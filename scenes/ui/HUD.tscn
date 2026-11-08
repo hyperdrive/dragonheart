@@ -64,6 +64,12 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "Stash: 0g / 0gems"
 
+[node name="HealthLabel" type="Label" parent="TopBar/TopBarMargin/HBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.5, 1, 0.6, 1)
+text = "HP 100/100"
+
 [node name="CarryLabel" type="Label" parent="TopBar/TopBarMargin/HBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 15

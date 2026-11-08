@@ -10,6 +10,7 @@ class_name GameHUD
 @onready var treasury_label: Label = $TopBar/TopBarMargin/HBox/TreasuryLabel
 @onready var food_label: Label = $TopBar/TopBarMargin/HBox/FoodLabel
 @onready var stash_label: Label = $TopBar/TopBarMargin/HBox/StashLabel
+@onready var health_label: Label = $TopBar/TopBarMargin/HBox/HealthLabel
 @onready var carry_label: Label = $TopBar/TopBarMargin/HBox/CarryLabel
 @onready var scales_label: Label = $TopBar/TopBarMargin/HBox/ScalesLabel
 @onready var fire_label: Label = $TopBar/TopBarMargin/HBox/FireLabel
@@ -46,6 +47,11 @@ func bind_manager(mgr: GameManager) -> void:
 	if world != null and world.has_signal("entity_spawned"):
 		pass  # soldier recount uses the same stream
 	mgr.boss_battle_started.connect(_on_king_arrived)
+	# Dragon health chip (take_damage/eat_food emit health_changed).
+	var dragon_ref := mgr.dragon
+	if dragon_ref != null and dragon_ref.has_signal("health_changed"):
+		dragon_ref.health_changed.connect(_on_dragon_health)
+		_on_dragon_health((dragon_ref as CharacterBody2D).get("health"))
 	_refresh_pools()
 	_refresh_dragon_stats()
 	refresh_threat()
@@ -66,6 +72,17 @@ func _on_upgrade_purchased(kind: String, level: int) -> void:
 ## The dragon's hauling loop — visible on the top bar at all times.
 func update_carried(total: int) -> void:
 	carry_label.text = "Claws: %d" % total
+
+## Damage/eating feed the HP chip (fed/take_damage both emit health_changed).
+func _on_dragon_health(health: Variant) -> void:
+	if game_manager == null:
+		var gm_root := get_tree().get_first_node_in_group("game_manager") as GameManager
+		if gm_root != null and gm_root.dragon != null:
+			health_label.text = "HP %d/%d" % [int(health), gm_root.dragon.get("max_health")]
+		return
+	var dragon_ref: CharacterBody2D = game_manager.dragon
+	if dragon_ref != null:
+		health_label.text = "HP %d/%d" % [int(health), int(dragon_ref.get("max_health"))]
 
 func _refresh_pools() -> void:
 	if game_manager == null:

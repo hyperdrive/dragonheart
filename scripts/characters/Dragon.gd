@@ -14,6 +14,10 @@ signal loot_carried(carry_total: int)
 @export var speed: float = 200.0
 @export var fire_rate: float = 1.0
 
+@export_group("Fire breath")
+@export var fire_reach: float = 95.0        # ignition distance from the mouth
+@export var fire_ignite_cone: float = 0.25  # facing half-plane dot threshold
+
 var health: int = 100
 var max_health: int = 100
 var is_firing: bool = false
@@ -84,6 +88,10 @@ func _physics_process(delta: float) -> void:
 	velocity = input_direction * speed
 	move_and_slide()
 
+	# While the breath window is open, soldiers in the flame cone catch fire.
+	if is_firing:
+		_ignite_soldiers()
+
 	# Face travel direction: mirrors the body and the whole fire assembly.
 	if input_direction.x != 0.0:
 		var new_facing := 1 if input_direction.x > 0.0 else -1
@@ -101,6 +109,20 @@ func _apply_facing() -> void:
 	fire_area.position.x = 20.0 * float(facing)      # breath origin offset
 	fire_collision.position.x = 15.0 * float(facing) # hitbox follows
 	flame.scale.x = float(facing)                    # flame visual mirrors
+
+## Soldiers caught in the breath cone are set ablaze (see Soldier.catch_fire).
+func _ignite_soldiers() -> void:
+	var facing_vec := Vector2(float(facing), 0.0)
+	for node: Node in get_tree().get_nodes_in_group("soldiers"):
+		var soldier := node as Soldier
+		if soldier == null or not soldier.is_alive:
+			continue
+		var to_target: Vector2 = soldier.global_position - global_position
+		if to_target.length() > fire_reach:
+			continue
+		if to_target.normalized().dot(facing_vec) < fire_ignite_cone:
+			continue
+		soldier.catch_fire()
 
 func _process(delta: float) -> void:
 	# Auto-theft: the core loop. When a payload carrier is in range and
