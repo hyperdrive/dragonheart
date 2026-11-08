@@ -26,6 +26,16 @@ signal victory_achieved(tally: Dictionary)
 @export var scales_cost_base: int = 50
 @export var fire_cost_base: int = 75
 
+## Wizard-shop price table (decision record 2026-11-08-manual-eat-wizard-menu).
+const WIZARD_PRICES := {
+	"flame_1": 30, "flame_2": 60, "shield": 40, "speed": 50, "range": 45,
+}
+
+var wizard_menu: CanvasLayer
+
+signal wizard_menu_opened
+signal wizard_menu_closed
+
 var treasury: Dictionary = {"gold": 0, "gems": 0}
 var stash: Dictionary = {"gold": 0, "gems": 0}      # dragon's stolen loot
 var food: int = 0
@@ -95,21 +105,11 @@ func consume_food(amount: int = 1) -> bool:
 
 # --- progression -----------------------------------------------------------
 
-## Dragon flame upgrade — paid from the dragon stash.
-func upgrade_fire() -> bool:
-	var ok := _pay_stash(fire_upgrade_cost())
-	if ok:
-		fire_power_level += 1
-		upgrade_purchased.emit("fire", fire_power_level)
-	return ok
+## Purchase paths retired: upgrades now happen ONLY at the wizard tower via
+## purchase_upgrade (decision record 2026-11-08-manual-eat-wizard-menu).
+## scales_level / fire_power_level stay as state for existing math.
 
-## Dragon armor (scales) upgrade — paid from the dragon stash.
-func upgrade_scales() -> bool:
-	var ok := _pay_stash(scales_upgrade_cost())
-	if ok:
-		scales_level += 1
-		upgrade_purchased.emit("scales", scales_level)
-	return ok
+# --- wizard shop (the tower site; replaces the old U-key panel) ---------------
 
 ## Pay a cost from the stash (gold first, gems worth 10x gold as top-up).
 func _pay_stash(cost: int) -> bool:
@@ -127,11 +127,58 @@ func _pay_stash(cost: int) -> bool:
 	stash_changed.emit("gems", stash["gems"])
 	return true
 
-func scales_upgrade_cost() -> int:
-	return scales_cost_base * scales_level
+# --- wizard shop (the tower site; replaces the old U-key panel) ---------------
 
-func fire_upgrade_cost() -> int:
-	return fire_cost_base * fire_power_level
+const WIZARD_MENU_SCENE := preload("res://scenes/ui/WizardMenu.tscn")
+
+## Stash-value readout for affordability (gold first, gems as 10x top-up —
+## the same rule _pay_stash applies).
+func stash_value() -> int:
+	return stash["gold"] + stash["gems"] * 10
+
+## Buy one wizard option: pays, then applies the effect to the dragon.
+## Returns false when unaffordable — or, for the shield, while any shield
+## remains (non-stackable pool, decision record).
+func purchase_upgrade(kind: String) -> bool:
+	var price: int = WIZARD_PRICES[kind]
+	var dragon_ref := dragon as Node
+	if dragon_ref == null or not is_instance_valid(dragon_ref):
+		return false
+	if kind == "shield" and int(dragon_ref.get("shield_points")) > 0:
+		return false
+	if not _pay_stash(price):
+		return false
+	match kind:
+		"flame_1":
+			dragon_ref.call("increase_flame_capacity", 1)
+		"flame_2":
+			dragon_ref.call("increase_flame_capacity", 2)
+		"shield":
+			dragon_ref.call("add_shield", 10)
+		"speed":
+			dragon_ref.call("activate_speed_boost")
+		"range":
+			dragon_ref.call("increase_flame_range", 20.0)
+	upgrade_purchased.emit(kind, price)
+	return true
+
+## Open the wizard overlay (pause the live world beneath it). Lazily built so
+## GameManager's scene tree stays lean; the instance survives for reopen.
+func open_wizard_menu() -> void:
+	if run_finished:
+		return
+	if wizard_menu == null:
+		wizard_menu = WIZARD_MENU_SCENE.instantiate()
+		wizard_menu.process_mode = Node.PROCESS_MODE_ALWAYS
+		wizard_menu.connect("menu_close_requested", _on_wizard_menu_close)
+		add_child(wizard_menu)
+	wizard_menu.call("open")
+	get_tree().paused = true
+	wizard_menu_opened.emit()
+
+func _on_wizard_menu_close() -> void:
+	get_tree().paused = false
+	wizard_menu_closed.emit()
 
 # --- escalation ------------------------------------------------------------
 

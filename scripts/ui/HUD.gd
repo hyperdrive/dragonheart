@@ -4,7 +4,7 @@ class_name GameHUD
 
 ## HUD view: binds to GameManager (single state hub) —
 ## treasury (town pool), food, dragon stash + carried claws (the hauling loop),
-## dragon levels, threat readout (soldiers/swarm/King), upgrade panel, victory
+## dragon levels, threat readout (soldiers/swarm/King), victory
 ## tally. No state is stored here; every value arrives via signals.
 
 @onready var treasury_label: Label = $TopBar/TopBarMargin/HBox/TreasuryLabel
@@ -15,7 +15,6 @@ class_name GameHUD
 @onready var scales_label: Label = $TopBar/TopBarMargin/HBox/ScalesLabel
 @onready var fire_label: Label = $TopBar/TopBarMargin/HBox/FireLabel
 @onready var threat_label: Label = $TopBar/TopBarMargin/HBox/ThreatLabel
-@onready var upgrade_panel: Panel = $UpgradePanel
 @onready var message_label: Label = $MessageLabel
 @onready var minimap: MinimapPanel = $Minimap
 
@@ -24,11 +23,10 @@ var game_manager: GameManager
 var threat_swarm: String = "calm"
 
 func _ready() -> void:
-	upgrade_panel.hide()
-	$UpgradePanel/VBoxContainer/TowerButton.hide()  # wizard-site flow deferred
-	$UpgradePanel/VBoxContainer/ScalesButton.pressed.connect(_on_upgrade_scales)
-	$UpgradePanel/VBoxContainer/FireButton.pressed.connect(_on_upgrade_fire)
-	$UpgradePanel/VBoxContainer/CloseButton.pressed.connect(_on_close_panel)
+	# The old U-key upgrade panel is retired: purchases now happen ONLY at
+	# the wizard tower (decision record 2026-11-08-manual-eat-wizard-menu).
+	$UpgradePanel.visible = false
+	$UpgradePanel.process_mode = Node.PROCESS_MODE_DISABLED
 
 ## Called by GameManager._ready (the hub injects itself; signals up, calls down).
 func bind_manager(mgr: GameManager) -> void:
@@ -47,7 +45,7 @@ func bind_manager(mgr: GameManager) -> void:
 	if world != null and world.has_signal("entity_spawned"):
 		pass  # soldier recount uses the same stream
 	mgr.boss_battle_started.connect(_on_king_arrived)
-	# Dragon health/flame chips (take_damage/eat_animal emit the signals).
+	# Dragon health/flame/shield chips (take_damage/_try_eat_at_pen emit).
 	var dragon_ref := mgr.dragon
 	if dragon_ref != null and dragon_ref.has_signal("health_changed"):
 		dragon_ref.health_changed.connect(_on_dragon_health)
@@ -57,6 +55,11 @@ func bind_manager(mgr: GameManager) -> void:
 		_on_flame_charges(
 			int((dragon_ref as CharacterBody2D).get("flame_charges")),
 			int((dragon_ref as CharacterBody2D).get("max_flame_charges")))
+	if dragon_ref != null and dragon_ref.has_signal("eat_refused"):
+		dragon_ref.eat_refused.connect(_on_eat_refused)
+		if dragon_ref.has_signal("shield_changed"):
+			dragon_ref.shield_changed.connect(_on_dragon_shield)
+			_on_dragon_shield(int((dragon_ref as CharacterBody2D).get("shield_points")))
 	_refresh_pools()
 	_refresh_dragon_stats()
 	refresh_threat()
@@ -65,7 +68,6 @@ func bind_manager(mgr: GameManager) -> void:
 
 func _on_pools_changed(_res_type: String, _amount: int) -> void:
 	_refresh_pools()
-	_refresh_upgrade_buttons()
 
 func _on_food_changed(amount: int) -> void:
 	food_label.text = "Food: %d" % amount
@@ -79,15 +81,20 @@ func update_carried(total: int) -> void:
 	carry_label.text = "Claws: %d" % total
 
 ## Damage/eating feed the HP chip (fed/take_damage both emit health_changed).
+## An active wizard shield shows as an absorb suffix on the HP chip.
 func _on_dragon_health(health: Variant) -> void:
-	if game_manager == null:
-		var gm_root := get_tree().get_first_node_in_group("game_manager") as GameManager
-		if gm_root != null and gm_root.dragon != null:
-			health_label.text = "HP %d/%d" % [int(health), gm_root.dragon.get("max_health")]
-		return
-	var dragon_ref: CharacterBody2D = game_manager.dragon
+	var dragon_ref: CharacterBody2D = null
+	if game_manager != null:
+		dragon_ref = game_manager.dragon
+	elif get_tree() != null:
+		dragon_ref = get_tree().get_first_node_in_group("dragon") as CharacterBody2D
 	if dragon_ref != null:
-		health_label.text = "HP %d/%d" % [int(health), int(dragon_ref.get("max_health"))]
+		var shield: int = int(dragon_ref.get("shield_points"))
+		var shield_text: String = "" if shield <= 0 else " (+%d shield)" % shield
+		health_label.text = "HP %d/%d%s" % [
+			int(health), int(dragon_ref.get("max_health")), shield_text]
+	else:
+		health_label.text = "HP %d" % int(health)
 
 ## Flame economy readout: breaths left of the eaten-fuel pool.
 func _on_flame_charges(charges: int, max_charges: int) -> void:
@@ -133,45 +140,28 @@ func refresh_threat() -> void:
 		text += " • ⚔ KING"  # the final boss is on the field
 	threat_label.text = text
 
-# --- upgrade panel -----------------------------------------------------------
+# --- eat feedback + shield chip --------------------------------------------------------------
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("upgrade"):
-		_toggle_upgrade_panel()
+func _on_dragon_shield(points: int) -> void:
+	# Folded into the HP chip suffix; re-run the current health format.
+	var dragon_ref := get_tree().get_first_node_in_group("dragon") as CharacterBody2D
+	if dragon_ref != null:
+		_on_dragon_health(int(dragon_ref.get("health")))
+	if points > 0:
+		show_message("Shield active: absorbs 10 damage!")
 
-func _toggle_upgrade_panel() -> void:
-	upgrade_panel.visible = not upgrade_panel.visible
-	if upgrade_panel.visible:
-		_refresh_upgrade_buttons()
-
-func _refresh_upgrade_buttons() -> void:
-	if game_manager == null:
-		return
-	var stash_value: int = int(game_manager.stash["gold"]) + int(game_manager.stash["gems"]) * 10
-	var scales_button := $UpgradePanel/VBoxContainer/ScalesButton as Button
-	var fire_button := $UpgradePanel/VBoxContainer/FireButton as Button
-	var scales_cost := game_manager.scales_upgrade_cost()
-	var fire_cost := game_manager.fire_upgrade_cost()
-	scales_button.disabled = stash_value < scales_cost
-	fire_button.disabled = stash_value < fire_cost
-	scales_button.text = "Upgrade Scales (%d loot)" % scales_cost
-	fire_button.text = "Upgrade Fire (%d loot)" % fire_cost
-
-func _on_upgrade_scales() -> void:
-	game_manager.upgrade_scales()
-	_refresh_upgrade_buttons()
-
-func _on_upgrade_fire() -> void:
-	game_manager.upgrade_fire()
-	_refresh_upgrade_buttons()
-
-func _on_close_panel() -> void:
-	upgrade_panel.visible = false
+## Wasted-E feedback (Dragon refuses to eat when there is nothing to gain).
+## The offending chip pulses red, then returns to white.
+func _on_eat_refused(what: String) -> void:
+	var chip := health_label if what == "health" else fire_label
+	var tween := create_tween()
+	tween.tween_property(chip, "modulate", Color(1.0, 0.25, 0.25), 0.12)
+	tween.tween_property(chip, "modulate", Color.WHITE, 0.3)
 
 # --- messages ----------------------------------------------------------------
 
 func show_upgrade_available() -> void:
-	show_message("Upgrade Available! Press U")
+	show_message("Upgrades: visit the wizard's tower!")
 
 func show_message(text: String, duration: float = 3.0) -> void:
 	message_label.text = text
@@ -185,7 +175,7 @@ func _on_victory(tally: Dictionary) -> void:
 		tally["fire_level"], tally["scales_level"]]
 
 func _update_stats() -> void:
-	message_label.text = "Press U for Upgrades"
+	message_label.text = ""
 
 # --- minimap (MinimapPanel below; GameManager pushes per-frame dragon dots) ---
 

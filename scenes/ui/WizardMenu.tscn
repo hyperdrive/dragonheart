@@ -1,0 +1,30 @@
+[gd_scene load_steps=2 format=3 uid="uid://wm8x2v5r9n3k"]
+
+[ext_resource type="Script" path="res://scripts/ui/WizardMenu.gd" id="1_wizard_script"]
+
+[node name="WizardMenu" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_wizard_script")
+
+[node name="Center" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Panel" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(560, 380)
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel"]
+
+[node name="Title" type="Label" parent="Center/Panel/VBox"]
+text = "The Wizard's Tower"
+theme_override_font_sizes/font_size = 22
+
+[node name="StashLabel" type="Label" parent="Center/Panel/VBox"]
+text = "Stash: 0 gold, 0 gems"
+
+[node name="Options" type="VBoxContainer" parent="Center/Panel/VBox"]
+theme_override_constants/separation = 8
+
+[node name="Hint" type="Label" parent="Center/Panel/VBox"]
+text = "1–5 buy • ESC leave"

@@ -3,9 +3,9 @@ extends Node2D
 class_name AnimalPen
 
 ## Animal pen component (attached to PigPen/CowPen scenes). A slot pool:
-## the dragon eats an animal in reach (+health, +flame recharge); town codes
-## snack on the species for NPC respawns (farmer↔pig, miner↔cow); and farm
-## harvests pay 20 food per animal to fill empty slots (cap = max_animals).
+## the dragon eats an animal BY COMMAND (E;Dragon handles the trigger),
+## town consumes the species for NPC respawns (farmer↔pig, miner↔cow);
+## farm harvests pay 20 food per animal to fill empty slots (cap = max_animals).
 ## Animals no longer self-respawn on a timer — the farm cycle is their only
 ## return path (user spec 2026-11-08).
 
@@ -16,9 +16,6 @@ class_name AnimalPen
 @export var flame_recharge: int = 1
 @export var pen_radius: float = 80.0
 @export var max_animals: int = 4
-## Eating pace: one animal per bite_interval while the dragon hovers the pen —
-## otherwise the pen empties in a single frame and the farm chain collapses.
-@export var bite_interval: float = 0.8
 ## Food the town pays to fill one empty slot (paid by WorldManager on farm
 ## harvests).
 @export var refill_cost: int = 20
@@ -29,7 +26,6 @@ class_name AnimalPen
 ]
 
 var _animals: Array[Sprite2D] = []
-var _bite_left: float = 0.0
 
 func _ready() -> void:
 	# Existing Sprite2D children in the pen scene are slot 0..n. Slots beyond
@@ -55,29 +51,18 @@ func _ready() -> void:
 		add_child(slot)
 		_animals.append(slot)
 
-## The dragon snacking (one animal per bite_interval while in reach); the
-## dragon receives the heal + flame charge directly (capped on its side).
-func _physics_process(delta: float) -> void:
-	if _bite_left > 0.0:
-		_bite_left -= delta
-	_try_eat()
-
-func _try_eat() -> void:
-	if _bite_left > 0.0:
-		return
-	var dragon := get_tree().get_first_node_in_group("dragon") as CharacterBody2D
-	if dragon == null or not is_instance_valid(dragon):
-		return
-	if bool(dragon.get("_dying")):
-		return
-	if dragon.global_position.distance_to(global_position) > pen_radius:
-		return
-	var consumed := consume_animal()
-	if consumed:
-		_bite_left = bite_interval
-		dragon.call("eat_animal", heal_amount, flame_recharge)
-		print(" dragon ate a %s at the pen (+%d health, +%d flame charge)" % [
-			animal_name, heal_amount, flame_recharge])
+## Intentional meal extraction (E key handled by the Dragon): takes one
+## animal from the pen IF the dragon is within reach and stock exists.
+## Returns {"heal", "flame"} — or an empty Dictionary when nothing was
+## eaten (empty pen / not in reach), which the Dragon answers with a print.
+func take_animal_for_dragon(from_dragon: CharacterBody2D) -> Dictionary:
+	if from_dragon == null \
+			or from_dragon.global_position.distance_to(global_position) > pen_radius:
+		return {}
+	if not consume_animal():
+		return {}
+	print(" Dragon snacked on a %s at the pen" % animal_name)
+	return {"heal": heal_amount, "flame": flame_recharge}
 
 ## Empty-slot check for respawn rules.
 func has_empty_slot() -> bool:
