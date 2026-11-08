@@ -1,0 +1,61 @@
+[gd_scene load_steps=2 format=3 uid="uid://e3f5g7h2i9j0k"]
+
+[ext_resource type="Script" path="res://scripts/objects/WizardTower.gd" id="1_l4m6n"]
+[ext_resource type="RectangleShape2D" path="res://assets/shapes/wizardtower_shape.tres" id="2_t7y9z"]
+
+[node name="WizardTower" type="Area2D"]
+collision_layer = 4
+collision_mask = 2
+script = ExtResource("1_l4m6n")
+
+[node name="Sprite" type="Node2D" parent="."]
+
+[node name="Base" type="ColorRect" parent="WizardTower/Sprite"]
+size = Vector2(60, 40)
+color = Color(0.4, 0.2, 0.6, 1.0)
+
+[node name="Tower" type="ColorRect" parent="WizardTower/Sprite"]
+position = Vector2(-10, -40)
+size = Vector2(30, 40)
+color = Color(0.6, 0.3, 0.8, 1.0)
+
+[node name="Roof" type="ColorRect" parent="WizardTower/Sprite"]
+position = Vector2(-15, -50)
+size = Vector2(40, 15)
+color = Color(0.8, 0.5, 1.0, 1.0)
+
+[node name="Portal" type="ColorRect" parent="WizardTower/Sprite"]
+position = Vector2(5, -30)
+size = Vector2(15, 20)
+color = Color(0.0, 0.8, 1.0, 1.0)
+
+[node name="Stars" type="Node2D" parent="WizardTower/Sprite"]
+
+[node name="Star1" type="ColorRect" parent="WizardTower/Sprite/Stars"]
+position = Vector2(-20, -55)
+size = Vector2(5, 5)
+color = Color(1.0, 1.0, 0.0, 1.0)
+
+[node name="Star2" type="ColorRect" parent="WizardTower/Sprite/Stars"]
+position = Vector2(-10, -60)
+size = Vector2(5, 5)
+color = Color(1.0, 1.0, 0.0, 1.0)
+
+[node name="Star3" type="ColorRect" parent="WizardTower/Sprite/Stars"]
+position = Vector2(0, -58)
+size = Vector2(5, 5)
+color = Color(1.0, 1.0, 0.0, 1.0)
+
+[node name="Star4" type="ColorRect" parent="WizardTower/Sprite/Stars"]
+position = Vector2(10, -60)
+size = Vector2(5, 5)
+color = Color(1.0, 1.0, 0.0, 1.0)
+
+[node name="Star5" type="ColorRect" parent="WizardTower/Sprite/Stars"]
+position = Vector2(20, -55)
+size = Vector2(5, 5)
+color = Color(1.0, 1.0, 0.0, 1.0)
+
+[node name="CollisionShape" type="CollisionShape2D" parent="."]
+shape = ExtResource("2_t7y9z")
+position = Vector2(0, -20)

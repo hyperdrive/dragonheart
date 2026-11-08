@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <polygon points="16,2 28,10 28,24 16,30 4,24 4,10" fill="#9370DB" stroke="#8A2BE2" stroke-width="1"/>
+  <polygon points="16,2 22,6 22,18 16,22 10,18 10,6" fill="#DDA0DD"/>
+  <text x="16" y="20" font-family="Arial" font-size="12" fill="#8A2BE2" text-anchor="middle">G</text>
+</svg>

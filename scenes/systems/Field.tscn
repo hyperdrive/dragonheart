@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3 uid="uid://c8f1k4xq2m7dv"]
+
+[ext_resource type="Script" path="res://scripts/systems/Field.gd" id="1_field_script"]
+
+[sub_resource type="RectangleShape2D" id="1_field_shape"]
+size = Vector2(68, 52)
+
+[node name="Field" type="Area2D"]
+groups=["fields", "flammable"]
+z_index = -1
+script = ExtResource("1_field_script")
+
+[node name="Crops" type="ColorRect" parent="."]
+offset_left = -32.0
+offset_top = -24.0
+offset_right = 32.0
+offset_bottom = 24.0
+color = Color(0.3, 0.75, 0.2, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1_field_shape")
+
+[node name="RegrowTimer" type="Timer" parent="."]
+one_shot = true

@@ -1,0 +1,41 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Engine binaries & archives dropped in the repo root (not game files)
+/Godot_*
+/Godot*
+/godot.zip
+
+# One-off test/debug tooling at repo root (kept out of the repo; the copies
+# that matter live in scripts/, scenes/, or are covered by docs/)
+/*.gd
+/*.gd.uid
+/*.tscn
+/*.py
+/input_map.cfg
+
+# Test scaffolding dirs (reference the root test scripts above)
+/testfiles/
+/scenes/test/
+
+# Stale session-note documents at repo root (canonical notes live in docs/)
+/ANIMATION_FIXES.md
+/DRAGON_FIXES.md
+/FIRE_ANIMATION_FIX_SUMMARY.md
+/FIX_SUMMARY.md
+/fixes_summary.md
+/SCRIPT_ERROR_FIXES_SUMMARY.md
+/WASD*.md
+
+# Editor stub icon not referenced by project settings
+/icon.png
+/icon.png.import
+
+# Agent/tooling config (not game files)
+/opencode.json
+
+# Orphaned test scaffolding inside scripts/ (only scenes/test references them,
+# and scenes/test is ignored)
+/scripts/test_*.gd
+/scripts/test_*.gd.uid

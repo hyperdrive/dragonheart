@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=3 uid="uid://a8b3c9d2e1f4g"]
+
+[ext_resource type="Script" path="res://scripts/npcs/Soldier.gd" id="1_m2n7r"]
+[ext_resource type="RectangleShape2D" path="res://assets/shapes/soldier_shape.tres" id="2_k5p8q"]
+
+[node name="Soldier" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_m2n7r")
+
+[node name="Sprite" type="Node2D" parent="."]
+position = Vector2(0, -5)
+
+[node name="Body" type="ColorRect" parent="Sprite"]
+size = Vector2(18, 25)
+color = Color(0.2, 0.2, 0.8, 1.0)
+
+[node name="Helmet" type="ColorRect" parent="Sprite"]
+position = Vector2(-4, -15)
+size = Vector2(12, 15)
+color = Color(0.6, 0.6, 0.6, 1.0)
+
+[node name="Shield" type="ColorRect" parent="Sprite"]
+position = Vector2(-15, -5)
+size = Vector2(8, 18)
+color = Color(0.8, 0.6, 0.4, 1.0)
+
+[node name="Spear" type="ColorRect" parent="Sprite"]
+position = Vector2(15, -10)
+size = Vector2(4, 20)
+color = Color(0.6, 0.4, 0.2, 1.0)
+
+[node name="MainCollision" type="CollisionShape2D" parent="."]
+shape = ExtResource("2_k5p8q")
+position = Vector2(0, 5)
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
+shape = ExtResource("2_k5p8q")
+position = Vector2(0, 0)
+
+[node name="AttackArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="AttackCollision" type="CollisionShape2D" parent="AttackArea"]
+shape = ExtResource("2_k5p8q")
+position = Vector2(20, 0)

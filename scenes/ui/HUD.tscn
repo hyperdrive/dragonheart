@@ -1,0 +1,140 @@
+[gd_scene format=3 uid="uid://c3w7d8b2n0h6f"]
+
+[node name="HUD" type="Control" unique_id=638309366]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ResourcePanel" type="Panel" parent="." unique_id=62304991]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -80.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ResourcePanel" unique_id=1099152119]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="GoldLabel" type="Label" parent="ResourcePanel/VBoxContainer" unique_id=1408234077]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Gold: 0"
+horizontal_alignment = 1
+
+[node name="FoodLabel" type="Label" parent="ResourcePanel/VBoxContainer" unique_id=1609203266]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Food: 0"
+horizontal_alignment = 1
+
+[node name="UpgradePanel" type="Panel" parent="." unique_id=1999221265]
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -150.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UpgradePanel" unique_id=1740001586]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="TowerButton" type="Button" parent="UpgradePanel/VBoxContainer" unique_id=319602254]
+layout_mode = 2
+text = "Build Wizard Tower (100 Gold)"
+
+[node name="ScalesButton" type="Button" parent="UpgradePanel/VBoxContainer" unique_id=172738350]
+layout_mode = 2
+text = "Upgrade Scales (50 Gold)"
+
+[node name="FireButton" type="Button" parent="UpgradePanel/VBoxContainer" unique_id=780316821]
+layout_mode = 2
+text = "Upgrade Fire (75 Gold)"
+
+[node name="CloseButton" type="Button" parent="UpgradePanel/VBoxContainer" unique_id=1204169610]
+layout_mode = 2
+text = "Close"
+
+[node name="MessageLabel" type="Label" parent="." unique_id=1063582146]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -50.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 18
+text = "Press U for Upgrades"
+
+[node name="DragonStats" type="Panel" parent="." unique_id=443476908]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 150.0
+anchor_bottom = 150.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="DragonStats" unique_id=515364244]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 5
+
+[node name="ScalesLabel" type="Label" parent="DragonStats/VBoxContainer" unique_id=728076432]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Scales: Level 1"
+
+[node name="FireLabel" type="Label" parent="DragonStats/VBoxContainer" unique_id=1915666032]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Fire: Level 1"
+
+[node name="Minimap" type="Panel" parent="." unique_id=918273645]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 0.0
+anchor_top = 0.0
+offset_right = 200.0
+offset_bottom = 200.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="MinimapTexture" type="ColorRect" parent="Minimap" unique_id=819273646]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.1, 1)

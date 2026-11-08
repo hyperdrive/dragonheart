@@ -1,0 +1,24 @@
+[gd_scene load_steps=7 format=3 uid="uid://b4x8u8xh5v1qo"]
+
+[ext_resource type="Script" path="res://scripts/main/GameManager.gd" id="1_wy8d8"]
+[ext_resource type="Script" path="res://scripts/ui/HUD.gd" id="2_n5x7f"]
+[ext_resource type="Script" path="res://scripts/main/WorldManager.gd" id="3_world_manager_script"]
+
+[ext_resource type="PackedScene" path="res://scenes/characters/Dragon.tscn" id="4_dragon_scene"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="3_7k3c9"]
+
+[node name="Main" type="Node2D" groups=["game_manager"]]
+script = ExtResource("1_wy8d8")
+
+[node name="Camera" type="Camera2D" parent="."]
+position_smoothing_enabled = true
+zoom = Vector2(0.75, 0.75)
+
+[node name="World" type="Node2D" parent="." groups=["world"]]
+[node name="Dragon" parent="World" instance=ExtResource("4_dragon_scene")]
+[node name="WorldManager" type="Node2D" parent="World"]
+script = ExtResource("3_world_manager_script")
+
+[node name="HUD" parent="." instance=ExtResource("3_7k3c9")]
+script = ExtResource("2_n5x7f")
+

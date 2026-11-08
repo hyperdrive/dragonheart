@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <ellipse cx="16" cy="20" rx="10" ry="7" fill="#FFB6C1"/>
+  <ellipse cx="8" cy="16" rx="5" ry="4" fill="#FFB6C1"/>
+  <ellipse cx="24" cy="16" rx="5" ry="4" fill="#FFB6C1"/>
+  <circle cx="8" cy="13" r="1" fill="#000000"/>
+  <circle cx="24" cy="13" r="1" fill="#000000"/>
+  <ellipse cx="16" cy="11" rx="3" ry="2" fill="#FF69B4"/>
+  <ellipse cx="14" cy="10" rx="1.5" ry="1" fill="#FFC0CB"/>
+  <ellipse cx="18" cy="10" rx="1.5" ry="1" fill="#FFC0CB"/>
+  <rect x="14" y="23" width="3" height="3" fill="#FFB6C1"/>
+  <rect x="11" y="21" width="2" height="3" fill="#FFB6C1"/>
+  <rect x="19" y="21" width="2" height="3" fill="#FFB6C1"/>
+  <text x="16" y="18" font-family="Arial" font-size="8" fill="#000000" text-anchor="middle">P</text>
+</svg>

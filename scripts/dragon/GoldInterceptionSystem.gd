@@ -1,0 +1,92 @@
+extends Node
+
+class_name GoldInterceptionSystem
+
+## Dragon's steal mechanism (child of Dragon). Finds payload-carrying NPCs in
+## range, resolves the interception, transfers the payload to the dragon stash
+## (GameManager.add_stolen — two pools never mix), wounds the victim.
+## docs/plans/2026-11-08-behavior-system-rebuild.md — Trace 1.
+
+signal resources_seized(res_type: String, amount: int)
+signal miner_intercepted(miner)   # arg is a Miner NPC (pre-class-load safety)
+
+@export var interception_range: float = 100.0
+@export var intercept_damage: int = 30
+@export var min_interception_cooldown: float = 3.0
+@export var max_interception_risk: float = 0.8
+@export var kill_chance_low_health: float = 0.6
+
+var interception_cooldown: float = 0.0
+
+## Injected by Dragon._ready (GameManager is the only state hub).
+var game_manager: GameManager
+
+func _ready() -> void:
+	print("GoldInterceptionSystem initialized")
+
+func setup(mgr: GameManager) -> void:
+	game_manager = mgr
+
+func _process(delta: float) -> void:
+	if interception_cooldown > 0.0:
+		interception_cooldown = maxf(interception_cooldown - delta, 0.0)
+
+## Miners (any BaseNPC) currently carrying payload within interception range.
+func check_interception_opportunities(dragon_position: Vector2) -> Array[BaseNPC]:
+	var available: Array[BaseNPC] = []
+	for carrier: Node in get_tree().get_nodes_in_group("miners"):
+		var npc := carrier as BaseNPC
+		if npc == null or not npc.is_alive or npc.payload_amount <= 0:
+			continue
+		if dragon_position.distance_to(npc.global_position) < interception_range:
+			available.append(npc)
+	return available
+
+## Sort the available targets by value (payload + proximity) and return the best.
+func get_best_interception_targets(dragon_position: Vector2, max_targets: int = 3) -> Array[BaseNPC]:
+	var targets := check_interception_opportunities(dragon_position)
+	targets.sort_custom(func(a: BaseNPC, b: BaseNPC) -> bool:
+		var a_value := a.payload_amount * 15 - dragon_position.distance_to(a.global_position)
+		var b_value := b.payload_amount * 15 - dragon_position.distance_to(b.global_position)
+		return a_value > b_value
+	)
+	return targets.slice(0, mini(max_targets, targets.size()))
+
+## Resolve one interception attempt. Returns true when it connected.
+func attempt_interception(dragon: Node2D, target: BaseNPC) -> bool:
+	if interception_cooldown > 0.0:
+		return false
+
+	# Distance-weighted success chance.
+	var distance := dragon.global_position.distance_to(target.global_position)
+	var success_probability := max_interception_risk * (1.0 - clampf(distance / interception_range, 0.0, 1.0))
+	if randf() >= success_probability:
+		return false
+
+	interception_cooldown = min_interception_cooldown
+
+	# Transfer the whole payload to the dragon stash.
+	var loot := target.steal_payload()
+	if loot["amount"] > 0:
+		if game_manager != null:
+			game_manager.add_stolen(loot["res_type"], loot["amount"])
+		else:
+			push_warning("GoldInterceptionSystem: no GameManager — loot discarded")
+		resources_seized.emit(loot["res_type"], loot["amount"])
+
+	# Damage + possible kill; surviving miners recover slowly.
+	target.take_damage(intercept_damage)
+	var miner := target as Miner
+	if miner != null:
+		if miner.health <= 20 and randf() < kill_chance_low_health:
+			miner_intercepted.emit(miner)
+			miner.die()
+		else:
+			miner.intercepted_by_dragon()
+	return true
+
+func get_interception_status() -> Dictionary:
+	return {
+		"cooldown_remaining": maxf(0.0, interception_cooldown),
+		"interception_range": interception_range,
+	}

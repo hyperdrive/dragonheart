@@ -1,0 +1,144 @@
+[gd_scene load_steps=9 format=3 uid="uid://d6n2r5p4v8x7c"]
+
+[ext_resource type="Script" path="res://scripts/characters/Dragon.gd" id="1_m3q8w"]
+[ext_resource type="Script" path="res://scripts/dragon/GoldInterceptionSystem.gd" id="1_g4s2t"]
+
+[sub_resource type="RectangleShape2D" id="1_b5t6n"]
+size = Vector2(40, 30)
+
+[sub_resource type="Animation" id="1_idle"]
+length = 1.0
+loop_mode = 1
+step = 0.1
+tracks/0/type = "value"
+tracks/0/path = "Sprite:position"
+tracks/0/interp = 1
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, -5), Vector2(0, -7), Vector2(0, -5)]
+}
+tracks/1/type = "value"
+tracks/1/path = "Sprite:rotation"
+tracks/1/interp = 1
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.05, 0.0]
+}
+
+[sub_resource type="Animation" id="2_fire_breath"]
+length = 0.8
+loop_mode = 0
+step = 0.1
+tracks/0/type = "value"
+tracks/0/path = "Sprite:position"
+tracks/0/interp = 1
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.4, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, -5), Vector2(5, -5), Vector2(0, -5)]
+}
+tracks/1/type = "value"
+tracks/1/path = "Sprite:rotation"
+tracks/1/interp = 1
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.4, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, -0.2, 0.0]
+}
+
+[sub_resource type="Animation" id="3_death"]
+length = 2.0
+loop_mode = 0
+step = 0.1
+tracks/0/type = "value"
+tracks/0/path = "Sprite:position"
+tracks/0/interp = 1
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5, 1.0, 1.5, 2.0),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector2(0, 0), Vector2(0, 5), Vector2(0, 10), Vector2(0, 15), Vector2(0, 20)]
+}
+tracks/1/type = "value"
+tracks/1/path = "Sprite:rotation"
+tracks/1/interp = 1
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.5, 1.0, 1.5, 2.0),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [0.0, 0.2, 0.4, 0.6, 0.8]
+}
+
+[sub_resource type="RectangleShape2D" id="1_j7h1g"]
+size = Vector2(30, 20)
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_dragon"]
+_data = {
+"idle": SubResource("1_idle"),
+"fire_breath": SubResource("2_fire_breath"),
+"death": SubResource("3_death")
+}
+
+[node name="Dragon" type="CharacterBody2D" groups=["dragon"]]
+collision_layer = 2
+collision_mask = 3
+script = ExtResource("1_m3q8w")
+group = "dragon"
+
+[node name="Sprite" type="Node2D" parent="."]
+position = Vector2(0, -5)
+
+[node name="Body" type="ColorRect" parent="Sprite"]
+size = Vector2(40, 30)
+color = Color(0.8, 0.2, 0.2, 1.0)
+
+[node name="Head" type="ColorRect" parent="Sprite"]
+position = Vector2(15, -10)
+size = Vector2(20, 20)
+color = Color(0.9, 0.3, 0.3, 1.0)
+
+[node name="Wing" type="ColorRect" parent="Sprite"]
+position = Vector2(-10, -5)
+size = Vector2(15, 25)
+color = Color(0.7, 0.1, 0.1, 1.0)
+
+[node name="Tail" type="ColorRect" parent="Sprite"]
+position = Vector2(-35, 0)
+size = Vector2(20, 10)
+color = Color(0.6, 0.1, 0.1, 1.0)
+
+[node name="CollisionShape" type="CollisionShape2D" parent="."]
+shape = SubResource("1_b5t6n")
+position = Vector2(0, 0)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+	"": SubResource("AnimationLibrary_dragon")
+}
+autoplay = "idle"
+
+[node name="FireArea" type="Area2D" parent="."]
+position = Vector2(20, 0)
+
+[node name="FireCollision" type="CollisionShape2D" parent="FireArea"]
+shape = SubResource("1_j7h1g")
+position = Vector2(15, 0)
+
+[node name="FireDetector" type="Node2D" parent="FireArea"]
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="HurtCollision" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("1_b5t6n")
+position = Vector2(0, 0)
+
+[node name="GoldInterceptionSystem" type="Node" parent="." groups=["gold_interception_system"]]
+script = ExtResource("1_g4s2t")
