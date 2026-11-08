@@ -11,6 +11,8 @@ signal gold_collected
 signal gems_collected
 signal resource_delivered(npc_type: String, res_type: String, amount: int)
 
+const GOLD_DROP_SCENE := preload("res://scenes/objects/GoldDrop.tscn")
+
 @export_group("Mining")
 @export var mine_work_time: float = 4.0
 @export var mine_cooldown: float = 3.0
@@ -48,6 +50,9 @@ func _ready() -> void:
 	behavior_tree = BehaviorTree.new()
 	add_child(behavior_tree)
 	behavior_tree.setup(self)
+	# The moment the dragon gets too close the cart is a liability: the miner
+	# drops the whole payload as loose loot (GoldDrop) and runs unburdened.
+	behavior_tree.fled_from_dragon.connect(_drop_payload)
 	behavior_tree.register_activity(
 		"mine", 20,
 		_pick_mine_target, mine_work_time * level_multiplier(),
@@ -130,6 +135,20 @@ func intercepted_by_dragon() -> void:
 	print("Miner intercepted by dragon!")
 
 # --- gold cart ----------------------------------------------------------------
+
+## Panic response: the gold becomes a loose pickup (with settle delay for the
+## dragon) and the miner keeps nothing — the interception system then only
+## covers a miner caught *while* carting (e.g. dangerous behavior rare now).
+func _drop_payload(_dragon_position: Vector2) -> void:
+	if payload_amount <= 0:
+		return
+	var drop := GOLD_DROP_SCENE.instantiate() as GoldDrop
+	drop.res_type = payload_res_type
+	drop.amount = payload_amount
+	drop.position = Vector2(randf_range(-16, 16), randf_range(4, 12))
+	get_parent().add_child(drop)
+	set_payload("", 0)
+	print("Miner dropped %d %s while fleeing the dragon!" % [drop.amount, drop.res_type])
 
 ## The cart rides in front of the miner (they push it toward town).
 func _push_cart() -> void:

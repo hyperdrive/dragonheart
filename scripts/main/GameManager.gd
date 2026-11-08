@@ -51,6 +51,9 @@ func _ready() -> void:
 		(hud as GameHUD).bind_manager(self)
 	else:
 		push_warning("HUD missing or not a GameHUD")
+	# Loot-haul loop messaging: pickups tell the player where to bank them.
+	if dragon != null and dragon.has_signal("loot_carried"):
+		dragon.loot_carried.connect(_on_dragon_loot_carried)
 	emit_signal("gold_changed", treasury["gold"])
 	emit_signal("food_changed", food)
 
@@ -164,9 +167,15 @@ func update_camera_position() -> void:
 func _on_entity_spawned(entity_type: String, position: Vector2) -> void:
 	pass  # keep the hook for future minimap/gameplay expansions
 
+## Dragon picked up more loot: nudge the player toward the lair.
+func _on_dragon_loot_carried(carry_total: int) -> void:
+	if carry_total > 0 and hud is GameHUD:
+		(hud as GameHUD).show_message(
+			"Carrying %d loot — haul it to the lair!" % carry_total)
+
+
 ## WorldManager raises the alarm: rally/attack messages surface on the HUD.
-func _on_swarm_state_changed(new_state: WorldManager.SwarmState) -> void:
-	if hud is GameHUD:
+func _on_swarm_state_changed(new_state: WorldManager.SwarmState) -> void:	if hud is GameHUD:
 		match new_state:
 			WorldManager.SwarmState.RALLY:
 				(hud as GameHUD).show_message("The soldiers mass at the city gate!")

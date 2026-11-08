@@ -65,13 +65,14 @@ func attempt_interception(dragon: Node2D, target: BaseNPC) -> bool:
 
 	interception_cooldown = min_interception_cooldown
 
-	# Transfer the whole payload to the dragon stash.
+	# Transfer the whole payload into the dragon's claws (banked at the lair).
 	var loot := target.steal_payload()
 	if loot["amount"] > 0:
-		if game_manager != null:
-			game_manager.add_stolen(loot["res_type"], loot["amount"])
+		var dragon_c := dragon as Dragon
+		if dragon_c != null:
+			dragon_c.take_loot(loot["res_type"], loot["amount"])
 		else:
-			push_warning("GoldInterceptionSystem: no GameManager — loot discarded")
+			push_warning("GoldInterceptionSystem: no Dragon carry — loot discarded")
 		resources_seized.emit(loot["res_type"], loot["amount"])
 
 	# Damage + possible kill; surviving miners recover slowly.

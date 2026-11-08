@@ -8,6 +8,7 @@ class_name Dragon
 
 signal health_changed(health: int)
 signal fire_attacked
+signal loot_carried(carry_total: int)
 
 @export_group("Controls")
 @export var speed: float = 200.0
@@ -19,6 +20,12 @@ var is_firing: bool = false
 var fire_cooldown: float = 0.0
 ## Facing state: 1 = right, -1 = left; mirrors body AND the fire assembly.
 var facing: int = 1
+## Loot in the claws — banked only when delivered at the lair.
+var carried_loot: Dictionary = {"gold": 0, "gems": 0}
+
+@export_group("Loot hauling")
+@export var pickup_radius: float = 70.0
+@export var lair_delivery_radius: float = 150.0
 ## True from die() onward: blocks extra damage, input, activity re-entry.
 var _dying: bool = false
 
@@ -105,6 +112,56 @@ func _process(delta: float) -> void:
 	var opportunities := interception_system.check_interception_opportunities(global_position)
 	if opportunities.size() > 0:
 		interception_system.attempt_interception(self, opportunities[0])
+	_scoop_loose_loot()
+	_deliver_carried_loot()
+
+# --- loot hauling: scoop → claws → lair ---------------------------------------
+
+## Loose drops (miner panic-drops) become collectible after their settle delay.
+## One scoop per frame keeps the pocketing readable.
+func _scoop_loose_loot() -> void:
+	for drop: Node in get_tree().get_nodes_in_group("loose_loot"):
+		var gold_drop := drop as GoldDrop
+		if gold_drop == null or not gold_drop.settled:
+			continue
+		if global_position.distance_to(gold_drop.global_position) > pickup_radius:
+			continue
+		take_loot(gold_drop.res_type, gold_drop.amount)
+		print("Dragon collected %d %s — %d loot carried, deliver to the lair!" % [
+			gold_drop.amount, gold_drop.res_type, carried_total()])
+		gold_drop.queue_free()
+		return  # one pickup per frame
+
+## Stash only grows at the lair: carried loot banks inside the cave radius.
+func _deliver_carried_loot() -> void:
+	var carry := carried_total()
+	if carry == 0:
+		return
+	var lair := get_tree().get_first_node_in_group("dragon_lair") as Node2D
+	if lair == null:
+		return
+	if global_position.distance_to(lair.global_position) > lair_delivery_radius:
+		return
+	for res_type: String in carried_loot:
+		var amount: int = carried_loot[res_type]
+		if amount > 0:
+			game_manager.add_stolen(res_type, amount)
+			print("Dragon banked %d %s at the lair" % [amount, res_type])
+			carried_loot[res_type] = 0
+	loot_carried.emit(0)
+
+## Everything (drops, interception, mine landing) funnels through here.
+func take_loot(res_type: String, amount: int) -> void:
+	if not carried_loot.has(res_type):
+		carried_loot[res_type] = 0
+	carried_loot[res_type] += amount
+	loot_carried.emit(carried_total())
+
+func carried_total() -> int:
+	var total := 0
+	for amount: int in carried_loot.values():
+		total += amount
+	return total
 
 func fire_breath() -> void:
 	if _dying or is_firing or fire_cooldown > 0.0:
@@ -149,14 +206,15 @@ func die() -> void:
 # Animations (idle, fire_breath, death) live in Dragon.tscn's AnimationPlayer
 # library — do not recreate them in code.
 
-## Direct pickup of loose resources (dropped ore, food) → dragon stash pool.
+## Loose resources grabbed straight off a mine (landing on the entrance) —
+## goes into the claws like everything else; banking happens at the lair.
 func collect_resources(resources: Dictionary) -> void:
-	if game_manager == null:
-		return
 	if resources.has("gold"):
-		game_manager.add_stolen("gold", resources["gold"])
+		take_loot("gold", resources["gold"])
 	if resources.has("gems"):
-		game_manager.add_stolen("gems", resources["gems"])
+		take_loot("gems", resources["gems"])
+	if resources.has("food"):
+		eat_food(resources["food"])
 
 func eat_food(food_value: int) -> void:
 	health = mini(health + food_value, max_health)

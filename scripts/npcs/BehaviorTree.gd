@@ -14,6 +14,7 @@ class_name BehaviorTree
 
 signal state_changed(new_state: State)
 signal activity_completed(activity_id: String)
+signal fled_from_dragon(dragon_position: Vector2)
 
 enum State { IDLE, MOVING, WORKING, FLEEING, DEAD }
 
@@ -165,6 +166,7 @@ func _start_flee(dragon_position: Vector2) -> void:
 	var away := (npc.global_position - dragon_position).normalized()
 	npc.flee_target = npc.global_position + away * npc.safe_radius
 	_set_state(State.FLEEING)
+	fled_from_dragon.emit(dragon_position)
 
 func _tick_fleeing() -> void:
 	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D

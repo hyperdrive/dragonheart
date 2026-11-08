@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="160" viewBox="0 0 192 160">
+  <!-- mountain silhouette (matches assets/sprites/mountain.svg palette) -->
+  <polygon points="96,10 178,150 14,150" fill="#6f7480"/>
+  <polygon points="150,70 192,150 104,150" fill="#5e6270"/>
+  <!-- snow cap -->
+  <polygon points="96,10 114,48 106,42 98,52 90,42 80,48" fill="#e8ecf2"/>
+  <!-- rocky shading -->
+  <polygon points="96,24 132,150 62,150" fill="#7c818d" opacity="0.55"/>
+  <!-- cave mouth -->
+  <path d="M64 150 v-34 a32 30 0 0 1 64 0 v34 z" fill="#171419"/>
+  <!-- gold hoard glowing inside the cave -->
+  <ellipse cx="96" cy="142" rx="26" ry="7" fill="#c9960f"/>
+  <circle cx="84" cy="138" r="5" fill="#ffd54a"/>
+  <circle cx="96" cy="136" r="6" fill="#ffe27a"/>
+  <circle cx="108" cy="138" r="5" fill="#ffd54a"/>
+  <circle cx="92" cy="133" r="3.5" fill="#fff2b0"/>
+  <circle cx="101" cy="132" r="3" fill="#fff2b0"/>
+  <!-- cave inner glow -->
+  <ellipse cx="96" cy="128" rx="20" ry="12" fill="#ffb638" opacity="0.25"/>
+  <!-- dragon sigil above the cave: winged mark -->
+  <path d="M72 88 q14 -18 24 -4 q10 -16 24 -2 q-10 8 -24 6 q-14 6 -24 0 z" fill="#2a2326"/>
+  <circle cx="96" cy="72" r="3" fill="#2a2326"/>
+  <!-- bone decorations flanking the lair -->
+  <g fill="#ddd6c8">
+    <ellipse cx="52" cy="146" rx="9" ry="3"/>
+    <circle cx="44" cy="144" r="3.5"/>
+    <circle cx="58" cy="143" r="3.5"/>
+    <ellipse cx="144" cy="147" rx="8" ry="3"/>
+    <circle cx="152" cy="145" r="3"/>
+  </g>
+</svg>

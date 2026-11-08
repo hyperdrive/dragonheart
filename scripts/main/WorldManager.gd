@@ -28,6 +28,8 @@ enum SwarmState { CALM, RALLY, ATTACK }
 @export var rally_point: Vector2 = Vector2(0, 500)   # north gate of the city
 @export var pig_pen_position: Vector2 = Vector2(-260, 760)
 @export var cow_pen_position: Vector2 = Vector2(260, 820)
+@export var lair_position: Vector2 = Vector2(-620, 60)   # dragon's home mountain
+@export var tower_position: Vector2 = Vector2(520, -420)  # wizard tower
 
 @export_group("Terrain")
 @export var tree_count: int = 14
@@ -63,6 +65,7 @@ var entity_scenes := {
 	"city": preload("res://scenes/props/City.tscn"),
 	"pig_pen": preload("res://scenes/props/PigPen.tscn"),
 	"cow_pen": preload("res://scenes/props/CowPen.tscn"),
+	"lair": preload("res://scenes/props/DragonLair.tscn"),
 }
 
 var scenery_scenes := [
@@ -117,8 +120,11 @@ func generate_world() -> void:
 	spawn_entity("city", 1, city_position)
 	spawn_entity("pig_pen", 1, pig_pen_position)
 	spawn_entity("cow_pen", 1, cow_pen_position)
+	spawn_entity("lair", 1, lair_position)     # solid like other mountains
+	spawn_entity("tower", 1, tower_position)   # wizard upgrades landmark
 	spawn_fields()
-	spawn_scenery()          # scenery avoids city/fields/pens (protected list)
+	# Scenery avoids ALL landmarks (incl. lair + tower) with clearances.
+	spawn_scenery()
 	spawn_entity("mine", mine_count, mine_center, 180.0)
 	spawn_farmers()
 	spawn_entity("soldier", initial_soldier_count, rally_point, 90.0)
@@ -156,6 +162,7 @@ func spawn_farmers() -> void:
 func spawn_scenery() -> void:
 	var protected: Array = [
 		city_position, Vector2.ZERO, pig_pen_position, cow_pen_position,
+		lair_position, tower_position,
 	]
 	for field_pos: Vector2 in field_positions:
 		protected.append(field_pos)

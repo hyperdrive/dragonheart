@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="112" height="176" viewBox="0 0 112 176">
+  <!-- rock base -->
+  <ellipse cx="56" cy="164" rx="44" ry="10" fill="#4a5568"/>
+  <!-- tower body: tapered stone -->
+  <polygon points="34,160 38,40 74,40 78,160" fill="#6b5b8e"/>
+  <polygon points="38,40 42,160 38,160 34,60" fill="#7d6da0" opacity="0.7"/>
+  <!-- stone bands -->
+  <g fill="#5a4b7a">
+    <rect x="35" y="60" width="42" height="6"/>
+    <rect x="36" y="90" width="40" height="6"/>
+    <rect x="36.5" y="120" width="39" height="6"/>
+    <rect x="37" y="148" width="38" height="6"/>
+  </g>
+  <!-- glowing windows -->
+  <g fill="#5ff5e0">
+    <rect x="50" y="70" width="10" height="12" rx="2"/>
+    <rect x="50" y="100" width="10" height="12" rx="2"/>
+    <rect x="50" y="130" width="10" height="12" rx="2"/>
+    <rect x="49" y="62" width="12" height="20" rx="3" opacity="0.35"/>
+    <rect x="49" y="92" width="12" height="20" rx="3" opacity="0.35"/>
+    <rect x="49" y="122" width="12" height="20" rx="3" opacity="0.35"/>
+  </g>
+  <!-- door -->
+  <path d="M46 160 v-16 a10 10 0 0 1 20 0 v16 z" fill="#2c2440"/>
+  <!-- orb chamber -->
+  <polygon points="30,40 82,40 74,14 38,14" fill="#8a79ad"/>
+  <polygon points="34,40 78,40 72,16 40,16" fill="#9989bf" opacity="0.6"/>
+  <!-- roof spike -->
+  <polygon points="56,2 62,16 50,16" fill="#c9b9e8"/>
+  <!-- floating orb -->
+  <circle cx="56" cy="30" r="9" fill="#00e5ff" opacity="0.9"/>
+  <circle cx="56" cy="30" r="5.5" fill="#9ef7ff"/>
+  <circle cx="53" cy="27" r="2" fill="#ffffff"/>
+  <!-- arcanum sparks -->
+  <g fill="#ffe27a">
+    <circle cx="24" cy="34" r="3"/>
+    <circle cx="90" cy="44" r="2.5"/>
+    <circle cx="34" cy="18" r="2.5"/>
+    <circle cx="82" cy="26" r="2"/>
+  </g>
+  <!-- arcane octagram on the base -->
+  <g stroke="#5ff5e0" stroke-width="2" fill="none" opacity="0.85">
+    <polygon points="56,164 66,146 46,146"/>
+    <polygon points="56,140 66,158 46,158"/>
+  </g>
+</svg>
