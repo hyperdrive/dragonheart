@@ -76,6 +76,12 @@ func _ready() -> void:
 ## Burning overrides everything (the tree stops issuing intents while it
 ## panics); subclasses add per-frame behavior on top.
 func _physics_process(delta: float) -> void:
+	if not global_position.is_finite():
+		# Lost-in-space watchdog (2026-11-08): a non-finite position spews
+		# normalize warnings every physics tick and can never recover — snap
+		# home (fallback ZERO = map centre, still walkable) and continue.
+		global_position = home_position
+		velocity = Vector2.ZERO
 	if _burning_left > 0.0:
 		_tick_burning(delta)
 		return

@@ -203,12 +203,18 @@ func spawn_fields() -> void:
 
 
 ## One farmer per field-ish position; the rest drift near the pens.
+## Bug fix (2026-11-08): this was the only caller of _terrain_free_position
+## without an INF fallback — a crowded spot spawned a farmer AT Vector2.INF,
+## whose physics then NaN'd forever (the "normalize" warning spam + a farmer
+## that never farms). Fallback = the clamped anchor itself.
 func spawn_farmers() -> void:
 	for i in farmer_count:
 		var anchor := field_positions[i % field_positions.size()] \
 			if field_positions.size() > 0 else city_position
 		var position := _terrain_free_position(
 			_clear_position(anchor, 40.0), 40.0)
+		if position == Vector2.INF:
+			position = _clamp_to_interior(anchor, 40.0)
 		var farmer: Node = (entity_scenes["farmer"] as PackedScene).instantiate()
 		farmer.global_position = position
 		add_child(farmer)
