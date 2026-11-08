@@ -7,6 +7,7 @@
 script = ExtResource("2_pen_script")
 animal_name = "cow"
 heal_amount = 25
+flame_recharge = 2
 
 [node name="FenceBack" type="ColorRect" parent="."]
 offset_left = -70.0

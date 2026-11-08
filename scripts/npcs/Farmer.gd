@@ -16,6 +16,13 @@ signal pigs_tended
 @export var tend_work_time: float = 3.0
 @export var tend_cooldown: float = 2.0
 
+@export_group("Loaded panic")
+## Carrying the city's food? The farmer bolts MUCH earlier and faster, so the
+## delivery stalls while the dragon lurks — the town starves for it.
+@export var loaded_danger_radius: float = 220.0
+@export var loaded_flee_speed: float = 1.3
+@export var unloaded_danger_radius: float = 120.0
+
 ## Food gathered since the last delivery (delivered in one trip).
 var food_carrying: int = 0
 
@@ -67,6 +74,17 @@ func _ready() -> void:
 	)
 
 	print("Farmer initialized at position: ", global_position)
+
+## Run/Fight tuning flips each frame with the payload (BehaviorTree's danger
+## check reads danger_radius per tick, so a live value works).
+func _physics_process(delta: float) -> void:
+	if food_carrying > 0:
+		danger_radius = loaded_danger_radius
+		flee_speed_multiplier = loaded_flee_speed
+	else:
+		danger_radius = unloaded_danger_radius
+		flee_speed_multiplier = 1.0
+	super._physics_process(delta)
 
 # --- activity providers & completers --------------------------------------
 

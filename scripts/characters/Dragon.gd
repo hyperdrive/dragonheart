@@ -9,6 +9,7 @@ class_name Dragon
 signal health_changed(health: int)
 signal fire_attacked
 signal loot_carried(carry_total: int)
+signal flame_charges_changed(charges: int, max_charges: int)
 
 @export_group("Controls")
 @export var speed: float = 200.0
@@ -17,11 +18,15 @@ signal loot_carried(carry_total: int)
 @export_group("Fire breath")
 @export var fire_reach: float = 95.0        # ignition distance from the mouth
 @export var fire_ignite_cone: float = 0.25  # facing half-plane dot threshold
+## Flame economy: breaths are a resource — spent on fire, refilled by eating
+## animals (pig +1, cow +2). Empty claws = a very quiet dragon.
+@export var max_flame_charges: int = 4
 
 var health: int = 100
 var max_health: int = 100
 var is_firing: bool = false
 var fire_cooldown: float = 0.0
+var flame_charges: float = max_flame_charges
 ## Facing state: 1 = right, -1 = left; mirrors body AND the fire assembly.
 var facing: int = 1
 ## Loot in the claws — banked only when delivered at the lair.
@@ -51,6 +56,7 @@ func _ready() -> void:
 	game_manager.upgrade_purchased.connect(_on_upgrade_purchased)
 	sync_from_game_manager()
 	interception_system.setup(game_manager)
+	flame_charges_changed.emit(int(flame_charges), max_flame_charges)
 
 	# Fire breath window wiring handled in fire_breath(); the idle starts on play.
 	fire_area.monitoring = false  # breath window only, set in fire_breath()
@@ -88,9 +94,10 @@ func _physics_process(delta: float) -> void:
 	velocity = input_direction * speed
 	move_and_slide()
 
-	# While the breath window is open, soldiers in the flame cone catch fire.
+	# While the breath window is open, flammable actors/fields in the cone
+	# catch fire.
 	if is_firing:
-		_ignite_soldiers()
+		_ignite_flammables()
 
 	# Face travel direction: mirrors the body and the whole fire assembly.
 	if input_direction.x != 0.0:
@@ -110,19 +117,22 @@ func _apply_facing() -> void:
 	fire_collision.position.x = 15.0 * float(facing) # hitbox follows
 	flame.scale.x = float(facing)                    # flame visual mirrors
 
-## Soldiers caught in the breath cone are set ablaze (see Soldier.catch_fire).
-func _ignite_soldiers() -> void:
+## Everything flammable caught in the breath cone ignites: farmers, miners,
+## soldiers (+ the King), and crop fields (Field.burn → stubble → slow regrow).
+func _ignite_flammables() -> void:
 	var facing_vec := Vector2(float(facing), 0.0)
-	for node: Node in get_tree().get_nodes_in_group("soldiers"):
-		var soldier := node as Soldier
-		if soldier == null or not soldier.is_alive:
-			continue
-		var to_target: Vector2 = soldier.global_position - global_position
-		if to_target.length() > fire_reach:
-			continue
-		if to_target.normalized().dot(facing_vec) < fire_ignite_cone:
-			continue
-		soldier.catch_fire()
+	for group: String in ["farmers", "miners", "soldiers", "king", "fields"]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			var target_pos: Vector2 = (node as Node2D).global_position
+			var to_target := target_pos - global_position
+			if to_target.length() > fire_reach:
+				continue
+			if to_target.normalized().dot(facing_vec) < fire_ignite_cone:
+				continue
+			if node is Field:
+				(node as Field).burn()
+			elif node is BaseNPC:
+				(node as BaseNPC).catch_fire()
 
 func _process(delta: float) -> void:
 	# Auto-theft: the core loop. When a payload carrier is in range and
@@ -188,6 +198,11 @@ func carried_total() -> int:
 func fire_breath() -> void:
 	if _dying or is_firing or fire_cooldown > 0.0:
 		return
+	if flame_charges < 1.0:
+		print("Dragon: flame spent — eat a pig (+1) or a cow (+2) to recharge!")
+		return
+	flame_charges -= 1.0
+	flame_charges_changed.emit(int(flame_charges), max_flame_charges)
 	is_firing = true
 	fire_cooldown = fire_rate
 	flame.visible = true          # visual breath (collision window matches)
@@ -241,3 +256,13 @@ func collect_resources(resources: Dictionary) -> void:
 func eat_food(food_value: int) -> void:
 	health = mini(health + food_value, max_health)
 	health_changed.emit(health)
+
+## Animal snacking (called by AnimalPen): health AND flame charges (each
+## capped; overfeed is a waste of a perfectly good cow).
+func eat_animal(health_gain: int, flame_recharge: int) -> void:
+	health = mini(health + health_gain, max_health)
+	health_changed.emit(health)
+	var had := flame_charges
+	flame_charges = minf(flame_charges + float(flame_recharge), float(max_flame_charges))
+	if flame_charges != had:
+		flame_charges_changed.emit(int(flame_charges), max_flame_charges)

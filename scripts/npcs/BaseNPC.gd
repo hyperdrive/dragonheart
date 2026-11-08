@@ -26,6 +26,13 @@ signal carrying_changed(res_type: String, amount: int)
 @export var danger_radius: float = 150.0
 @export var safe_radius: float = 320.0
 
+@export_group("Ablaze")
+## All NPC actors catch fire from dragon flame (User spec 2026-11-08):
+## abandon orders, run in random bursts, burn, and die when the fire burns out.
+@export var is_flammable: bool = true
+@export var burn_damage: float = 10.0
+@export var burn_duration: float = 3.0
+
 var health: int = max_health
 var is_alive: bool = true
 var behavior_tree: BehaviorTree
@@ -50,6 +57,12 @@ var payload_amount: int = 0
 ## left/right representation — composites mirror cleanly, see _apply_facing).
 var facing: int = 1
 
+## Burning status (see catch_fire). Guarded re-entry; killed behavior tree.
+var _burning_left: float = 0.0
+var _burn_move_timer: float = 0.0
+var _burn_direction: Vector2 = Vector2.ONE
+var _burn_debt: float = 0.0
+
 @onready var sprite: Node2D = $Sprite
 
 func _ready() -> void:
@@ -60,9 +73,52 @@ func _ready() -> void:
 	mine_position = global_position + Vector2(0, -200)
 	pig_pen_position = global_position + Vector2(-200, 0)
 
+## Burning overrides everything (the tree stops issuing intents while it
+## panics); subclasses add per-frame behavior on top.
 func _physics_process(delta: float) -> void:
+	if _burning_left > 0.0:
+		_tick_burning(delta)
+		return
 	if is_alive and behavior_tree != null:
 		behavior_tree.tick(delta)
+
+# --- ablaze status -----------------------------------------------------------
+
+## Flame breath hit: abandon orders (the behavior tree stops driving), panic
+## in random bursts, burn at burn_damage/s, and die when the fire burns out.
+func catch_fire() -> void:
+	if not is_flammable or _burning_left > 0.0 or not is_alive:
+		return
+	_burning_left = burn_duration
+	_burn_move_timer = 0.0
+	_burn_debt = 0.0
+	if behavior_tree != null:
+		behavior_tree.kill()
+	if sprite != null:
+		sprite.modulate = Color(1.0, 0.4, 0.1)  # scorched tint
+	print(npc_type + " caught fire — panicking!")
+
+## Ablaze physics: random-burst running, burn damage in int chunks, then death.
+func _tick_burning(delta: float) -> void:
+	_burning_left -= delta
+	_burn_move_timer -= delta
+	if _burn_move_timer <= 0.0:
+		_burn_move_timer = randf_range(0.25, 0.45)
+		_burn_direction = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized()
+	velocity = _burn_direction * _burn_speed()
+	update_facing()
+	move_and_slide()
+	_burn_debt += burn_damage * delta
+	var whole := int(_burn_debt)
+	if whole > 0:
+		_burn_debt -= float(whole)
+		take_damage(whole)
+	if _burning_left <= 0.0:
+		die()
+
+## Panic pace — subclasses may flail faster.
+func _burn_speed() -> float:
+	return speed * 1.4
 
 func take_damage(amount: int) -> void:
 	if not is_alive:

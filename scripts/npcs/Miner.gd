@@ -151,6 +151,13 @@ func intercepted_by_dragon() -> void:
 	mining_cooldown = 10.0
 	print("Miner intercepted by dragon!")
 
+## Burning to death spills the cart gold where he fell (also raises the
+## street alarm via report_loot_spill — same rule as a panic drop).
+func die() -> void:
+	if payload_amount > 0 and _burning_left > 0.0:
+		_drop_payload(global_position)
+	super.die()
+
 # --- gold cart ----------------------------------------------------------------
 
 ## Panic response: the gold becomes a loose pickup (with settle delay for the

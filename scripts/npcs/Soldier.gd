@@ -15,16 +15,6 @@ signal defeated(reward_gold: int)
 @export var attack_interval: float = 0.5
 @export var reward_gold: int = 25
 
-@export_group("Ablaze")
-@export var burn_damage: float = 10.0   # per second while on fire
-@export var burn_duration: float = 3.0  # panics, then always dies
-
-## Burning status: the soldier abandons orders (behavior killed), runs in
-## random bursts, burns, and dies when the fire burns out.
-var _burning_left: float = 0.0
-var _burn_move_timer: float = 0.0
-var _burn_direction: Vector2 = Vector2.ONE
-var _burn_debt: float = 0.0
 ## Contact-DPS accumulator: take_damage wants ints (10 DPS → 1 per 0.1s).
 var _contact_debt: float = 0.0
 
@@ -117,11 +107,10 @@ func _pick_patrol_target() -> Vector2:
 func _pick_idle_target() -> Vector2:
 	return home_position + Vector2(randf_range(-40, 40), randf_range(-40, 40))
 
-## Soldiers spot the dragon → alarm (swarm sighting), plus the two per-frame
-## combat channels: burning status and contact DPS on the dragon.
+## Soldiers spot the dragon → alarm (swarm sighting), plus contact DPS on the
+## dragon. Burning status (catch_fire/_tick_burning) is inherited from BaseNPC.
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	_tick_burning(delta)
 	_contact_damage(delta)
 	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
 	if dragon != null and is_instance_valid(dragon) \
@@ -130,41 +119,7 @@ func _physics_process(delta: float) -> void:
 		if world != null:
 			world.report_dragon_sighting(dragon.global_position)
 
-# --- combat: ablaze status + contact DPS ------------------------------------
-
-## Flame breath hit: abandon orders (the behavior tree stops driving), panic
-## in random bursts, burn at burn_damage/s, and die when the fire burns out.
-func catch_fire() -> void:
-	if _burning_left > 0.0 or not is_alive:
-		return
-	_burning_left = burn_duration
-	_burn_move_timer = 0.0
-	_burn_debt = 0.0
-	if behavior_tree != null:
-		behavior_tree.kill()
-	if sprite != null:
-		sprite.modulate = Color(1.0, 0.4, 0.1)  # scorched tint
-	print("Soldier caught fire — panicking!")
-
-## Ablaze physics: random-burst running, burn damage in int chunks, then death.
-func _tick_burning(delta: float) -> void:
-	if _burning_left <= 0.0 or not is_alive:
-		return
-	_burning_left -= delta
-	_burn_move_timer -= delta
-	if _burn_move_timer <= 0.0:
-		_burn_move_timer = randf_range(0.25, 0.45)
-		_burn_direction = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized()
-	velocity = _burn_direction * speed * 1.4
-	update_facing()
-	move_and_slide()
-	_burn_debt += burn_damage * delta
-	var whole := int(_burn_debt)
-	if whole > 0:
-		_burn_debt -= float(whole)
-		take_damage(whole)
-	if _burning_left <= 0.0:
-		die()
+# --- combat: contact DPS (ablaze lives in BaseNPC) ----------------------------
 
 ## 10 DPS while the hitbox collides with the dragon (integer-chunked debt).
 func _contact_damage(delta: float) -> void:

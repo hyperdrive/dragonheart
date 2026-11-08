@@ -47,11 +47,16 @@ func bind_manager(mgr: GameManager) -> void:
 	if world != null and world.has_signal("entity_spawned"):
 		pass  # soldier recount uses the same stream
 	mgr.boss_battle_started.connect(_on_king_arrived)
-	# Dragon health chip (take_damage/eat_food emit health_changed).
+	# Dragon health/flame chips (take_damage/eat_animal emit the signals).
 	var dragon_ref := mgr.dragon
 	if dragon_ref != null and dragon_ref.has_signal("health_changed"):
 		dragon_ref.health_changed.connect(_on_dragon_health)
 		_on_dragon_health((dragon_ref as CharacterBody2D).get("health"))
+	if dragon_ref != null and dragon_ref.has_signal("flame_charges_changed"):
+		dragon_ref.flame_charges_changed.connect(_on_flame_charges)
+		_on_flame_charges(
+			int((dragon_ref as CharacterBody2D).get("flame_charges")),
+			int((dragon_ref as CharacterBody2D).get("max_flame_charges")))
 	_refresh_pools()
 	_refresh_dragon_stats()
 	refresh_threat()
@@ -83,6 +88,12 @@ func _on_dragon_health(health: Variant) -> void:
 	var dragon_ref: CharacterBody2D = game_manager.dragon
 	if dragon_ref != null:
 		health_label.text = "HP %d/%d" % [int(health), int(dragon_ref.get("max_health"))]
+
+## Flame economy readout: breaths left of the eaten-fuel pool.
+func _on_flame_charges(charges: int, max_charges: int) -> void:
+	fire_label.text = "Fire %d • %d/%d" % [
+		game_manager.fire_power_level if game_manager != null else 1,
+		charges, max_charges]
 
 func _refresh_pools() -> void:
 	if game_manager == null:

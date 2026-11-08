@@ -42,6 +42,12 @@ enum SwarmState { CALM, RALLY, ATTACK }
 @export var miner_spawn_requirement_food: int = 10
 @export var miner_spawn_timer: float = 30.0
 
+@export_group("Town respawn")
+## Dead farmers return only if the town pays a pig from the pig pen (dead
+## miners pay a cow); retries every check interval until the pen can pay.
+@export var npc_respawn_delay: float = 10.0
+@export var npc_respawn_check_interval: float = 2.0
+
 @export_group("Escalation")
 @export var soldier_spawn_interval: float = 8.0
 @export var king_threshold: int = 15
@@ -79,6 +85,10 @@ var soldiers_spawned: int = 0
 var king_spawned: bool = false
 var swarm_state: SwarmState = SwarmState.CALM
 var field_positions: Array[Vector2] = []
+## Pending NPC respawns: {"type", "position", "timer_left"} — gated on the
+## matching pen having a live animal (farmer↔pig, miner↔cow).
+var _respawn_queue: Array[Dictionary] = []
+var _respawn_check_timer: float = 0.0
 var _soldier_timer: Timer
 var _swarm_timer: Timer
 ## Blocking scenery footprint (position + radius) for spawn-clearance checks.
@@ -134,11 +144,16 @@ func generate_world() -> void:
 	create_boundaries()
 
 
-## Fields ring the farm belt around the city (the food engine next to town).
+## Fields ring the farm belt — deliberately FARTHER from the city (user
+## request): the dragon burning crops is the consequence loop, but the pen
+## cluster stays defensible. Clamped inside the world bounds.
 func spawn_fields() -> void:
+	var margin := 80.0
 	for i in field_count:
 		var angle := TAU * float(i) / float(field_count) + 0.4
-		var position := city_position + Vector2.RIGHT.rotated(angle) * 230.0
+		var position := city_position + Vector2.RIGHT.rotated(angle) * 420.0
+		position.x = clampf(position.x, -world_size.x / 2 + margin, world_size.x / 2 - margin)
+		position.y = clampf(position.y, -world_size.y / 2 + margin, world_size.y / 2 - margin)
 		spawn_entity("field", 1, position)
 		field_positions.append(position)
 
@@ -259,6 +274,7 @@ func setup_entity(entity_type: String, instance: Node) -> void:
 				farmer.town_position = city_position + Vector2(0, -90)  # north gate
 				farmer.pig_pen_position = pig_pen_position
 				farmer.food_delivered.connect(_on_food_delivered)
+				farmer.npc_died.connect(_on_npc_died.bind(farmer))
 		"miner":
 			var miner := instance as Miner
 			if miner != null:
@@ -266,13 +282,12 @@ func setup_entity(entity_type: String, instance: Node) -> void:
 				miner.mine_position = _mine_spot()
 				miner.town_position = city_position + Vector2(0, -90)
 				miner.resource_delivered.connect(_on_resource_delivered)
+				miner.npc_died.connect(_on_npc_died.bind(miner))
 		"soldier":
 			var soldier := instance as Soldier
 			if soldier != null:
 				soldier.home_position = soldier.global_position
-	if entity_type in ["farmer", "miner", "soldier"]:
-		var npc := instance as BaseNPC
-		npc.npc_died.connect(_on_npc_died)
+				soldier.npc_died.connect(_on_npc_died.bind(soldier))
 
 
 ## Jittered position inside the mining district (spreads miners across it).
@@ -394,19 +409,72 @@ func spawn_king() -> void:
 
 # --- signal handlers: NPC → GameManager (the hub) ---------------------------
 
+func _process(delta: float) -> void:
+	_tick_respawn_queue(delta)
+
 func _on_food_delivered(amount: int) -> void:
 	if game_manager != null:
 		game_manager.add_food(amount)
-
+	# A farm delivery just fed the town: empty pen slots may now be bought
+	# back (each animal costs refill_cost, so food scarcity rations stock).
+	_attempt_pen_refills()
 
 func _on_resource_delivered(_npc_type: String, res_type: String, amount: int) -> void:
 	if game_manager != null:
 		game_manager.deposit_treasury(res_type, amount)
 
+## Farm cycle pays for livestock: one pig-pen slot and one cow-pen slot
+## attempt per delivery, each paid from the food pool.
+func _attempt_pen_refills() -> void:
+	if game_manager == null:
+		return
+	for group: String in ["pig_pens", "cow_pens"]:
+		var pen := get_tree().get_first_node_in_group(group) as AnimalPen
+		if pen != null and pen.has_empty_slot() \
+				and game_manager.consume_food(pen.refill_cost):
+			pen.respawn_animal()
 
-func _on_npc_died(npc_type: String) -> void:
+## Dead townsfolk come back IF their dedication animal is in stock:
+## farmer ← pig, miner ← cow (one of each consumed — user spec 2026-11-08).
+## Otherwise the runner retries every check interval until the pen can pay.
+func add_respawn_request(npc_type: String, at_position: Vector2) -> void:
+	_respawn_queue.append({
+		"type": npc_type,
+		"position": at_position,
+		"timer_left": npc_respawn_delay,
+	})
+	print("%s will respawn in %ds if the %s is in stock" % [
+		npc_type.capitalize(), int(npc_respawn_delay),
+		"pig" if npc_type == "farmer" else "cow"])
+
+func _tick_respawn_queue(delta: float) -> void:
+	var i := 0
+	while i < _respawn_queue.size():
+		var entry: Dictionary = _respawn_queue[i]
+		entry["timer_left"] = float(entry["timer_left"]) - delta
+		if float(entry["timer_left"]) <= 0.0:
+			# retry cadence while the animal species is out of stock
+			entry["timer_left"] = npc_respawn_check_interval
+			var pen_group := "pig_pens" if entry["type"] == "farmer" else "cow_pens"
+			var pen := get_tree().get_first_node_in_group(pen_group) as AnimalPen
+			if pen != null and pen.consume_animal():
+				_respawn_queue.remove_at(i)
+				spawn_respawned_npc(String(entry["type"]), entry["position"] as Vector2)
+				continue  # don't advance past the removed entry
+		i += 1
+
+func spawn_respawned_npc(npc_type: String, at_position: Vector2) -> void:
+	spawn_entity(npc_type, 1, at_position, 20.0)
+	print("%s respawned (a %s was consumed)!" % [
+		npc_type.capitalize(), "pig" if npc_type == "farmer" else "cow"])
+
+
+func _on_npc_died(npc_type: String, npc: BaseNPC) -> void:
 	# Economy-only consequences: killed miners slow gold/gem production but
-	# never accelerate soldiers (decision record).
+	# never accelerate soldiers by themselves (decision record). Respawns are
+	# the town's recovery loop, gated on pen livestock.
+	if (npc_type == "farmer" or npc_type == "miner") and is_instance_valid(npc):
+		add_respawn_request(npc_type, npc.home_position)
 	print("NPC died: ", npc_type)
 
 # --- miner support chain ------------------------------------------------------
