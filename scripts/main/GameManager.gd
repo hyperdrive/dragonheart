@@ -39,7 +39,7 @@ var run_timer: float = 0.0
 @onready var dragon: CharacterBody2D = $World/Dragon
 @onready var camera: Camera2D = $Camera
 @onready var world_manager: Node2D = $World/WorldManager
-@onready var hud: Control = $HUD
+@onready var hud: Control = $HUDLayer/HUD
 
 func _ready() -> void:
 	food = starting_food
@@ -169,9 +169,11 @@ func _on_entity_spawned(entity_type: String, position: Vector2) -> void:
 
 ## Dragon picked up more loot: nudge the player toward the lair.
 func _on_dragon_loot_carried(carry_total: int) -> void:
-	if carry_total > 0 and hud is GameHUD:
-		(hud as GameHUD).show_message(
-			"Carrying %d loot — haul it to the lair!" % carry_total)
+	if hud is GameHUD:
+		(hud as GameHUD).update_carried(carry_total)
+		if carry_total > 0:
+			(hud as GameHUD).show_message(
+				"Carrying %d loot — haul it to the lair!" % carry_total)
 
 
 ## WorldManager raises the alarm: rally/attack messages surface on the HUD.

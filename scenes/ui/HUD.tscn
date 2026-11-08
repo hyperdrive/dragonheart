@@ -1,127 +1,112 @@
-[gd_scene load_steps=2 format=3 uid="uid://c3w7d8b2n0h6f"]
+[gd_scene load_steps=4 format=3 uid="uid://c3w7d8b2n0h6f"]
 
 [ext_resource type="Script" path="res://scripts/ui/Minimap.gd" id="7_minimap_script"]
 
-[node name="HUD" type="Control" unique_id=638309366]
+[sub_resource type="StyleBoxFlat" id="1_bar_style"]
+bg_color = Color(0.04, 0.05, 0.08, 0.72)
+corner_radius_bottom_left = 10
+corner_radius_bottom_right = 10
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="2_map_style"]
+bg_color = Color(0.04, 0.05, 0.08, 0.72)
+corner_radius_top_left = 10
+corner_radius_bottom_left = 10
+
+[node name="HUD" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
-[node name="ResourcePanel" type="Panel" parent="." unique_id=62304991]
+[node name="TopBar" type="Panel" parent="."]
 layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_top = -140.0
-offset_right = 320.0
-offset_bottom = -60.0
-grow_vertical = 0
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 46.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("1_bar_style")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ResourcePanel" unique_id=1099152119]
+[node name="TopBarMargin" type="MarginContainer" parent="TopBar"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 10
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 6
 
-[node name="GoldLabel" type="Label" parent="ResourcePanel/VBoxContainer" unique_id=1408234077]
+[node name="HBox" type="HBoxContainer" parent="TopBar/TopBarMargin"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Gold: 0"
-horizontal_alignment = 1
+theme_override_constants/separation = 22
 
-[node name="FoodLabel" type="Label" parent="ResourcePanel/VBoxContainer" unique_id=1609203266]
+[node name="TreasuryLabel" type="Label" parent="TopBar/TopBarMargin/HBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 15
+text = "Treasury: 0g / 0gems"
+
+[node name="FoodLabel" type="Label" parent="TopBar/TopBarMargin/HBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
 text = "Food: 0"
-horizontal_alignment = 1
 
-[node name="UpgradePanel" type="Panel" parent="." unique_id=1999221265]
-visible = false
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -200.0
-offset_top = -150.0
-grow_horizontal = 0
-grow_vertical = 0
-
-[node name="VBoxContainer" type="VBoxContainer" parent="UpgradePanel" unique_id=1740001586]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 10
-
-[node name="TowerButton" type="Button" parent="UpgradePanel/VBoxContainer" unique_id=319602254]
+[node name="StashLabel" type="Label" parent="TopBar/TopBarMargin/HBox"]
 layout_mode = 2
-text = "Build Wizard Tower (100 Gold)"
+theme_override_font_sizes/font_size = 15
+text = "Stash: 0g / 0gems"
 
-[node name="ScalesButton" type="Button" parent="UpgradePanel/VBoxContainer" unique_id=172738350]
+[node name="CarryLabel" type="Label" parent="TopBar/TopBarMargin/HBox"]
 layout_mode = 2
-text = "Upgrade Scales (50 Gold)"
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+text = "Claws: 0"
 
-[node name="FireButton" type="Button" parent="UpgradePanel/VBoxContainer" unique_id=780316821]
+[node name="ScalesLabel" type="Label" parent="TopBar/TopBarMargin/HBox"]
 layout_mode = 2
-text = "Upgrade Fire (75 Gold)"
+theme_override_font_sizes/font_size = 15
+text = "Scales 1"
 
-[node name="CloseButton" type="Button" parent="UpgradePanel/VBoxContainer" unique_id=1204169610]
+[node name="FireLabel" type="Label" parent="TopBar/TopBarMargin/HBox"]
 layout_mode = 2
-text = "Close"
+theme_override_font_sizes/font_size = 15
+text = "Fire 1"
 
-[node name="MessageLabel" type="Label" parent="." unique_id=1063582146]
+[node name="ThreatLabel" type="Label" parent="TopBar/TopBarMargin/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.6, 0.75, 1, 1)
+text = "Soldiers: 0 • calm"
+
+[node name="MessageLabel" type="Label" parent="."]
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = -50.0
-offset_right = -10.0
-offset_bottom = -10.0
+offset_left = 260.0
+offset_top = -44.0
+offset_right = -240.0
+offset_bottom = -14.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
 text = "Press U for Upgrades"
 
-[node name="DragonStats" type="Panel" parent="." unique_id=443476908]
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 150.0
-anchor_bottom = 150.0
-grow_horizontal = 0
-grow_vertical = 0
-
-[node name="VBoxContainer" type="VBoxContainer" parent="DragonStats" unique_id=515364244]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 5
-
-[node name="ScalesLabel" type="Label" parent="DragonStats/VBoxContainer" unique_id=728076432]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Scales: Level 1"
-
-[node name="FireLabel" type="Label" parent="DragonStats/VBoxContainer" unique_id=1915666032]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Fire: Level 1"
-
-[node name="Minimap" type="Panel" parent="." unique_id=918273645]
+[node name="Minimap" type="Panel" parent="."]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -134,5 +119,42 @@ offset_right = -10.0
 offset_bottom = -60.0
 grow_horizontal = 0
 grow_vertical = 0
+theme_override_styles/panel = SubResource("2_map_style")
 script = ExtResource("7_minimap_script")
 
+[node name="UpgradePanel" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -206.0
+offset_right = 250.0
+offset_bottom = -12.0
+grow_vertical = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UpgradePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="TowerButton" type="Button" parent="UpgradePanel/VBoxContainer"]
+layout_mode = 2
+text = "Build Wizard Tower (100 Gold)"
+
+[node name="ScalesButton" type="Button" parent="UpgradePanel/VBoxContainer"]
+layout_mode = 2
+text = "Upgrade Scales (50 Gold)"
+
+[node name="FireButton" type="Button" parent="UpgradePanel/VBoxContainer"]
+layout_mode = 2
+text = "Upgrade Fire (75 Gold)"
+
+[node name="CloseButton" type="Button" parent="UpgradePanel/VBoxContainer"]
+layout_mode = 2
+text = "Close"

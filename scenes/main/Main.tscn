@@ -19,6 +19,9 @@ zoom = Vector2(0.75, 0.75)
 [node name="WorldManager" type="Node2D" parent="World"]
 script = ExtResource("3_world_manager_script")
 
-[node name="HUD" parent="." instance=ExtResource("3_7k3c9")]
+[node name="HUDLayer" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="HUD" parent="HUDLayer" instance=ExtResource("3_7k3c9")]
 script = ExtResource("2_n5x7f")
 

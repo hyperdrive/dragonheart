@@ -2,19 +2,25 @@ extends Control
 
 class_name GameHUD
 
-## HUD view: rebinding to GameManager (single state hub) —
-## treasury (town pool, filled by miners), food, dragon stash (stolen loot),
-## dragon levels, upgrade panel, victory tally. No state is stored here.
+## HUD view: binds to GameManager (single state hub) —
+## treasury (town pool), food, dragon stash + carried claws (the hauling loop),
+## dragon levels, threat readout (soldiers/swarm/King), upgrade panel, victory
+## tally. No state is stored here; every value arrives via signals.
 
-@onready var gold_label: Label = $ResourcePanel/VBoxContainer/GoldLabel
-@onready var food_label: Label = $ResourcePanel/VBoxContainer/FoodLabel
-@onready var scales_label: Label = $DragonStats/VBoxContainer/ScalesLabel
-@onready var fire_label: Label = $DragonStats/VBoxContainer/FireLabel
+@onready var treasury_label: Label = $TopBar/TopBarMargin/HBox/TreasuryLabel
+@onready var food_label: Label = $TopBar/TopBarMargin/HBox/FoodLabel
+@onready var stash_label: Label = $TopBar/TopBarMargin/HBox/StashLabel
+@onready var carry_label: Label = $TopBar/TopBarMargin/HBox/CarryLabel
+@onready var scales_label: Label = $TopBar/TopBarMargin/HBox/ScalesLabel
+@onready var fire_label: Label = $TopBar/TopBarMargin/HBox/FireLabel
+@onready var threat_label: Label = $TopBar/TopBarMargin/HBox/ThreatLabel
 @onready var upgrade_panel: Panel = $UpgradePanel
 @onready var message_label: Label = $MessageLabel
 @onready var minimap: MinimapPanel = $Minimap
 
 var game_manager: GameManager
+## Threat readout (top-right chip): swarm state name + live soldier/King scan.
+var threat_swarm: String = "calm"
 
 func _ready() -> void:
 	upgrade_panel.hide()
@@ -22,13 +28,6 @@ func _ready() -> void:
 	$UpgradePanel/VBoxContainer/ScalesButton.pressed.connect(_on_upgrade_scales)
 	$UpgradePanel/VBoxContainer/FireButton.pressed.connect(_on_upgrade_fire)
 	$UpgradePanel/VBoxContainer/CloseButton.pressed.connect(_on_close_panel)
-	# Dragon stash readout, built at runtime (keeps the scene untouched).
-	var stash_label := Label.new()
-	stash_label.name = "StashLabel"
-	stash_label.text = "Dragon stash: 0 gold"
-	stash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	$ResourcePanel/VBoxContainer.add_child(stash_label)
-	_update_stats()
 
 ## Called by GameManager._ready (the hub injects itself; signals up, calls down).
 func bind_manager(mgr: GameManager) -> void:
@@ -38,8 +37,18 @@ func bind_manager(mgr: GameManager) -> void:
 	mgr.food_changed.connect(_on_food_changed)
 	mgr.upgrade_purchased.connect(_on_upgrade_purchased)
 	mgr.victory_achieved.connect(_on_victory)
+	# Threat chip sources (WorldManager owns soldier/swarm facts).
+	var world := mgr.world_manager
+	if world != null and world.has_signal("entity_spawned"):
+		world.entity_spawned.connect(_on_world_entity_spawned)
+	if world != null and world.has_signal("swarm_state_changed"):
+		world.swarm_state_changed.connect(_on_swarm_state_changed)
+	if world != null and world.has_signal("entity_spawned"):
+		pass  # soldier recount uses the same stream
+	mgr.boss_battle_started.connect(_on_king_arrived)
 	_refresh_pools()
 	_refresh_dragon_stats()
+	refresh_threat()
 
 # --- reactive views ---------------------------------------------------------
 
@@ -48,26 +57,53 @@ func _on_pools_changed(_res_type: String, _amount: int) -> void:
 	_refresh_upgrade_buttons()
 
 func _on_food_changed(amount: int) -> void:
-	food_label.text = "Food (support): %d" % amount
+	food_label.text = "Food: %d" % amount
 
 func _on_upgrade_purchased(kind: String, level: int) -> void:
 	_refresh_dragon_stats()
 	show_message("%s upgraded to level %d!" % [kind.capitalize(), level])
 
+## The dragon's hauling loop — visible on the top bar at all times.
+func update_carried(total: int) -> void:
+	carry_label.text = "Claws: %d" % total
+
 func _refresh_pools() -> void:
 	if game_manager == null:
 		return
-	gold_label.text = "Town: %dg / %dgems" % [
+	treasury_label.text = "Treasury: %dg / %dgems" % [
 		game_manager.treasury["gold"], game_manager.treasury["gems"]]
-	var stash_label := $ResourcePanel/VBoxContainer/StashLabel as Label
-	stash_label.text = "Dragon stash: %dg / %dgems" % [
+	stash_label.text = "Stash: %dg / %dgems" % [
 		game_manager.stash["gold"], game_manager.stash["gems"]]
 
 func _refresh_dragon_stats() -> void:
 	if game_manager == null:
 		return
-	scales_label.text = "Scales: Level %d" % game_manager.scales_level
-	fire_label.text = "Fire: Level %d" % game_manager.fire_power_level
+	scales_label.text = "Scales %d" % game_manager.scales_level
+	fire_label.text = "Fire %d" % game_manager.fire_power_level
+
+# --- threat chip ------------------------------------------------------------
+
+## WorldManager spawns soldiers and the King on the same entity stream;
+## the head count is a live group scan (initial spawns happen BEFORE HUD
+## bindings exist — a counter would miss them; same reason Minimap self-scans).
+func _on_world_entity_spawned(entity_type: String, _position: Vector2) -> void:
+	if entity_type in ["soldier", "king", "farmer"]:
+		refresh_threat()
+
+func _on_swarm_state_changed(new_state: WorldManager.SwarmState) -> void:
+	threat_swarm = ["calm", "RALLY", "ATTACK"][int(new_state)]
+	refresh_threat()
+
+func _on_king_arrived(_king: Node) -> void:
+	refresh_threat()
+
+func refresh_threat() -> void:
+	var soldiers := get_tree().get_nodes_in_group("soldiers").size()
+	var king_here := not get_tree().get_nodes_in_group("king").is_empty()
+	var text := "Soldiers: %d • %s" % [soldiers, threat_swarm]
+	if king_here:
+		text += " • ⚔ KING"  # the final boss is on the field
+	threat_label.text = text
 
 # --- upgrade panel -----------------------------------------------------------
 
