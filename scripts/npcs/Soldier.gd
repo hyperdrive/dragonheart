@@ -95,17 +95,28 @@ func _pick_rally_target() -> Vector2:
 	var world := _world_manager()
 	if world == null:
 		return BehaviorTree.TARGET_NONE
-	var jitter := Vector2(randf_range(-50, 50), randf_range(-50, 50))
-	return world.rally_point + jitter
+	var anchor := world.rally_point + Vector2(randf_range(-50, 50), randf_range(-50, 50))
+	return world.terrain_free_target(anchor, 24.0)
 
 func _complete_rally() -> void:
 	pass  # arrival is the point; WorldManager counts heads at the gate
 
+## Patrol targets are terrain-cleared (2026-11-09): unpinned goals used to
+## land inside city walls — unreachable trips the whole remediation ladder
+## could never fix (soldiers grinding in MOVING for minutes).
 func _pick_patrol_target() -> Vector2:
-	return home_position + Vector2(randf_range(-200, 200), randf_range(-200, 200))
+	var anchor := home_position + Vector2(randf_range(-200, 200), randf_range(-200, 200))
+	return _cleared_trip_target(anchor, 24.0)
 
 func _pick_idle_target() -> Vector2:
-	return home_position + Vector2(randf_range(-40, 40), randf_range(-40, 40))
+	var anchor := home_position + Vector2(randf_range(-40, 40), randf_range(-40, 40))
+	return _cleared_trip_target(anchor, 20.0)
+
+## Shared: route the anchor through the world's footprint rules so no trip
+## goal is ever inside a registered obstacle (or the interior band edge).
+func _cleared_trip_target(anchor: Vector2, radius: float) -> Vector2:
+	var world := _world_manager()
+	return world.terrain_free_target(anchor, radius) if world != null else anchor
 
 ## Soldiers spot the dragon → alarm (swarm sighting), plus contact DPS on the
 ## dragon. Burning status (catch_fire/_tick_burning) is inherited from BaseNPC.

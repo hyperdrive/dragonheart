@@ -17,7 +17,9 @@ class_name AnimalPen
 @export var pen_radius: float = 80.0
 @export var max_animals: int = 4
 ## Food the town pays to fill one empty slot (paid by WorldManager on farm
-## harvests).
+## harvests). Species-priced in _ready per user spec 2026-11-09:
+## pigs are cheap stock (10 food), cows are prized stock (20 food).
+## NOTE: set in code, so inspector values are intentionally recomputed.
 @export var refill_cost: int = 20
 ## Slot offsets for sprite layout (used if the scene has fewer than
 ## max_animals sprite children).
@@ -28,6 +30,9 @@ class_name AnimalPen
 var _animals: Array[Sprite2D] = []
 
 func _ready() -> void:
+	# Species pricing (2026-11-09): 10 food buys a pig, 20 a cow. Computed
+	# here so both pen scenes share one rule without per-scene edits.
+	refill_cost = 10 if animal_name == "pig" else 20
 	# Existing Sprite2D children in the pen scene are slot 0..n. Slots beyond
 	# that (up to max_animals) are created hidden; a live sprite from the
 	# scene supplies the texture/scale.

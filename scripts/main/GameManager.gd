@@ -226,6 +226,16 @@ func _on_wizard_menu_close() -> void:
 func increment_soldier_count() -> void:
 	soldier_count += 1
 
+## Town spending (soldier purchases, 2026-11-09): pays out of the treasury
+## pool — the same pool miner deliveries fill. Returns false when it
+## can't afford it; callers loop to drain.
+func spend_treasury(res_type: String, amount: int) -> bool:
+	if not treasury.has(res_type) or treasury[res_type] < amount:
+		return false
+	treasury[res_type] -= amount
+	treasury_changed.emit(res_type, treasury[res_type])
+	return true
+
 func start_boss_battle(king) -> void:
 	king_spawned = true
 	boss_battle_started.emit(king)

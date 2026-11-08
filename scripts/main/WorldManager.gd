@@ -180,6 +180,14 @@ func _ready() -> void:
 	_stuck_timer.timeout.connect(_audit_npc_stuck)
 	add_child(_stuck_timer)
 
+	# Treasury spend heartbeat (2026-11-09): soldiers bought between
+	# deliveries too, so miner money is never parked.
+	_purchase_timer = Timer.new()
+	_purchase_timer.wait_time = soldier_purchase_interval
+	_purchase_timer.autostart = true
+	_purchase_timer.timeout.connect(_try_buy_soldiers)
+	add_child(_purchase_timer)
+
 
 # --- StuckMonitor (2026-11-09) ------------------------------------------------
 
@@ -263,9 +271,15 @@ func _remediate_stuck(npc: BaseNPC, record: Dictionary, now: int) -> void:
 		record["hold_fired"] = true
 		_rescue_npc(npc, record, "activity-stall", now)
 		return
-	# Alarm 1: movement-stall ladder (MOVING only).
+	# Alarm 1: movement-stall ladder (MOVING and FLEEING — a flee wedged
+	# against terrain never self-arrives and the tree's own detours may
+	# orbit; 2026-11-09 forensic: one miner crossed the whole run fleeing
+	# unpinned terrain with zero monitor coverage).
+	var stalling_states: Array = [
+		BehaviorTree.State.MOVING, BehaviorTree.State.FLEEING]
 	var stall_ms: int = now - int(record.get("last_progress_ms", now))
-	if bt.state != BehaviorTree.State.MOVING or stall_ms < int(detour_after_sec * 1000.0):
+	if not stalling_states.has(bt.state) \
+			or stall_ms < int(detour_after_sec * 1000.0):
 		return
 	if stall_ms >= int(teleport_after_sec * 1000.0):
 		_rescue_npc(npc, record, "move-stall", now)
@@ -296,7 +310,18 @@ func _rescue_npc(npc: BaseNPC, record: Dictionary, reason: String, now: int) -> 
 		return
 	var goal: Vector2 = activity.target
 	var offset := Vector2(randf_range(-35.0, 35.0), randf_range(-35.0, 35.0))
-	npc.global_position = _clamp_to_interior(goal + offset, 30.0)
+	# 2026-11-09 fix: the teleport spot must be TERRAIN-CLEAR — a rescue that
+	# drops an NPC inside a city wall recreates the wedge it was healing.
+	var spot := _terrain_free_position(goal + offset, 30.0, [], 90.0, true)
+	if spot == Vector2.INF:
+		# Nowhere safe near the goal: the target is effectively unreachable —
+		# abort the trip instead (fresh re-pick beats a wall-drop).
+		bt.force_repick()
+		restart_clock.call()
+		print("StuckMonitor: %s aborted %s trip — rescue spot blocked (%s #%d)" % [
+			npc.name, npc.npc_type, reason, rescues])
+		return
+	npc.global_position = spot
 	npc.velocity = Vector2.ZERO
 	restart_clock.call()
 	print("StuckMonitor: %s teleported near its %s goal %s (%s, rescue #%d)" % [
@@ -396,9 +421,12 @@ func spawn_scenery() -> void:
 ## Every candidate is clamped into the interior band minus self_radius —
 ## large attempt-based jitter (up to ±276px) can otherwise escape the band.
 func _terrain_free_position(anchor: Vector2, self_radius: float,
-	protected := [] as Array, protected_margin := 90.0) -> Vector2:
+	protected := [] as Array, protected_margin := 90.0,
+	nearest := false) -> Vector2:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
+	var best := Vector2.INF
+	var best_dist := INF
 	for attempt in 24:
 		var candidate := _clamp_to_interior(anchor + Vector2(
 			rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0)
@@ -421,13 +449,32 @@ func _terrain_free_position(anchor: Vector2, self_radius: float,
 					< protected_margin + float(spot.get("pad", 0.0)):
 				clear = false
 				break
-		if clear:
+		if not clear:
+			continue
+		if not nearest:
 			return candidate
-	return Vector2.INF
+		var dist := candidate.distance_to(anchor)
+		if dist < best_dist:
+			best_dist = dist
+			best = candidate
+	return best
 
 
 func _clear_position(anchor: Vector2, spread: float) -> Vector2:
 	return anchor + Vector2(randf_range(-spread, spread), randf_range(-spread, spread))
+
+
+## PUBLIC terrain-safe target for NPC target providers (2026-11-09): NPCs may
+## only TRIP toward spots that can actually be stood on — inside a city wall
+## or a pen footprint the raycast detours never converge (forensic finding:
+## soldiers ground to a halt in MOVING for 99s+ with goals inside the city).
+## Tries a jitter search (same rules as spawn placement), falls back to the
+## interior-clamped anchor itself.
+func terrain_free_target(anchor: Vector2, self_radius: float) -> Vector2:
+	var spot := _terrain_free_position(
+		_clear_position(anchor, self_radius), self_radius)
+	return _clamp_to_interior(anchor, self_radius) if spot == Vector2.INF \
+		else spot
 
 
 # --- spawn plumbing ---------------------------------------------------------
@@ -580,15 +627,51 @@ func report_loot_spill() -> void:
 
 # --- escalation --------------------------------------------------------------
 
+## The King arrives once the town has fielded king_threshold soldiers in
+## total (initial + timer trickle + treasury purchases) — decision
+## 2026-11-09 keeps the same threshold for the new purchase model.
+func _escalation_soldier_spawned() -> void:
+	soldiers_spawned += 1
+	if game_manager != null:
+		game_manager.increment_soldier_count()
+	if soldiers_spawned >= king_threshold:
+		spawn_king()
 
 func _on_escalation_tick() -> void:
 	if king_spawned or game_manager == null:
 		return
 	spawn_entity(ESCALATING, 1, rally_point, 90.0)
-	soldiers_spawned += 1
-	game_manager.increment_soldier_count()
-	if soldiers_spawned >= king_threshold:
-		spawn_king()
+	_escalation_soldier_spawned()
+
+
+# --- treasury soldier purchases (2026-11-09) ----------------------------------
+
+## One soldier per 2 gold OR 2 soldiers per 1 gem — user spec, gold spent
+## first so gold-only shop stock (Brute Force) stays meaningful. The town
+## drains the treasury continuously: every miner delivery plus a 1s spend
+## heartbeat. The 8s escalation timer still runs as the bare trickle.
+@export_group("SoldierPurchases")
+@export var soldier_gold_cost: int = 2
+@export var soldiers_per_gem: int = 2
+@export var soldier_purchase_interval: float = 1.0
+
+var _purchase_timer: Timer
+
+func _try_buy_soldiers() -> void:
+	if king_spawned or game_manager == null or game_manager.run_finished:
+		return
+	var bought := 0
+	while game_manager.spend_treasury("gold", soldier_gold_cost):
+		bought += 1
+	while game_manager.spend_treasury("gems", 1):
+		bought += soldiers_per_gem
+	if bought == 0:
+		return
+	spawn_entity("soldier", bought, rally_point, 90.0)
+	for i in bought:
+		_escalation_soldier_spawned()
+	print("Town bought %d soldiers with treasury funds (%d fielded total)" % [
+		bought, soldiers_spawned])
 
 
 ## The final boss arrives at the city; defeating him ends the run.
@@ -628,6 +711,9 @@ func _on_resource_delivered(_npc_type: String, res_type: String, amount: int) ->
 	# 2026-11-08) — gold literally makes the farm belt come back.
 	if res_type == "gold":
 		_regrow_fields_on_gold()
+	# Treasury just grew — the town spends soldier money immediately
+	# (rule 2026-11-09: "always try to buy while there is gold").
+	_try_buy_soldiers()
 
 ## One STUBBLE field per gold delivery (fields in the RP order they appear
 ## in the group; the rest keep waiting on the fund).

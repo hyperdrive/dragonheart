@@ -208,6 +208,18 @@ be silently wedged or circle-loop forever:
   released, field plots freed) and the tree re-picks fresh.
 - **Skipped** — dead, burning, and legitimately-stationary NPCs; WORKING
   is covered by the activity alarm, never the movement alarm.
+- **Terrain-safe goals (2026-11-09 fix)**: every trip target must be
+  standable — soldier patrol/idle/rally anchors route through
+  `WorldManager.terrain_free_target()` (footprint rules, city 140px
+  no-go ring), because goals inside city walls are unreachable no matter
+  how many detours or teleports follow (forensic: soldiers grinding in
+  MOVING for 99s+ with in-wall goals).
+- **Rescue teleports are terrain-cleared too** — the landing searches
+  the nearest standable spot around the goal; when NO clear spot exists
+  near the goal the trip aborts instead of dropping an NPC inside an
+  obstacle (a wall-drop recreates the wedge it was healing).
+- The movement ladder also covers **FLEEING** — a flee wedged against
+  terrain never self-arrives and previously had zero supervision.
 - Time-based thresholds (not audit counts) so cadence changes never skew
   escalation; all knobs live under the WorldManager `StuckMonitor` export
   group. BehaviorTree exposes `force_detour()` / `force_repick()` bridges.
@@ -305,11 +317,17 @@ strings and gates affordability through the SAME
 
 ## 9. Escalation and victory
 
-- Soldiers spawn on a timer (initial 4, then one per interval) regardless
-  of the dragon's crimes. Miners do NOT feed soldier counts (that's the
-  economy-only-consequences pillar).
+- **Soldier supply has two lanes** (2026-11-09 prices): the town's bare
+  trickle (initial 4, then one per 8s interval) is INDEPENDENT of the
+  dragon's crimes (economy-only-consequences pillar stands) — and on top
+  the town SPENDS its treasury: **2 gold = 1 soldier, 1 gem = 2
+  soldiers**. Gold drains first so gold-only shop stock (Brute Force)
+  keeps meaning; gems only pay when no gold remains. The drain runs
+  instantly on every miner delivery AND on a 1s heartbeat, so miner
+  money is never parked idle.
 - At the King threshold the swarm musters (rally, ATTACK state) and the
-  King spawns.
+  King spawns. The threshold counts EVERY soldier the town has fielded —
+  initial + trickle + treasury-bought (15).
 - Victory = the King dies. `GameManager.notify_king_defeated()` emits the
   tally: time survived, gold/gems stolen, treasury left, fire/scales
   levels. There is no other win/loss condition beyond dragon death.
@@ -322,7 +340,8 @@ strings and gates affordability through the SAME
 | World size / margin band | 1600×1600 / ±720 interior | WorldManager exports |
 | Farmer count / fields | 5 / 6 | WorldManager |
 | field ring radius | 420 from city | spawn_fields |
-| Pen max slots / refill cost | 4 / 20 food | AnimalPen |
+| Pen max slots | 4 | AnimalPen (# animals in scene = live slots) |
+| Pen refill price (2026-11-09) | pig 10 food / cow 20 food | AnimalPen._ready (species-priced) |
 | Pig / Cow meal | +5 HP +1 flame / +10 HP +2 flame | AnimalPen (heal_amount, flame_recharge) |
 | NPC respawn delay / retry | 10s / 2s | WorldManager |
 | Flame max charges / reach | 4 / 95 (+20 per range buy) | Dragon exports |
@@ -336,6 +355,7 @@ strings and gates affordability through the SAME
 | Wizard prices | Section 8 table | GameManager.WIZARD_PRICES |
 | Miner support gate | ≥3 farmers, ≥10 food, 30s timer | Miner/WorldManager exports |
 | StuckMonitor audit / detour / teleport / hold | 2.5s / 5s / 10s / 30s | WorldManager StuckMonitor group |
+| Soldier purchase prices | 2 gold : 1 soldier, 1 gem : 2 soldiers | WorldManager SoldierPurchases group |
 
 
 ## 11. Implementation notes (engine mapping)
@@ -370,3 +390,4 @@ strings and gates affordability through the SAME
 - `2026-11-08-soldier-strike.md` — soldier kill lottery, Brute Force, speed-to-recharge strike coupling
 - `2026-11-08-farmer-nan-spawn.md` mentioned in dragon-strikes record — INF spawn fallback, lost-in-space watchdog *(addendum: see commit be4f2f9)*
 - `2026-11-09-stuck-monitor.md` — NPC supervision: movement/activity stall alarms, detour→teleport ladder, 3-rescue abort valve
+- `2026-11-09-town-purchases-and-stuck-fixes.md` — pen species pricing (pig 10/cow 20), treasury soldier buys (2g=1, 1gem=2, instant drain, King at 15 fielded), terrain-safe trip goals + rescue landings, FLEEING ladder coverage
