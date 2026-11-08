@@ -13,11 +13,12 @@ const OPTIONS: Array = [
 	{"kind": "flame_1", "label": "+1 Flame (%s)", "desc": "More flames carried: capacity +1, arrives loaded."},
 	{"kind": "flame_2", "label": "+2 Flames (%s)", "desc": "Even bigger flame pool: capacity +2, arrives loaded."},
 	{"kind": "shield", "label": "Shield 10 (%s)", "desc": "Absorbs 10 damage, then gone. Cannot restack while one is active."},
-	{"kind": "speed", "label": "Speed Boost (%s)", "desc": "Fast wings for 6s (x1.6)."},
+	{"kind": "speed", "label": "Speed Boost (%s)", "desc": "Fast wings for 6s (x1.6). Also unlocks the 0.2s strike recharge."},
 	{"kind": "range", "label": "Longer Flame (%s)", "desc": "Breath reaches +20px further. Permanent."},
+	{"kind": "brute", "label": "Brute Force +5%% (%s)", "desc": "Soldier E-strike kill odds +5%. Repeatable, capped at 35%."},
 ]
 
-const HOTKEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5]
+const HOTKEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6]
 
 var game_manager: GameManager
 var option_buttons: Array[Button] = []
@@ -62,12 +63,20 @@ func _refresh() -> void:
 		if gems > 0:
 			price_text += " + %d gem%s" % [gems, "" if gems == 1 else "s"]
 		var button := option_buttons[i]
+		var affordable: bool = game_manager.can_afford_wizard(kind)
 		if option["kind"] == "shield" and shield_active:
 			button.text = "Shield 10 — already active (15g)"
+			button.disabled = true
+		elif option["kind"] == "brute" and dragon_ref != null:
+			var chance: float = float(dragon_ref.get("soldier_strike_chance"))
+			var capped: bool = not bool(dragon_ref.call("can_add_strike"))
+			button.text = "Brute Force — %d%% kill odds (%s)" % [chance * 100.0, price_text]
+			if capped:
+				button.text = "Brute Force — %d%% kill odds (MAXED)" % [chance * 100.0]
+			button.disabled = not affordable or capped
 		else:
 			button.text = option["label"] % price_text
-		button.disabled = not game_manager.can_afford_wizard(kind) \
-			or (option["kind"] == "shield" and shield_active)
+			button.disabled = not affordable
 	hint_label.text = "1–5 buy • ESC leave  •  shield ready: %s" % (
 		"no" if shield_active else "yes")
 

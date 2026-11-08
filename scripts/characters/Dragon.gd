@@ -91,6 +91,8 @@ func _physics_process(delta: float) -> void:
 		fire_cooldown -= delta
 	if _speed_boost_left > 0.0:
 		_speed_boost_left -= delta
+	if _strike_cooldown > 0.0:
+		_strike_cooldown = maxf(_strike_cooldown - delta, 0.0)
 
 	var input_direction := Vector2.ZERO
 	if Input.is_action_pressed("move_left"):
@@ -123,18 +125,28 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("fire"):
 		fire_breath()
 
-## Intentional E press (decision record 2026-11-08-dragon-strikes-respawn-
-## prices): a CONTEXT action — the nearest valid target wins:
+## Intentional E press (decision records 2026-11-08-dragon-strikes-respawn-
+## prices and 2026-11-08-soldier-strike): a CONTEXT action — the nearest
+## valid target wins:
 ##   • pen with stock in its reach → eat one animal
 ##   • farmer/miner within strike_reach → deliberate strike-kill
+##   • ordinary soldier within strike_reach → chance kill (recharge-gated)
 ## Eating stays full-health-refused with chip flashes (see
-## 2026-11-08-manual-eat-wizard-menu); kills pay +5 health and STEAL the
-## payload before death. Flyover interception is steal-only and never kills.
+## 2026-11-08-manual-eat-wizard-menu); townsfolk kills pay +5 health and
+## STEAL the payload before death. Flyover interception is steal-only.
 @export_group("Strikes")
 ## E-kill reach for townsfolk (pens ration their own pen_radius).
 @export var strike_reach: float = 100.0
-## Health restored per deliberate E-kill.
+## Health restored per deliberate E-kill (townsfolk only).
 @export var kill_health_gain: int = 5
+## Soldier strike: chance kill lottery (Brute Force raises by 5% each buy),
+## with a short recharge (first Speed buy drops 0.5 → 0.2 permanently).
+@export var soldier_strike_chance: float = 0.15
+@export var strike_recharge: float = 0.5
+const STRIKE_CHANCE_CAP := 0.35
+var _strike_cooldown: float = 0.0
+
+signal strike_missed
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("eat") and not _dying:
@@ -143,17 +155,22 @@ func _unhandled_input(event: InputEvent) -> void:
 func _try_context_action() -> void:
 	var pen := _nearest_edible_pen()
 	var victim := _nearest_strike_target()
+	var soldier := _soldier_in_strike_reach()
+	if pen == null and victim == null and soldier == null:
+		print("Dragon: nothing to eat or strike in reach!")
+		return
 	var pen_dist := INF if pen == null \
 		else global_position.distance_to(pen.global_position)
 	var victim_dist := INF if victim == null \
 		else global_position.distance_to(victim.global_position)
-	if pen == null and victim == null:
-		print("Dragon: nothing to eat or strike in reach!")
-		return
-	if pen_dist <= victim_dist:
-		_eat_meal_from(pen)   # may refuse when full (never consumes)
-	else:
+	var soldier_dist := INF if soldier == null \
+		else global_position.distance_to(soldier.global_position)
+	if pen_dist <= victim_dist and pen_dist <= soldier_dist:
+		_eat_meal_from(pen)      # may refuse when full (never consumes)
+	elif victim_dist <= soldier_dist:
 		_strike_kill(victim)
+	else:
+		_strike_soldier(soldier)
 
 ## Nearest pen (either species) with stock within its own reach, else null.
 func _nearest_edible_pen() -> AnimalPen:
@@ -184,6 +201,36 @@ func _nearest_strike_target() -> BaseNPC:
 				best_dist = dist
 				best = npc
 	return best
+
+## Nearest ordinary soldier within strike reach — while the strike is
+## recharging soldiers are NOT valid targets (cooldown keeps E on other
+## candidates), and the King is excluded (his own battle rules).
+func _soldier_in_strike_reach() -> BaseNPC:
+	if _strike_cooldown > 0.0:
+		return null
+	var best: BaseNPC = null
+	var best_dist := INF
+	for node: Node in get_tree().get_nodes_in_group("soldiers"):
+		var npc := node as BaseNPC
+		if npc == null or not npc.is_alive or npc.is_in_group("king"):
+			continue
+		var dist := global_position.distance_to(npc.global_position)
+		if dist <= strike_reach and dist < best_dist:
+			best_dist = dist
+			best = npc
+	return best
+
+## Soldier strike: spends the recharge FIRST, then rolls the kill lottery.
+## A miss flashes the threat chip via strike_missed (decision record).
+func _strike_soldier(soldier: BaseNPC) -> void:
+	_strike_cooldown = strike_recharge
+	var odds := int(soldier_strike_chance * 100.0)
+	if randf() >= soldier_strike_chance:
+		strike_missed.emit()
+		print("Dragon's claw swipes past the soldier! (%d%% odds)" % odds)
+		return
+	soldier.kill_by_dragon()
+	print("Dragon mauled a soldier! (%d%% odds paid off)" % odds)
 
 ## Deliberate kill: steal payload BEFORE death so an E-killed loaded miner
 ## banks the cart into the claws; +5 health after regardless.
@@ -378,6 +425,26 @@ func activate_speed_boost() -> void:
 	_speed_boost_left = speed_boost_duration
 	print("Dragon feels fast! (%.0fx for %ds)" % [
 		speed_boost_multiplier, speed_boost_duration])
+
+## First Speed purchase EVER unlocks the fast strike cadence permanently
+## (decision 2026-11-08-soldier-strike); later buys are a no-op here.
+func unlock_fast_strike() -> void:
+	if strike_recharge <= 0.2:
+		return
+	strike_recharge = 0.2
+	print("Dragon strikes flow faster now (0.2s recharge)!")
+
+## Brute Force purchase: raise the soldier kill lottery (+5% per buy).
+## Returns false while capped — the caller must refuse payment then.
+func can_add_strike() -> bool:
+	return soldier_strike_chance < STRIKE_CHANCE_CAP
+
+func add_strike_chance(add: float) -> bool:
+	if not can_add_strike():
+		return false
+	soldier_strike_chance = minf(soldier_strike_chance + add, STRIKE_CHANCE_CAP)
+	print("Dragon strike chance now %d%%!" % int(soldier_strike_chance * 100.0))
+	return true
 
 ## Effective move speed in _physics_process — boost multiplier while active.
 func effective_speed() -> float:

@@ -35,6 +35,7 @@ const WIZARD_PRICES := {
 	"shield": {"gold": 15, "gems": 0},
 	"speed": {"gold": 25, "gems": 0},
 	"range": {"gold": 30, "gems": 1},
+	"brute": {"gold": 20, "gems": 0},
 }
 
 var wizard_menu: CanvasLayer
@@ -180,6 +181,9 @@ func purchase_upgrade(kind: String) -> bool:
 		return false
 	if kind == "shield" and int(dragon_ref.get("shield_points")) > 0:
 		return false
+	# Brute Force is capped — refuse BEFORE taking payment (decision record).
+	if kind == "brute" and not bool(dragon_ref.call("can_add_strike")):
+		return false
 	if not _pay_wizard_cost(kind):
 		return false
 	match kind:
@@ -191,8 +195,11 @@ func purchase_upgrade(kind: String) -> bool:
 			dragon_ref.call("add_shield", 10)
 		"speed":
 			dragon_ref.call("activate_speed_boost")
+			dragon_ref.call("unlock_fast_strike")
 		"range":
 			dragon_ref.call("increase_flame_range", 20.0)
+		"brute":
+			dragon_ref.call("add_strike_chance", 0.05)
 	upgrade_purchased.emit(kind, int(WIZARD_PRICES[kind]["gold"]))
 	return true
 

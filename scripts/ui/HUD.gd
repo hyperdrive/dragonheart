@@ -57,6 +57,8 @@ func bind_manager(mgr: GameManager) -> void:
 			int((dragon_ref as CharacterBody2D).get("max_flame_charges")))
 	if dragon_ref != null and dragon_ref.has_signal("eat_refused"):
 		dragon_ref.eat_refused.connect(_on_eat_refused)
+		if dragon_ref.has_signal("strike_missed"):
+			dragon_ref.strike_missed.connect(_on_strike_missed)
 		if dragon_ref.has_signal("shield_changed"):
 			dragon_ref.shield_changed.connect(_on_dragon_shield)
 			_on_dragon_shield(int((dragon_ref as CharacterBody2D).get("shield_points")))
@@ -158,6 +160,13 @@ func _on_eat_refused(what: String) -> void:
 	var tween := create_tween()
 	tween.tween_property(chip, "modulate", Color(1.0, 0.25, 0.25), 0.12)
 	tween.tween_property(chip, "modulate", Color.WHITE, 0.3)
+
+## Failed soldier strike (dice miss): the threat chip pulses red so the
+## miss reads as feedback, not lag (decision 2026-11-08-soldier-strike).
+func _on_strike_missed() -> void:
+	var tween := create_tween()
+	tween.tween_property(threat_label, "modulate", Color(1.0, 0.25, 0.25), 0.12)
+	tween.tween_property(threat_label, "modulate", Color.WHITE, 0.3)
 
 # --- messages ----------------------------------------------------------------
 
