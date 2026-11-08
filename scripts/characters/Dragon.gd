@@ -17,6 +17,8 @@ var health: int = 100
 var max_health: int = 100
 var is_firing: bool = false
 var fire_cooldown: float = 0.0
+## True from die() onward: blocks extra damage, input, activity re-entry.
+var _dying: bool = false
 
 var game_manager: GameManager
 
@@ -50,6 +52,9 @@ func _on_upgrade_purchased(kind: String, level: int) -> void:
 	sync_from_game_manager()
 
 func _physics_process(delta: float) -> void:
+	if _dying:
+		velocity = Vector2.ZERO
+		return
 	if fire_cooldown > 0.0:
 		fire_cooldown -= delta
 
@@ -74,7 +79,9 @@ func _physics_process(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	# Auto-theft: the core loop. When a payload carrier is in range and
-	#cooldown allows, attempt an interception.
+	# cooldown allows, attempt an interception. (Dead dragons steal nothing.)
+	if _dying:
+		return
 	if interception_system == null or game_manager == null:
 		return
 	var opportunities := interception_system.check_interception_opportunities(global_position)
@@ -82,7 +89,7 @@ func _process(delta: float) -> void:
 		interception_system.attempt_interception(self, opportunities[0])
 
 func fire_breath() -> void:
-	if is_firing or fire_cooldown > 0.0:
+	if _dying or is_firing or fire_cooldown > 0.0:
 		return
 	is_firing = true
 	fire_cooldown = fire_rate
@@ -98,6 +105,8 @@ func fire_breath() -> void:
 		animation_player.play("idle")
 
 func take_damage(amount: int) -> void:
+	if _dying:
+		return
 	var damage_reduction := 0
 	if game_manager != null:
 		damage_reduction = (game_manager.scales_level - 1) * 2
@@ -107,9 +116,17 @@ func take_damage(amount: int) -> void:
 		die()
 
 func die() -> void:
+	# Re-entry guard: several attacks can land during the death animation;
+	# each call would await animation_finished and try to reload the scene.
+	if _dying:
+		return
+	_dying = true
 	animation_player.play("death")
 	await animation_player.animation_finished
-	get_tree().reload_current_scene()
+	# After the await the scene may already be torn down (double reload) or
+	# the node detached — reload only while we are still in a live tree.
+	if is_inside_tree() and get_tree() != null:
+		get_tree().reload_current_scene()
 
 # Animations (idle, fire_breath, death) live in Dragon.tscn's AnimationPlayer
 # library — do not recreate them in code.
