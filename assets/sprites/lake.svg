@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="96" viewBox="0 0 128 96">
+  <!-- shore -->
+  <ellipse cx="64" cy="48" rx="60" ry="44" fill="#4a7a44"/>
+  <!-- water -->
+  <ellipse cx="64" cy="48" rx="52" ry="37" fill="#2a6fb0"/>
+  <!-- shallow rim -->
+  <ellipse cx="64" cy="48" rx="52" ry="37" fill="none" stroke="#5fa8d8" stroke-width="3"/>
+  <!-- ripples -->
+  <path d="M40 40 q8 -5 16 0 q8 5 16 0 q8 -5 16 0" fill="none" stroke="#7cc0e8" stroke-width="2.5" opacity="0.8"/>
+  <path d="M48 58 q8 -5 16 0 q8 5 16 0" fill="none" stroke="#7cc0e8" stroke-width="2" opacity="0.6"/>
+</svg>

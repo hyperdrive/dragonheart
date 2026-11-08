@@ -2,9 +2,9 @@ extends BaseNPC
 
 class_name Soldier
 
-## Town soldier: patrols, chases the dragon when it gets close, attacks in
-## range. Runs on the same Activity engine (CHASE = attack activity whose
-## work-tick lands damage on the dragon). docs/plans/2026-11-08-behavior-system-rebuild.md
+## Town soldier: patrols the city, RALLIES at the gate when the dragon nears,
+## and attacks only once the swarm is released (WorldManager.swarm_state).
+## docs/plans/2026-11-08-behavior-system-rebuild.md
 
 signal defeated(reward_gold: int)
 
@@ -31,7 +31,13 @@ func _ready() -> void:
 		"attack_dragon", 60,
 		_pick_dragon_target, attack_interval,
 		0.5, _complete_attack,
-		Callable(), _dragon_in_attack_range
+		_swarm_released, _dragon_in_attack_range
+	)
+	behavior_tree.register_activity(
+		"rally", 40,
+		_pick_rally_target, 0.0,
+		0.5, _complete_rally,
+		_swarm_rallying
 	)
 	behavior_tree.register_activity(
 		"patrol", 10,
@@ -44,20 +50,32 @@ func _ready() -> void:
 		2.0, Callable()
 	)
 
-# --- danger override: soldiers do NOT flee the dragon -----------------------
+# --- swarm state access ------------------------------------------------------
 
-## Soldiers stand their ground (danger_radius = 0 in _ready) so the engine's
-## flee reaction never applies to them.
-func _physics_process(delta: float) -> void:
-	super._physics_process(delta)
+## The WorldManager owns the swarm coordination; missing manager = old-style
+## independent behavior (chase on sight).
+func _world_manager() -> WorldManager:
+	return get_tree().get_first_node_in_group("world_manager") as WorldManager
+
+func _swarm_rallying() -> bool:
+	var world := _world_manager()
+	return world != null and world.swarm_state == WorldManager.SwarmState.RALLY
+
+func _swarm_released() -> bool:
+	var world := _world_manager()
+	return world == null or world.swarm_state == WorldManager.SwarmState.ATTACK
 
 # --- activity providers & completers ---------------------------------------
 
+## During ATTACK the aggro range widens hugely: the whole swarm hunts.
 func _pick_dragon_target() -> Vector2:
 	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return BehaviorTree.TARGET_NONE
-	if global_position.distance_to(dragon.global_position) > aggro_range:
+	var reach := aggro_range
+	if _swarm_released():
+		reach = 4000.0
+	if global_position.distance_to(dragon.global_position) > reach:
 		return BehaviorTree.TARGET_NONE
 	return dragon.global_position
 
@@ -73,11 +91,33 @@ func _complete_attack() -> void:
 	if dragon != null and dragon.has_method("take_damage"):
 		dragon.take_damage(attack_damage)
 
+## Muster on a loose ring at the rally point (swarm cohesion before the charge).
+func _pick_rally_target() -> Vector2:
+	var world := _world_manager()
+	if world == null:
+		return BehaviorTree.TARGET_NONE
+	var jitter := Vector2(randf_range(-50, 50), randf_range(-50, 50))
+	return world.rally_point + jitter
+
+func _complete_rally() -> void:
+	pass  # arrival is the point; WorldManager counts heads at the gate
+
 func _pick_patrol_target() -> Vector2:
 	return home_position + Vector2(randf_range(-200, 200), randf_range(-200, 200))
 
 func _pick_idle_target() -> Vector2:
 	return home_position + Vector2(randf_range(-40, 40), randf_range(-40, 40))
+
+## Soldiers keep a slack aggro: spotting the dragon near them raises the alarm
+## state so distant comrades rally even before the city-radius alarm triggers.
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	if dragon != null and is_instance_valid(dragon) \
+			and global_position.distance_to(dragon.global_position) < aggro_range:
+		var world := _world_manager()
+		if world != null:
+			world.report_dragon_sighting(dragon.global_position)
 
 func take_damage(amount: int) -> void:
 	# Soldiers take fire/dragon damage; routed into the base class.

@@ -23,6 +23,7 @@ var game_manager: GameManager
 @onready var sprite: Node2D = $Sprite
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var fire_area: Area2D = $FireArea
+@onready var flame: Node2D = $FireArea/Flame
 @onready var interception_system: GoldInterceptionSystem = $GoldInterceptionSystem
 
 func _ready() -> void:
@@ -85,11 +86,13 @@ func fire_breath() -> void:
 		return
 	is_firing = true
 	fire_cooldown = fire_rate
-	fire_area.monitoring = true  # breath window: ignites flammable fields
+	flame.visible = true          # visual breath (collision window matches)
+	fire_area.monitoring = true   # breath window: ignites flammable fields
 	animation_player.play("fire_breath")
 	fire_attacked.emit()
 	await animation_player.animation_finished
 	is_firing = false
+	flame.visible = false
 	fire_area.monitoring = false
 	if animation_player.has_animation("idle"):
 		animation_player.play("idle")

@@ -1,4 +1,6 @@
-[gd_scene format=3 uid="uid://c3w7d8b2n0h6f"]
+[gd_scene load_steps=2 format=3 uid="uid://c3w7d8b2n0h6f"]
+
+[ext_resource type="Script" path="res://scripts/ui/Minimap.gd" id="7_minimap_script"]
 
 [node name="HUD" type="Control" unique_id=638309366]
 layout_mode = 3
@@ -10,13 +12,12 @@ grow_vertical = 2
 
 [node name="ResourcePanel" type="Panel" parent="." unique_id=62304991]
 layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
+anchors_preset = 2
 anchor_top = 1.0
-anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -80.0
-grow_horizontal = 2
+offset_top = -140.0
+offset_right = 320.0
+offset_bottom = -60.0
 grow_vertical = 0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="ResourcePanel" unique_id=1099152119]
@@ -122,19 +123,16 @@ text = "Fire: Level 1"
 
 [node name="Minimap" type="Panel" parent="." unique_id=918273645]
 layout_mode = 1
-anchors_preset = 1
-anchor_left = 0.0
-anchor_top = 0.0
-offset_right = 200.0
-offset_bottom = 200.0
-grow_horizontal = 0
-grow_vertical = 0
-
-[node name="MinimapTexture" type="ColorRect" parent="Minimap" unique_id=819273646]
-layout_mode = 1
-anchors_preset = 15
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.1, 0.1, 0.1, 1)
+offset_left = -220.0
+offset_top = -260.0
+offset_right = -10.0
+offset_bottom = -60.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("7_minimap_script")
+

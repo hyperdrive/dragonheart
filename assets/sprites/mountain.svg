@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- main peak -->
+  <polygon points="64,8 120,120 8,120" fill="#7a7f8a"/>
+  <!-- back peak -->
+  <polygon points="96,40 128,120 58,120" fill="#686d78"/>
+  <!-- snow cap -->
+  <polygon points="64,8 82,44 74,38 66,48 58,38 48,44" fill="#e8ecf2"/>
+  <polygon points="96,40 108,66 100,60 94,68 86,60" fill="#dfe4ea"/>
+  <!-- rocky shading -->
+  <polygon points="64,20 100,120 40,120" fill="#878c97" opacity="0.6"/>
+</svg>

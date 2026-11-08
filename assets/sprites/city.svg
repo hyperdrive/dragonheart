@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="160" viewBox="0 0 192 160">
+  <!-- keep (behind wall) -->
+  <rect x="74" y="20" width="44" height="80" fill="#9aa0aa"/>
+  <polygon points="70,20 96,0 122,20" fill="#8a5545"/>
+  <rect x="88" y="40" width="6" height="14" fill="#3a3f47"/>
+  <rect x="98" y="40" width="6" height="14" fill="#3a3f47"/>
+  <rect x="88" y="70" width="6" height="14" fill="#3a3f47"/>
+  <rect x="98" y="70" width="6" height="14" fill="#3a3f47"/>
+  <!-- temple roof -->
+  <polygon points="60,4 96,-14 132,4" fill="#b05040" transform="translate(0,10)"/>
+  <!-- walls -->
+  <rect x="14" y="78" width="164" height="56" fill="#a8aeb8"/>
+  <!-- battlements -->
+  <g fill="#a8aeb8">
+    <rect x="14" y="70" width="16" height="14"/>
+    <rect x="42" y="70" width="16" height="14"/>
+    <rect x="70" y="70" width="16" height="14"/>
+    <rect x="98" y="70" width="16" height="14"/>
+    <rect x="126" y="70" width="16" height="14"/>
+    <rect x="154" y="70" width="16" height="14"/>
+    <rect x="8" y="70" width="176" height="8"/>
+  </g>
+  <!-- corner towers -->
+  <rect x="4" y="54" width="26" height="84" fill="#9aa0aa"/>
+  <polygon points="0,54 17,36 34,54" fill="#8a5545"/>
+  <rect x="162" y="54" width="26" height="84" fill="#9aa0aa"/>
+  <polygon points="158,54 175,36 192,54" fill="#8a5545"/>
+  <!-- gate -->
+  <path d="M82 134 v-28 a14 14 0 0 1 28 0 v28 z" fill="#4a3626"/>
+  <rect x="84" y="146" width="24" height="6" fill="#3a2c1e"/>
+  <!-- windows -->
+  <rect x="10" y="70" width="5" height="10" fill="#3a3f47"/>
+  <rect x="19" y="70" width="5" height="10" fill="#3a3f47"/>
+  <rect x="168" y="70" width="5" height="10" fill="#3a3f47"/>
+  <rect x="177" y="70" width="5" height="10" fill="#3a3f47"/>
+</svg>

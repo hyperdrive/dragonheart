@@ -12,7 +12,7 @@ class_name GameHUD
 @onready var fire_label: Label = $DragonStats/VBoxContainer/FireLabel
 @onready var upgrade_panel: Panel = $UpgradePanel
 @onready var message_label: Label = $MessageLabel
-@onready var minimap: Panel = $Minimap
+@onready var minimap: MinimapPanel = $Minimap
 
 var game_manager: GameManager
 
@@ -123,13 +123,13 @@ func _on_victory(tally: Dictionary) -> void:
 func _update_stats() -> void:
 	message_label.text = "Press U for Upgrades"
 
-# --- minimap (stubs kept for GameManager connections) -------------------------
+# --- minimap (MinimapPanel below; GameManager pushes per-frame dragon dots) ---
 
 func update_minimap_entity(entity_type: String, position: Vector2, remove: bool = false) -> void:
-	pass
+	minimap.set_entity(entity_type, position, remove)
 
 func update_minimap_dragon(dragon_pos: Vector2) -> void:
-	pass
+	minimap.set_dragon(dragon_pos)
 
 func initialize_minimap() -> void:
-	pass
+	minimap.scan_and_redraw()

@@ -163,3 +163,12 @@ func update_camera_position() -> void:
 
 func _on_entity_spawned(entity_type: String, position: Vector2) -> void:
 	pass  # keep the hook for future minimap/gameplay expansions
+
+## WorldManager raises the alarm: rally/attack messages surface on the HUD.
+func _on_swarm_state_changed(new_state: WorldManager.SwarmState) -> void:
+	if hud is GameHUD:
+		match new_state:
+			WorldManager.SwarmState.RALLY:
+				(hud as GameHUD).show_message("The soldiers mass at the city gate!")
+			WorldManager.SwarmState.ATTACK:
+				(hud as GameHUD).show_message("The swarm charges! Defend yourself!")

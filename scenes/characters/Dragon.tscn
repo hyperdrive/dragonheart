@@ -89,7 +89,6 @@ _data = {
 collision_layer = 2
 collision_mask = 3
 script = ExtResource("1_m3q8w")
-group = "dragon"
 
 [node name="Sprite" type="Node2D" parent="."]
 position = Vector2(0, -5)
@@ -129,6 +128,24 @@ position = Vector2(20, 0)
 [node name="FireCollision" type="CollisionShape2D" parent="FireArea"]
 shape = SubResource("1_j7h1g")
 position = Vector2(15, 0)
+
+[node name="Flame" type="Node2D" parent="FireArea"]
+visible = false
+
+[node name="OuterFlame" type="ColorRect" parent="FireArea/Flame"]
+position = Vector2(12, -10)
+size = Vector2(44, 22)
+color = Color(1.0, 0.45, 0.05, 0.85)
+
+[node name="MidFlame" type="ColorRect" parent="FireArea/Flame"]
+position = Vector2(10, -7)
+size = Vector2(32, 15)
+color = Color(1.0, 0.65, 0.1, 0.95)
+
+[node name="CoreFlame" type="ColorRect" parent="FireArea/Flame"]
+position = Vector2(8, -4)
+size = Vector2(18, 8)
+color = Color(1.0, 0.95, 0.6, 1.0)
 
 [node name="FireDetector" type="Node2D" parent="FireArea"]
 

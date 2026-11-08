@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/npcs/King.gd" id="1_n7m8k"]
 [ext_resource type="RectangleShape2D" path="res://assets/shapes/king_shape.tres" id="2_p9q4l"]
 
-[node name="King" type="CharacterBody2D"]
+[node name="King" type="CharacterBody2D" groups=["king", "soldiers"]]
 collision_layer = 4
 collision_mask = 1
 script = ExtResource("1_n7m8k")
