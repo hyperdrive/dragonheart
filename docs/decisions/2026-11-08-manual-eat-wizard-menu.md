@@ -30,3 +30,5 @@ that absorbs damage once, a short speed boost, +1 longer flame range.
 ## Open / deferred
 - Wizard menu art/labels — programmer-color placeholder assumed.
 - Purchase failure feedback — stash label flash assumed (matches chip-flash pattern).
+- PRICES superseded same day by 2026-11-08-dragon-strikes-respawn-prices
+  (per-item {"gold","gems"}; the int table above is historical).

@@ -72,9 +72,10 @@ func _on_pools_changed(_res_type: String, _amount: int) -> void:
 func _on_food_changed(amount: int) -> void:
 	food_label.text = "Food: %d" % amount
 
-func _on_upgrade_purchased(kind: String, level: int) -> void:
+func _on_upgrade_purchased(kind: String, price: int) -> void:
 	_refresh_dragon_stats()
-	show_message("%s upgraded to level %d!" % [kind.capitalize(), level])
+	show_message("The wizard casts %s! (paid %d gold)" % [
+		kind.replace("_", " ").capitalize(), price])
 
 ## The dragon's hauling loop — visible on the top bar at all times.
 func update_carried(total: int) -> void:

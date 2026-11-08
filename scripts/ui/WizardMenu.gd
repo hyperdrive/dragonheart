@@ -10,11 +10,11 @@ class_name WizardMenu
 signal menu_close_requested
 
 const OPTIONS: Array = [
-	{"kind": "flame_1", "label": "+1 Flame (%d)", "desc": "More flames carried: capacity +1, arrives loaded."},
-	{"kind": "flame_2", "label": "+2 Flames (%d)", "desc": "Even bigger flame pool: capacity +2, arrives loaded."},
-	{"kind": "shield", "label": "Shield 10 (%d)", "desc": "Absorbs 10 damage, then gone. Cannot restack while one is active."},
-	{"kind": "speed", "label": "Speed Boost (%d)", "desc": "Fast wings for 6s (x1.6)."},
-	{"kind": "range", "label": "Longer Flame (%d)", "desc": "Breath reaches +20px further. Permanent."},
+	{"kind": "flame_1", "label": "+1 Flame (%s)", "desc": "More flames carried: capacity +1, arrives loaded."},
+	{"kind": "flame_2", "label": "+2 Flames (%s)", "desc": "Even bigger flame pool: capacity +2, arrives loaded."},
+	{"kind": "shield", "label": "Shield 10 (%s)", "desc": "Absorbs 10 damage, then gone. Cannot restack while one is active."},
+	{"kind": "speed", "label": "Speed Boost (%s)", "desc": "Fast wings for 6s (x1.6)."},
+	{"kind": "range", "label": "Longer Flame (%s)", "desc": "Breath reaches +20px further. Permanent."},
 ]
 
 const HOTKEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5]
@@ -31,7 +31,7 @@ func _ready() -> void:
 	game_manager = get_tree().get_first_node_in_group("game_manager") as GameManager
 	for option: Dictionary in OPTIONS:
 		var button := Button.new()
-		button.text = option["label"] % GameManager.WIZARD_PRICES[option["kind"]]
+		button.text = option["label"] % ""  # real text on open()
 		button.pressed.connect(_on_option_pressed.bind(option["kind"]))
 		options_box.add_child(button)
 		option_buttons.append(button)
@@ -55,17 +55,19 @@ func _refresh() -> void:
 		and int(dragon_ref.get("shield_points")) > 0
 	for i in OPTIONS.size():
 		var option: Dictionary = OPTIONS[i]
+		var kind: String = option["kind"]
+		var cost: Dictionary = GameManager.WIZARD_PRICES[kind]
+		var gems := int(cost["gems"])
+		var price_text: String = "%dg" % int(cost["gold"])
+		if gems > 0:
+			price_text += " + %d gem%s" % [gems, "" if gems == 1 else "s"]
 		var button := option_buttons[i]
-		var affordable: bool = game_manager.stash_value() \
-			>= int(GameManager.WIZARD_PRICES[option["kind"]])
-		button.disabled = not affordable \
-			or (option["kind"] == "shield" and shield_active)
 		if option["kind"] == "shield" and shield_active:
-			button.text = "Shield 10 — already active (%d)" % int(
-				GameManager.WIZARD_PRICES[option["kind"]])
+			button.text = "Shield 10 — already active (15g)"
 		else:
-			button.text = option["label"] % int(
-				GameManager.WIZARD_PRICES[option["kind"]])
+			button.text = option["label"] % price_text
+		button.disabled = not game_manager.can_afford_wizard(kind) \
+			or (option["kind"] == "shield" and shield_active)
 	hint_label.text = "1–5 buy • ESC leave  •  shield ready: %s" % (
 		"no" if shield_active else "yes")
 

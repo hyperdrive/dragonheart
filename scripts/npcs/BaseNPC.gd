@@ -193,6 +193,15 @@ func steal_payload() -> Dictionary:
 	set_payload("", 0)
 	return stolen
 
+## Explicit E-kill by the dragon (decision record 2026-11-08-dragon-attack-eat):
+## guaranteed death. Burn flags are cleared so a burning target killed by
+## E takes the deliberate-death path (no extra spill semantics).
+func kill_by_dragon() -> void:
+	if not is_alive:
+		return
+	_burning_left = 0.0
+	die()
+
 ## Tier multiplier hook: subclasses scale yields/speed with npc_level.
 func level_multiplier() -> float:
 	return 1.0 + float(npc_level - 1) * 0.25

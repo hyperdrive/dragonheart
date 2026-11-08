@@ -111,7 +111,7 @@ func tick(delta: float) -> void:
 	_tick_danger()
 	match state:
 		State.MOVING:
-			_tick_moving()
+			_tick_moving(delta)
 		State.WORKING:
 			_tick_working(delta)
 		State.FLEEING:
@@ -193,7 +193,7 @@ func _tick_fleeing() -> void:
 		npc._waypoint = Vector2.INF
 		_set_state(State.IDLE)
 
-func _tick_moving() -> void:
+func _tick_moving(delta: float) -> void:
 	if current_activity == null:
 		_set_state(State.IDLE)
 		return

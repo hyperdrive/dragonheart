@@ -123,26 +123,92 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("fire"):
 		fire_breath()
 
-## Intentional snacking (E): one animal from the NEAREST pen in reach.
-## Full dragons get nothing from eating (no heal ⇒ no flames ⇒ pure waste)
-## — refused with a chip flash instead of consuming stock. Note: eating an
-## animal CAN only ever grant flames as a side effect of the heal, so a
-## full-health dragon is always refused even with flame room. (Decision
-## record 2026-11-08-manual-eat-wizard-menu.)
+## Intentional E press (decision record 2026-11-08-dragon-strikes-respawn-
+## prices): a CONTEXT action — the nearest valid target wins:
+##   • pen with stock in its reach → eat one animal
+##   • farmer/miner within strike_reach → deliberate strike-kill
+## Eating stays full-health-refused with chip flashes (see
+## 2026-11-08-manual-eat-wizard-menu); kills pay +5 health and STEAL the
+## payload before death. Flyover interception is steal-only and never kills.
+@export_group("Strikes")
+## E-kill reach for townsfolk (pens ration their own pen_radius).
+@export var strike_reach: float = 100.0
+## Health restored per deliberate E-kill.
+@export var kill_health_gain: int = 5
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("eat") and not _dying:
-		_try_eat_at_pen()
+		_try_context_action()
 
-func _try_eat_at_pen() -> void:
+func _try_context_action() -> void:
+	var pen := _nearest_edible_pen()
+	var victim := _nearest_strike_target()
+	var pen_dist := INF if pen == null \
+		else global_position.distance_to(pen.global_position)
+	var victim_dist := INF if victim == null \
+		else global_position.distance_to(victim.global_position)
+	if pen == null and victim == null:
+		print("Dragon: nothing to eat or strike in reach!")
+		return
+	if pen_dist <= victim_dist:
+		_eat_meal_from(pen)   # may refuse when full (never consumes)
+	else:
+		_strike_kill(victim)
+
+## Nearest pen (either species) with stock within its own reach, else null.
+func _nearest_edible_pen() -> AnimalPen:
+	var best: AnimalPen = null
+	var best_dist := INF
+	for group: String in ["pig_pens", "cow_pens"]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			var pen := node as AnimalPen
+			if pen == null or pen.animal_count() == 0:
+				continue
+			var dist := global_position.distance_to(pen.global_position)
+			if dist <= pen.pen_radius and dist < best_dist:
+				best_dist = dist
+				best = pen
+	return best
+
+## Nearest alive farmer/miner within strike_reach, else null.
+func _nearest_strike_target() -> BaseNPC:
+	var best: BaseNPC = null
+	var best_dist := INF
+	for group: String in ["farmers", "miners"]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			var npc := node as BaseNPC
+			if npc == null or not npc.is_alive:
+				continue
+			var dist := global_position.distance_to(npc.global_position)
+			if dist <= strike_reach and dist < best_dist:
+				best_dist = dist
+				best = npc
+	return best
+
+## Deliberate kill: steal payload BEFORE death so an E-killed loaded miner
+## banks the cart into the claws; +5 health after regardless.
+func _strike_kill(npc: BaseNPC) -> void:
+	var loot := npc.steal_payload()
+	if int(loot["amount"]) > 0 and str(loot["res_type"]) != "":
+		take_loot(str(loot["res_type"]), int(loot["amount"]))
+		print("Dragon ripped %d %s from the %s!" % [
+			int(loot["amount"]), loot["res_type"], npc.npc_type])
+	npc.kill_by_dragon()
+	health = mini(health + kill_health_gain, max_health)
+	health_changed.emit(health)
+	print("Dragon struck down the %s! (+%d health)" % [npc.npc_type, kill_health_gain])
+
+## The pen-meal half of the context action (see
+## 2026-11-08-manual-eat-wizard-menu for the refusal rules).
+func _eat_meal_from(pen: AnimalPen) -> void:
 	if health >= max_health:
 		eat_refused.emit("health")
 		if flame_charges >= max_flame_charges:
 			eat_refused.emit("flames")  # both chips flash on a fully-full dragon
 		print("Dragon: full — eating would be wasted!")
 		return
-	var meal := _take_meal_from_nearest_pen()
+	var meal := pen.take_animal_for_dragon(self)
 	if meal.is_empty():
-		print("Dragon: no animals in reach to eat!")
 		return
 	var healed := mini(int(meal["heal"]), max_health - health)
 	health += healed
@@ -154,28 +220,6 @@ func _try_eat_at_pen() -> void:
 		flame_charges_changed.emit(int(flame_charges), max_flame_charges)
 	if flame_charges >= max_flame_charges:
 		eat_refused.emit("flames")  # heal happened, but the recharge clamped
-
-## Nearest pen (either species) within its own reach; {} when none in reach
-## or its pen is out of stock.
-func _take_meal_from_nearest_pen() -> Dictionary:
-	var best: AnimalPen = null
-	var best_dist := INF
-	for group: String in ["pig_pens", "cow_pens"]:
-		for node: Node in get_tree().get_nodes_in_group(group):
-			var pen := node as AnimalPen
-			if pen == null:
-				continue
-			var dist := global_position.distance_to(pen.global_position)
-			if dist < best_dist and dist <= pen.pen_radius:
-				best_dist = dist
-				best = pen
-	if best == null or best.animal_count() == 0:
-		return {}
-	var meal: Dictionary = best.take_animal_for_dragon(self)
-	if not meal.is_empty():
-		print("Dragon ate a %s! (+%d health attempted, +%d flame)" % [
-			best.animal_name, int(meal["heal"]), int(meal["flame"])])
-	return meal
 
 ## Mirror the visual body AND the fire assembly to the facing side. Done with
 ## explicit component mirroring — no negative scale on the physics Area2D.

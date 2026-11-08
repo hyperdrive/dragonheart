@@ -103,6 +103,19 @@ const FOOTPRINT_RADIUS := {
 	"mountain": 80.0, "mine": 30.0,
 }
 
+## Walkable interior band: boundary walls sit at ±world_size/2 (20px thick);
+## everything reachable must stay WORLD_MARGIN inside them — minus any own
+## footprint. Bug fix (decision 2026-11-08-dragon-strikes-respawn-prices):
+## stale anchor defaults put the cow pen y=820 and whole fields behind the
+## south wall, wedging farmers and starving miner→cow respawns.
+const WORLD_MARGIN := 80.0
+
+func _clamp_to_interior(pos: Vector2, radius := 0.0) -> Vector2:
+	var pad := WORLD_MARGIN + radius
+	var half := world_size * 0.5 - Vector2(pad, pad)
+	return pos.clamp(-half, half)
+
+
 func register_footprint(position: Vector2, radius: float) -> void:
 	_terrain_clearances.append({"pos": position, "radius": radius})
 
@@ -112,6 +125,15 @@ func _ready() -> void:
 	add_to_group("world_manager")
 	if game_manager != null:
 		swarm_state_changed.connect(game_manager._on_swarm_state_changed)
+	# Pre-clamp landmark anchors BEFORE generation: they are design numbers
+	# exported before the margin rule existed.
+	city_position = _clamp_to_interior(city_position, FOOTPRINT_RADIUS["city"])
+	mine_center = _clamp_to_interior(mine_center, FOOTPRINT_RADIUS["mine"])
+	rally_point = _clamp_to_interior(rally_point)
+	pig_pen_position = _clamp_to_interior(pig_pen_position, FOOTPRINT_RADIUS["pig_pen"])
+	cow_pen_position = _clamp_to_interior(cow_pen_position, FOOTPRINT_RADIUS["cow_pen"])
+	lair_position = _clamp_to_interior(lair_position, FOOTPRINT_RADIUS["lair"])
+	tower_position = _clamp_to_interior(tower_position, FOOTPRINT_RADIUS["tower"])
 	generate_world()
 
 	# Escalation timer: one soldier per interval until the King threshold.
@@ -167,13 +189,11 @@ func generate_world() -> void:
 ## (landmarks AND each other) so plots never collide before anything is
 ## placed on top.
 func spawn_fields() -> void:
-	var margin := 80.0
 	var field_radius: float = FOOTPRINT_RADIUS["field"]
 	for i in field_count:
 		var angle := TAU * float(i) / float(field_count) + 0.4
-		var anchor := city_position + Vector2.RIGHT.rotated(angle) * 420.0
-		anchor.x = clampf(anchor.x, -world_size.x / 2 + margin, world_size.x / 2 - margin)
-		anchor.y = clampf(anchor.y, -world_size.y / 2 + margin, world_size.y / 2 - margin)
+		var anchor := _clamp_to_interior(
+			city_position + Vector2.RIGHT.rotated(angle) * 420.0, field_radius)
 		var position := _terrain_free_position(anchor, field_radius)
 		if position == Vector2.INF:
 			position = anchor  # map too crowded at this spot; never lose a field
@@ -222,14 +242,16 @@ func spawn_scenery() -> void:
 ## Jitter around an anchor until the spot is reasonably free (checks the
 ## whole footprint registry); `protected` overrides use dict spots:
 ## {"pos": Vector2, "pad": float} — blocked inside protected_margin + pad.
+## Every candidate is clamped into the interior band minus self_radius —
+## large attempt-based jitter (up to ±276px) can otherwise escape the band.
 func _terrain_free_position(anchor: Vector2, self_radius: float,
 	protected := [] as Array, protected_margin := 90.0) -> Vector2:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	for attempt in 24:
-		var candidate := anchor + Vector2(
+		var candidate := _clamp_to_interior(anchor + Vector2(
 			rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0)
-		) * float(attempt) * 12.0
+		) * float(attempt) * 12.0, self_radius)
 		if candidate.distance_to(city_position) < 140.0:
 			continue
 		if candidate.distance_to(Vector2.ZERO) < 120.0:
@@ -465,15 +487,18 @@ func _regrow_fields_on_gold() -> void:
 			field.regrow()
 			return
 
-## Farm cycle pays for livestock: one pig-pen slot and one cow-pen slot
-## attempt per delivery, each paid from the food pool.
+## Farm cycle pays for livestock: after EVERY delivery, BOTH pens refill
+## greedily — slots fill until the town's food runs dry (bug fix 2026-11-08:
+## the one-attempt-per-delivery rule starved pen stock and thus NPC respawns;
+## user spec "respawn as soon as farmers deliver food").
 func _attempt_pen_refills() -> void:
 	if game_manager == null:
 		return
 	for group: String in ["pig_pens", "cow_pens"]:
 		var pen := get_tree().get_first_node_in_group(group) as AnimalPen
-		if pen != null and pen.has_empty_slot() \
-				and game_manager.consume_food(pen.refill_cost):
+		if pen == null:
+			continue
+		while pen.has_empty_slot() and game_manager.consume_food(pen.refill_cost):
 			pen.respawn_animal()
 
 ## Dead townsfolk come back IF their dedication animal is in stock:

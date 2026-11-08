@@ -4,17 +4,16 @@ class_name GoldInterceptionSystem
 
 ## Dragon's steal mechanism (child of Dragon). Finds payload-carrying NPCs in
 ## range, resolves the interception, transfers the payload to the dragon stash
-## (GameManager.add_stolen — two pools never mix), wounds the victim.
+## (GameManager.add_stolen — two pools never mix). STEAL-ONLY: flyovers never
+## damage or kill (decision 2026-11-08-dragon-strikes-respawn-prices — only an
+## explicit E-press does).
 ## docs/plans/2026-11-08-behavior-system-rebuild.md — Trace 1.
 
 signal resources_seized(res_type: String, amount: int)
-signal miner_intercepted(miner)   # arg is a Miner NPC (pre-class-load safety)
 
 @export var interception_range: float = 100.0
-@export var intercept_damage: int = 30
 @export var min_interception_cooldown: float = 3.0
 @export var max_interception_risk: float = 0.8
-@export var kill_chance_low_health: float = 0.6
 
 var interception_cooldown: float = 0.0
 
@@ -75,15 +74,12 @@ func attempt_interception(dragon: Node2D, target: BaseNPC) -> bool:
 			push_warning("GoldInterceptionSystem: no Dragon carry — loot discarded")
 		resources_seized.emit(loot["res_type"], loot["amount"])
 
-	# Damage + possible kill; surviving miners recover slowly.
-	target.take_damage(intercept_damage)
+	# Steal-only by design (decision 2026-11-08-dragon-strikes-respawn-prices):
+	# a flyover NEVER damages or kills — only an explicit E-press does.
+	# Surviving miners panic anyway (payload already gone → pause in _check).
 	var miner := target as Miner
 	if miner != null:
-		if miner.health <= 20 and randf() < kill_chance_low_health:
-			miner_intercepted.emit(miner)
-			miner.die()
-		else:
-			miner.intercepted_by_dragon()
+		miner.intercepted_by_dragon()
 	return true
 
 func get_interception_status() -> Dictionary:

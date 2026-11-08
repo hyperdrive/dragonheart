@@ -145,11 +145,11 @@ func _complete_deliver() -> void:
 		set_payload("", 0)
 
 func intercepted_by_dragon() -> void:
-	# Steal damage + long recovery; payload removal is handled by the
-	# GoldInterceptionSystem via steal_payload().
-	take_damage(40)
+	# Steal-only interception (decision 2026-11-08-dragon-strikes-respawn-
+	# prices): the payload is gone (GoldInterceptionSystem.steal_payload) and
+	# the miner takes NO damage — flyovers never kill. Just a long recovery.
 	mining_cooldown = 10.0
-	print("Miner intercepted by dragon!")
+	print("Miner intercepted by dragon — cart looted clean!")
 
 ## Burning to death spills the cart gold where he fell (also raises the
 ## street alarm via report_loot_spill — same rule as a panic drop).

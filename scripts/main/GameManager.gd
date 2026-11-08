@@ -26,9 +26,15 @@ signal victory_achieved(tally: Dictionary)
 @export var scales_cost_base: int = 50
 @export var fire_cost_base: int = 75
 
-## Wizard-shop price table (decision record 2026-11-08-manual-eat-wizard-menu).
+## Wizard-shop price table (decision 2026-11-08-dragon-strikes-respawn-prices):
+## {kind: {"gold": int, "gems": int}} — retuned ("too steep") with a HARD gem
+## requirement on the flagship items. Gold part may be gem-topped 10:1.
 const WIZARD_PRICES := {
-	"flame_1": 30, "flame_2": 60, "shield": 40, "speed": 50, "range": 45,
+	"flame_1": {"gold": 20, "gems": 0},
+	"flame_2": {"gold": 40, "gems": 2},
+	"shield": {"gold": 15, "gems": 0},
+	"speed": {"gold": 25, "gems": 0},
+	"range": {"gold": 30, "gems": 1},
 }
 
 var wizard_menu: CanvasLayer
@@ -131,22 +137,50 @@ func _pay_stash(cost: int) -> bool:
 
 const WIZARD_MENU_SCENE := preload("res://scenes/ui/WizardMenu.tscn")
 
-## Stash-value readout for affordability (gold first, gems as 10x top-up —
-## the same rule _pay_stash applies).
+## Stash-value readout (gold-equivalent; gems worth 10x — display only).
 func stash_value() -> int:
 	return stash["gold"] + stash["gems"] * 10
+
+## Shared affordability rule (decision 2026-11-08-dragon-strikes-respawn-
+## prices): the gem part is a HARD requirement (the currencies have distinct
+## duties); the gold part may be topped up with SPARE gems at 10:1 — the
+## same rule the stash economy already applies.
+func can_afford_wizard(kind: String) -> bool:
+	var cost: Dictionary = WIZARD_PRICES[kind]
+	var gem_need := int(cost["gems"])
+	if int(stash["gems"]) < gem_need:
+		return false
+	var spare_gems := int(stash["gems"]) - gem_need
+	return int(stash["gold"]) + spare_gems * 10 >= int(cost["gold"])
+
+## Pay a wizard cost {"gold", "gems"} — same rule as can_afford_wizard.
+## A refused purchase never half-pays (gold-first, gems flatten the rest).
+func _pay_wizard_cost(kind: String) -> bool:
+	if run_finished or not can_afford_wizard(kind):
+		return false
+	var cost: Dictionary = WIZARD_PRICES[kind]
+	var gem_need := int(cost["gems"])
+	stash["gems"] -= gem_need
+	var gold_need := int(cost["gold"])
+	var from_gold := mini(gold_need, int(stash["gold"]))
+	stash["gold"] -= from_gold
+	var leftover := gold_need - from_gold
+	if leftover > 0:
+		stash["gems"] -= ceili(float(leftover) / 10.0)
+	stash_changed.emit("gold", stash["gold"])
+	stash_changed.emit("gems", stash["gems"])
+	return true
 
 ## Buy one wizard option: pays, then applies the effect to the dragon.
 ## Returns false when unaffordable — or, for the shield, while any shield
 ## remains (non-stackable pool, decision record).
 func purchase_upgrade(kind: String) -> bool:
-	var price: int = WIZARD_PRICES[kind]
 	var dragon_ref := dragon as Node
 	if dragon_ref == null or not is_instance_valid(dragon_ref):
 		return false
 	if kind == "shield" and int(dragon_ref.get("shield_points")) > 0:
 		return false
-	if not _pay_stash(price):
+	if not _pay_wizard_cost(kind):
 		return false
 	match kind:
 		"flame_1":
@@ -159,7 +193,7 @@ func purchase_upgrade(kind: String) -> bool:
 			dragon_ref.call("activate_speed_boost")
 		"range":
 			dragon_ref.call("increase_flame_range", 20.0)
-	upgrade_purchased.emit(kind, price)
+	upgrade_purchased.emit(kind, int(WIZARD_PRICES[kind]["gold"]))
 	return true
 
 ## Open the wizard overlay (pause the live world beneath it). Lazily built so
