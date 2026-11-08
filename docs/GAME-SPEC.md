@@ -188,6 +188,30 @@ deliberate path, no burn-out spill).
 | Flyover interception | NO death — payload steal only |
 | Soldier chase/collisions | dragon takes contact DPS; NPC never dies from body-blocking |
 
+### 5.6 StuckMonitor — world supervision of NPCs
+
+A town-level watchdog (decision record 2026-11-09) audits every NPC on a
+2.5s `Timer` on WorldManager and remedies trips that stall, so no NPC can
+be silently wedged or circle-loop forever:
+
+- **Movement stall** — NPC in `MOVING` that progressed less than
+  `max(4px, speed×0.05)` since its last recorded move:
+  after `detour_after_sec` (5s) force a tangent detour waypoint
+  (pathfinding tweak); after `teleport_after_sec` (10s) teleport
+  (±35px jitter, interior-clamped) next to the CURRENT activity target so
+  the trip still completes naturally.
+- **Activity stall** — the same activity id held ≥
+  `activity_stall_after_sec` (30s) with no completion (loop/circle
+  detection) → one teleport rescue of the same kind.
+- **Escape valve** — the 3rd rescue for the SAME activity declares the
+  target unreachable: the trip aborts WITHOUT reward (claim leases
+  released, field plots freed) and the tree re-picks fresh.
+- **Skipped** — dead, burning, and legitimately-stationary NPCs; WORKING
+  is covered by the activity alarm, never the movement alarm.
+- Time-based thresholds (not audit counts) so cadence changes never skew
+  escalation; all knobs live under the WorldManager `StuckMonitor` export
+  group. BehaviorTree exposes `force_detour()` / `force_repick()` bridges.
+
 ---
 
 ## 6. Livestock, fields, food chain
@@ -311,6 +335,7 @@ strings and gates affordability through the SAME
 | Lair banking radius | 150 | Dragon |
 | Wizard prices | Section 8 table | GameManager.WIZARD_PRICES |
 | Miner support gate | ≥3 farmers, ≥10 food, 30s timer | Miner/WorldManager exports |
+| StuckMonitor audit / detour / teleport / hold | 2.5s / 5s / 10s / 30s | WorldManager StuckMonitor group |
 
 
 ## 11. Implementation notes (engine mapping)
@@ -343,3 +368,5 @@ strings and gates affordability through the SAME
 - `2026-11-08-manual-eat-wizard-menu.md` — E-commanded meals, wizard menu, retired U-panel
 - `2026-11-08-dragon-strikes-respawn-prices.md` — interior band fix, E context action, greedy pen refills, gem pricing
 - `2026-11-08-soldier-strike.md` — soldier kill lottery, Brute Force, speed-to-recharge strike coupling
+- `2026-11-08-farmer-nan-spawn.md` mentioned in dragon-strikes record — INF spawn fallback, lost-in-space watchdog *(addendum: see commit be4f2f9)*
+- `2026-11-09-stuck-monitor.md` — NPC supervision: movement/activity stall alarms, detour→teleport ladder, 3-rescue abort valve

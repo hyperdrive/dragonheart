@@ -134,6 +134,20 @@ func interrupt_current_activity() -> void:
 		velocity_zero()
 		_set_state(State.IDLE)
 
+# --- StuckMonitor bridges (world supervision, decision 2026-11-09) -----------
+
+## World-level watchdog: force the tangent-hop detour without waiting for
+## the tree's own stuck window (same math, superseding trigger).
+func force_detour() -> void:
+	_stuck_window = 0.0
+	_last_stuck_pos = npc.global_position
+	_place_detour()
+
+## World-level watchdog: abandon the current trip WITHOUT completion and
+## re-pick from IDLE (releases field claims via the state-change hook).
+func force_repick() -> void:
+	interrupt_current_activity()
+
 func velocity_zero() -> void:
 	if npc is CharacterBody2D:
 		npc.velocity = Vector2.ZERO

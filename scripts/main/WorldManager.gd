@@ -90,6 +90,22 @@ var field_positions: Array[Vector2] = []
 var _respawn_queue: Array[Dictionary] = []
 var _soldier_timer: Timer
 var _swarm_timer: Timer
+## StuckMonitor (decision 2026-11-09): per-NPC supervision records trusted by
+## the audit — see _audit_npc_stuck/_remediate_stuck.
+var _stuck_timer: Timer
+var _stuck_records: Dictionary = {}
+
+@export_group("StuckMonitor")
+## Audit cadence in seconds.
+@export var stuck_audit_interval: float = 2.5
+## Seconds of near-zero movement while MOVING before forcing a detour /
+## teleporting to the current target vicinity.
+@export var detour_after_sec: float = 5.0
+@export var teleport_after_sec: float = 10.0
+## Seconds the same activity id may hold without completion before the trip
+## is rescued (covers circling, not just wall-wedging). 3 rescues of the
+## SAME activity end in an abort instead of another teleport.
+@export var activity_stall_after_sec: float = 30.0
 ## Blocking scenery footprint (position + radius) for spawn-clearance checks.
 ## Grows during world generation: landmarks, fields and mines all register,
 ## so every later placement (scenery, mines, NPC jitter) keeps clear of all
@@ -156,6 +172,135 @@ func _ready() -> void:
 	_swarm_timer.autostart = true
 	_swarm_timer.timeout.connect(_on_swarm_tick)
 	add_child(_swarm_timer)
+
+	# StuckMonitor watch (decision 2026-11-09): NPC supervision heartbeat.
+	_stuck_timer = Timer.new()
+	_stuck_timer.wait_time = stuck_audit_interval
+	_stuck_timer.autostart = true
+	_stuck_timer.timeout.connect(_audit_npc_stuck)
+	add_child(_stuck_timer)
+
+
+# --- StuckMonitor (2026-11-09) ------------------------------------------------
+
+## Two failure alarms, decided per NPC per audit — all thresholds in ELAPSED
+## TIME so audit cadence (real timer, probes, future callers) can't skew the
+## escalation clock:
+##  • MOVEMENT STALL: state == MOVING and moved < max(4px, speed x 0.05)
+##    since the last recorded progress. detour_after_sec → force a tangent
+##    detour (pathfinding tweak); teleport_after_sec → teleport next to the
+##    CURRENT activity target so the trip can still complete naturally.
+##  • ACTIVITY STALL: the same activity id without completion for
+##    activity_stall_after_sec (circle/loop detection) → one teleport rescue;
+##    after 3 rescues of the SAME activity the target is declared
+##    unreachable and the trip aborts (no teleport-loop forever).
+## Burning/dead NPCs are skipped; WORKING is legitimately stationary and the
+## activity alarm covers it.
+func _audit_npc_stuck() -> void:
+	if game_manager != null and game_manager.run_finished:
+		return
+	var seen: Dictionary = {}
+	for node: Node in get_tree().get_nodes_in_group("farmers"):
+		seen[_audit_one_npc(node)] = true
+	for node: Node in get_tree().get_nodes_in_group("miners"):
+		seen[_audit_one_npc(node)] = true
+	for node: Node in get_tree().get_nodes_in_group("soldiers"):
+		seen[_audit_one_npc(node)] = true
+	# Scrub records for freed NPCs.
+	for id: int in _stuck_records.keys():
+		if not seen.has(id):
+			_stuck_records.erase(id)
+
+func _audit_one_npc(node: Node) -> int:
+	var npc := node as BaseNPC
+	var id := npc.get_instance_id()
+	if npc == null or not npc.is_alive:
+		return id
+	var bt := npc.behavior_tree
+	if bt == null or bt.state == BehaviorTree.State.DEAD \
+			or float(npc._burning_left) > 0.0:
+		return id
+	var state := bt.state
+	var act_id: String = str(bt.current_activity.id) \
+		if bt.current_activity != null else ""
+	var now := Time.get_ticks_msec()
+	var record: Dictionary = _stuck_records.get(id, {})
+	var prev_pos: Vector2 = record.get("pos", npc.global_position)
+	var moved: float = npc.global_position.distance_to(prev_pos)
+	var activity_changed: bool = act_id != String(record.get("activity_id", ""))
+	if record.is_empty():
+		# Fresh clock starts NOW; nothing escalates before its first window.
+		record = {"pos": npc.global_position, "state": state,
+			"activity_id": act_id, "rescues": 0, "last_progress_ms": now,
+			"activity_start_ms": now, "hold_fired": false}
+	elif activity_changed or int(record.get("state", -1)) != state:
+		# The tree did something new: reset the progress clock; a NEW trip
+		# gets a fresh rescue budget (rescues are scoped per activity).
+		record["last_progress_ms"] = now
+		record["activity_start_ms"] = now
+		record["hold_fired"] = false
+		if activity_changed:
+			record["rescues"] = 0
+	elif moved >= maxf(4.0, npc.speed * 0.05):
+		# Refresh the progress clock on REAL movement (dither in place does
+		# NOT clear the movement alarm; honest steps do).
+		record["last_progress_ms"] = now
+	record["pos"] = npc.global_position
+	record["state"] = state
+	record["activity_id"] = act_id
+	_stuck_records[id] = record
+	_remediate_stuck(npc, record, now)
+	return id
+
+func _remediate_stuck(npc: BaseNPC, record: Dictionary, now: int) -> void:
+	var bt := npc.behavior_tree
+	# Alarm 2: activity hold (any state — a legit tend walk+work is well
+	# under the threshold; a hold that long means a loop).
+	if bt.current_activity != null \
+			and now - int(record.get("activity_start_ms", now)) \
+				>= int(activity_stall_after_sec * 1000.0) \
+			and not bool(record.get("hold_fired", false)):
+		record["hold_fired"] = true
+		_rescue_npc(npc, record, "activity-stall", now)
+		return
+	# Alarm 1: movement-stall ladder (MOVING only).
+	var stall_ms: int = now - int(record.get("last_progress_ms", now))
+	if bt.state != BehaviorTree.State.MOVING or stall_ms < int(detour_after_sec * 1000.0):
+		return
+	if stall_ms >= int(teleport_after_sec * 1000.0):
+		_rescue_npc(npc, record, "move-stall", now)
+	else:
+		bt.force_detour()
+		record["last_progress_ms"] = now  # the detour earns its own window
+		print("StuckMonitor: %s not moving — forced detour" % npc.name)
+
+## The rescue: teleport next to the CURRENT activity target (clamped to the
+## interior band, ±35px jitter) so the trip can complete naturally. On the
+## 3rd rescue for the SAME activity — or a non-finite target — abort the
+## trip instead (claim released, tree re-picks something else).
+func _rescue_npc(npc: BaseNPC, record: Dictionary, reason: String, now: int) -> void:
+	var rescues := int(record.get("rescues", 0)) + 1
+	record["rescues"] = rescues
+	var bt := npc.behavior_tree
+	var activity := bt.current_activity
+	var restart_clock := func() -> void:
+		record["pos"] = npc.global_position
+		record["last_progress_ms"] = now
+		record["activity_start_ms"] = now
+		record["hold_fired"] = false
+	if activity == null or rescues > 2 or not (activity.target as Vector2).is_finite():
+		bt.force_repick()
+		restart_clock.call()
+		print("StuckMonitor: %s abandoned stuck %s trip (%s, rescue #%d)" % [
+			npc.name, npc.npc_type, reason, rescues])
+		return
+	var goal: Vector2 = activity.target
+	var offset := Vector2(randf_range(-35.0, 35.0), randf_range(-35.0, 35.0))
+	npc.global_position = _clamp_to_interior(goal + offset, 30.0)
+	npc.velocity = Vector2.ZERO
+	restart_clock.call()
+	print("StuckMonitor: %s teleported near its %s goal %s (%s, rescue #%d)" % [
+		npc.name, npc.npc_type, str(npc.global_position), reason, rescues])
 
 
 # --- world generation --------------------------------------------------------
