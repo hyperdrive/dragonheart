@@ -20,19 +20,30 @@ signal resource_delivered(npc_type: String, res_type: String, amount: int)
 var can_mine: bool = true
 var mining_cooldown: float = 0.0
 
+@onready var cart: Node2D = $Cart
+
 func _physics_process(delta: float) -> void:
 	# Post-interception recovery timer (blocks the mine activity until elapsed).
 	if mining_cooldown > 0.0:
 		mining_cooldown -= delta
 	super._physics_process(delta)
+	_push_cart()
 
 func _ready() -> void:
 	# Configure before super._ready() — it syncs health from max_health.
 	npc_type = "miner"
 	max_health = 60
 	speed = 90.0
+	# Cart carriers are the gold economy on legs — they start fleeing earlier
+	# and run faster while the payload (and its cart) is exposed.
+	danger_radius = 180.0
+	flee_speed_multiplier = 1.3
 
 	super._ready()
+
+	# Cart visibility tracks the payload slot (shown while gold/gems aboard).
+	cart.visible = payload_amount > 0
+	carrying_changed.connect(_on_carrying_changed)
 
 	behavior_tree = BehaviorTree.new()
 	add_child(behavior_tree)
@@ -117,3 +128,18 @@ func intercepted_by_dragon() -> void:
 	take_damage(40)
 	mining_cooldown = 10.0
 	print("Miner intercepted by dragon!")
+
+# --- gold cart ----------------------------------------------------------------
+
+## The cart rides in front of the miner (they push it toward town).
+func _push_cart() -> void:
+	if cart == null:
+		return
+	cart.position = Vector2(26.0 * float(facing), 8.0)
+
+## carrying_changed: show the cart only while a payload is actually aboard —
+## filling it at the mine, hiding it after delivery or a dragon steal.
+func _on_carrying_changed(_res_type: String, amount: int) -> void:
+	if cart == null:
+		return
+	cart.visible = amount > 0

@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://c1d4e6f8a2b3n"]
+[gd_scene load_steps=4 format=3 uid="uid://c1d4e6f8a2b3n"]
 
 [ext_resource type="Script" path="res://scripts/npcs/Miner.gd" id="2_r5s7t"]
+[ext_resource type="Texture2D" path="res://assets/gold.svg" id="3_gold_tex"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(16, 32)
@@ -46,3 +47,32 @@ color = Color(0.3, 0.3, 0.32, 1.0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("1")
+
+[node name="Cart" type="Node2D" parent="."]
+visible = false
+position = Vector2(26, 8)
+
+[node name="Bed" type="ColorRect" parent="Cart"]
+position = Vector2(-16, -14)
+size = Vector2(24, 16)
+color = Color(0.48, 0.32, 0.16, 1.0)
+
+[node name="Rail" type="ColorRect" parent="Cart"]
+position = Vector2(-16, -18)
+size = Vector2(24, 5)
+color = Color(0.38, 0.25, 0.12, 1.0)
+
+[node name="Wheel" type="ColorRect" parent="Cart"]
+position = Vector2(-13, 2)
+size = Vector2(8, 8)
+color = Color(0.28, 0.2, 0.12, 1.0)
+
+[node name="Wheel2" type="ColorRect" parent="Cart"]
+position = Vector2(1, 2)
+size = Vector2(8, 8)
+color = Color(0.28, 0.2, 0.12, 1.0)
+
+[node name="GoldPile" type="Sprite2D" parent="Cart"]
+position = Vector2(-4, -17)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("3_gold_tex")

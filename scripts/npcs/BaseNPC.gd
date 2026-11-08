@@ -14,7 +14,10 @@ signal carrying_changed(res_type: String, amount: int)
 @export_group("Identity")
 @export var npc_type: String = "villager"
 @export var max_health: int = 50
+@export_group("Movement")
 @export var speed: float = 100.0
+## Speed multiplier while FLEEING (BehaviorTree applies it to the escape run).
+@export var flee_speed_multiplier: float = 1.0
 
 @export_group("Tier (TTRPG levels)")
 @export_range(1, 5) var npc_level: int = 1
@@ -38,6 +41,12 @@ var pig_pen_position: Vector2 = Vector2.ZERO
 ## Payload slot: resources currently being carried (walked to town / stealable).
 var payload_res_type: String = ""
 var payload_amount: int = 0
+
+## Facing state: 1 = right, -1 = left. Mirrors the Sprite container (cheap
+## left/right representation — composites mirror cleanly, see _apply_facing).
+var facing: int = 1
+
+@onready var sprite: Node2D = $Sprite
 
 func _ready() -> void:
 	# sync health — subclasses MUST set max_health before calling super._ready()
@@ -79,8 +88,25 @@ func move_towards(target: Vector2) -> bool:
 		velocity = Vector2.ZERO
 		return true
 	velocity = (target - global_position).normalized() * speed
+	update_facing()
 	move_and_slide()
 	return false
+
+## Track last horizontal travel direction: 1 right, -1 left. Zero x keeps the
+## current facing. Call sites: move_towards (aim walk), BehaviorTree fleeing.
+func update_facing() -> void:
+	if velocity.x == 0.0:
+		return
+	var new_facing := 1 if velocity.x > 0.0 else -1
+	if new_facing != facing:
+		facing = new_facing
+		_apply_facing()
+
+## Mirror the whole visual container horizontally. ColorRect composites mirror
+## about the container origin, so outlines/animations stay consistent.
+func _apply_facing() -> void:
+	if sprite != null:
+		sprite.scale.x = float(facing)
 
 ## Set/clear the payload being carried. Emits carrying_changed so the
 ## GoldInterceptionSystem sees this NPC as a steal target.

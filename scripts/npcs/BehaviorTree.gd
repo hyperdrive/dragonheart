@@ -174,7 +174,9 @@ func _tick_fleeing() -> void:
 			# Refresh the escape vector while still too close.
 			var away := (npc.global_position - dragon.global_position).normalized()
 			npc.flee_target = npc.global_position + away * npc.safe_radius
-	npc.velocity = (npc.flee_target - npc.global_position).normalized() * npc.speed
+	var flee_speed := npc.speed * npc.flee_speed_multiplier
+	npc.velocity = (npc.flee_target - npc.global_position).normalized() * flee_speed
+	npc.update_facing()
 	npc.move_and_slide()
 	if npc.global_position.distance_to(npc.flee_target) < ARRIVAL_DISTANCE:
 		npc.velocity = Vector2.ZERO

@@ -17,6 +17,8 @@ var health: int = 100
 var max_health: int = 100
 var is_firing: bool = false
 var fire_cooldown: float = 0.0
+## Facing state: 1 = right, -1 = left; mirrors body AND the fire assembly.
+var facing: int = 1
 ## True from die() onward: blocks extra damage, input, activity re-entry.
 var _dying: bool = false
 
@@ -26,6 +28,7 @@ var game_manager: GameManager
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var fire_area: Area2D = $FireArea
 @onready var flame: Node2D = $FireArea/Flame
+@onready var fire_collision: CollisionShape2D = $FireArea/FireCollision
 @onready var interception_system: GoldInterceptionSystem = $GoldInterceptionSystem
 
 func _ready() -> void:
@@ -74,8 +77,23 @@ func _physics_process(delta: float) -> void:
 	velocity = input_direction * speed
 	move_and_slide()
 
+	# Face travel direction: mirrors the body and the whole fire assembly.
+	if input_direction.x != 0.0:
+		var new_facing := 1 if input_direction.x > 0.0 else -1
+		if new_facing != facing:
+			facing = new_facing
+			_apply_facing()
+
 	if Input.is_action_just_pressed("fire"):
 		fire_breath()
+
+## Mirror the visual body AND the fire assembly to the facing side. Done with
+## explicit component mirroring — no negative scale on the physics Area2D.
+func _apply_facing() -> void:
+	sprite.scale.x = float(facing)
+	fire_area.position.x = 20.0 * float(facing)      # breath origin offset
+	fire_collision.position.x = 15.0 * float(facing) # hitbox follows
+	flame.scale.x = float(facing)                    # flame visual mirrors
 
 func _process(delta: float) -> void:
 	# Auto-theft: the core loop. When a payload carrier is in range and
