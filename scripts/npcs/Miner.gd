@@ -18,6 +18,9 @@ const GOLD_DROP_SCENE := preload("res://scenes/objects/GoldDrop.tscn")
 @export var mine_cooldown: float = 3.0
 @export_range(1, 5) var required_farmer_support: int = 3
 @export_range(0, 50) var required_food_support: int = 10
+## Payload spills when the dragon is THIS close (tighter than the 180 flee
+## trigger — the drop happens as the claws arrive, not at first sight).
+@export var drop_radius: float = 85.0
 
 var can_mine: bool = true
 var mining_cooldown: float = 0.0
@@ -30,6 +33,19 @@ func _physics_process(delta: float) -> void:
 		mining_cooldown -= delta
 	super._physics_process(delta)
 	_push_cart()
+	_check_dragon_drop()
+
+
+## The claws arriving under the dropper's nose (not the flee trigger at 180)
+## is what spills the payload — so loot lands by the miner, not down the road.
+func _check_dragon_drop() -> void:
+	if payload_amount <= 0 or not is_alive:
+		return
+	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	if dragon == null or not is_instance_valid(dragon):
+		return
+	if global_position.distance_to(dragon.global_position) <= drop_radius:
+		_drop_payload(dragon.global_position)
 
 func _ready() -> void:
 	# Configure before super._ready() — it syncs health from max_health.
@@ -50,9 +66,10 @@ func _ready() -> void:
 	behavior_tree = BehaviorTree.new()
 	add_child(behavior_tree)
 	behavior_tree.setup(self)
-	# The moment the dragon gets too close the cart is a liability: the miner
-	# drops the whole payload as loose loot (GoldDrop) and runs unburdened.
-	behavior_tree.fled_from_dragon.connect(_drop_payload)
+	# NOTE: the payload release is deliberately NOT tied to fled_from_dragon
+	# (flee starts at danger_radius 180) — the miner runs first and only
+	# spills when the dragon actually closes to drop_radius (user bug report;
+	# _check_dragon_drop owns the release now).
 	behavior_tree.register_activity(
 		"mine", 20,
 		_pick_mine_target, mine_work_time * level_multiplier(),
@@ -137,18 +154,26 @@ func intercepted_by_dragon() -> void:
 # --- gold cart ----------------------------------------------------------------
 
 ## Panic response: the gold becomes a loose pickup (with settle delay for the
-## dragon) and the miner keeps nothing — the interception system then only
-## covers a miner caught *while* carting (e.g. dangerous behavior rare now).
+## dragon) and the miner keeps nothing. Spilling treasure in the street raises
+## the town alarm — soldiers go ATTACK (user-requested consequence of DROPPING,
+## not of stealing; economy-only-consequences record stays intact).
 func _drop_payload(_dragon_position: Vector2) -> void:
 	if payload_amount <= 0:
 		return
 	var drop := GOLD_DROP_SCENE.instantiate() as GoldDrop
 	drop.res_type = payload_res_type
 	drop.amount = payload_amount
-	drop.position = Vector2(randf_range(-16, 16), randf_range(4, 12))
-	get_parent().add_child(drop)
 	set_payload("", 0)
-	print("Miner dropped %d %s while fleeing the dragon!" % [drop.amount, drop.res_type])
+	get_parent().add_child(drop)   # world-space owner: the drop stays put
+	# global AFTER add_child: the old code wrote a parent-relative jitter into
+	# drop.position BEFORE parenting, and WorldManager sits at the world
+	# origin — every drop therefore spawned at the map center.
+	drop.global_position = global_position + Vector2(randf_range(-16, 16), randf_range(4, 12))
+	var world := get_tree().get_first_node_in_group("world_manager") as WorldManager
+	if world != null:
+		world.report_loot_spill()
+	print("Miner dropped %d %s at %s!" % [drop.amount, drop.res_type,
+		drop.global_position])
 
 ## The cart rides in front of the miner (they push it toward town).
 func _push_cart() -> void:

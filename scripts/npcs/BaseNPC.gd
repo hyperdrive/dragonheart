@@ -32,6 +32,10 @@ var behavior_tree: BehaviorTree
 ## Escape vector refreshed by the engine while the dragon is still close.
 var flee_target: Vector2 = Vector2.ZERO
 
+## Detour waypoint (set by BehaviorTree when a body blocks the path):
+## move_towards heads here first, then resumes the real target.
+var _waypoint: Vector2 = Vector2.INF
+
 ## Anchors, initialized at spawn and overridden by subclasses/WorldManager.
 var home_position: Vector2 = Vector2.ZERO
 var town_position: Vector2 = Vector2.ZERO
@@ -79,14 +83,22 @@ func die() -> void:
 	if is_instance_valid(self):
 		queue_free()
 
-## Steering-seek movement toward a world-space target.
-## Returns true when the target is reached (arrival threshold 12px).
+## Steering-seek movement toward a world-space target. When a detour waypoint
+## is set (BehaviorTree stuck-detection), it is consumed first and cleared on
+## arrival. Returns true when the TARGET is reached (arrival threshold 12px).
 func move_towards(target: Vector2) -> bool:
 	if not is_alive:
 		return true
 	if global_position.distance_to(target) <= 12.0:
 		velocity = Vector2.ZERO
+		_waypoint = Vector2.INF
 		return true
+	# Detour hop: steer to the waypoint until we stand on it.
+	if _waypoint != Vector2.INF:
+		if global_position.distance_to(_waypoint) <= 16.0:
+			_waypoint = Vector2.INF  # cleared it — resume the real target
+		else:
+			target = _waypoint
 	velocity = (target - global_position).normalized() * speed
 	update_facing()
 	move_and_slide()

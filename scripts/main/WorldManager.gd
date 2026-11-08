@@ -354,6 +354,13 @@ func report_dragon_sighting(sighting_position: Vector2) -> void:
 			and sighting_position.distance_to(city_position) < rally_range * 1.4:
 		_set_swarm_state(SwarmState.RALLY)
 
+
+## Treasure spilled in the streets (miners panic-dropping) is a visible dragon
+## crime: soldiers skip the RALLY gathering and hunt now. Called by Miner.
+func report_loot_spill() -> void:
+	if swarm_state != SwarmState.ATTACK:
+		_set_swarm_state(SwarmState.ATTACK)
+
 # --- escalation --------------------------------------------------------------
 
 

@@ -39,16 +39,18 @@ func set_entity(_entity_type: String, _position: Vector2, _remove: bool = false)
 
 
 func _world_to_minimap(world_pos: Vector2) -> Vector2:
-	var box: Rect2 = get_rect()
-	var scale_factor: Vector2 = box.size / world_size
-	return box.position + Vector2(
+	# Draw space is LOCAL (position zero); get_rect().position is parent-
+	# relative and offset everything off-panel — map world coords straight
+	# into the local panel size.
+	var scale_factor: Vector2 = get_size() / world_size
+	return Vector2(
 		(world_pos.x + world_size.x / 2.0) * scale_factor.x,
 		(world_pos.y + world_size.y / 2.0) * scale_factor.y
 	)
 
 
 func _draw() -> void:
-	var box: Rect2 = get_rect()
+	var box := Rect2(Vector2.ZERO, get_size())  # local draw space
 	draw_rect(box, Color(0.08, 0.09, 0.12, 0.85))
 	draw_rect(box, Color(0.45, 0.45, 0.5, 0.9), false, 2.0)
 

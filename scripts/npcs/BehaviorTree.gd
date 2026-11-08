@@ -177,11 +177,20 @@ func _tick_fleeing() -> void:
 			var away := (npc.global_position - dragon.global_position).normalized()
 			npc.flee_target = npc.global_position + away * npc.safe_radius
 	var flee_speed := npc.speed * npc.flee_speed_multiplier
-	npc.velocity = (npc.flee_target - npc.global_position).normalized() * flee_speed
+	# Detour hop takes precedence over the raw escape vector.
+	var flee_direction_target := npc.flee_target
+	if npc._waypoint != Vector2.INF:
+		if npc.global_position.distance_to(npc._waypoint) <= 16.0:
+			npc._waypoint = Vector2.INF
+		else:
+			flee_direction_target = npc._waypoint
+	npc.velocity = (flee_direction_target - npc.global_position).normalized() * flee_speed
 	npc.update_facing()
 	npc.move_and_slide()
+	_check_stuck()
 	if npc.global_position.distance_to(npc.flee_target) < ARRIVAL_DISTANCE:
 		npc.velocity = Vector2.ZERO
+		npc._waypoint = Vector2.INF
 		_set_state(State.IDLE)
 
 func _tick_moving() -> void:
@@ -194,6 +203,131 @@ func _tick_moving() -> void:
 			_set_state(State.WORKING)
 		else:
 			_complete_activity()
+	else:
+		_check_stuck()
+
+# --- stuck detection & detour ------------------------------------------------
+
+## Movement watchdog: if the NPC barely moved over the window while it should
+## be going somewhere, raycast toward the goal and sidestep the blocker.
+var _stuck_window: float = 0.0
+var _last_stuck_pos: Vector2 = Vector2.ZERO
+const STUCK_WINDOW := 0.7            # seconds of stalled motion before reacting
+const STUCK_MOVE_EPS := 6.0          # px travelled below this = stuck
+const DETOUR_CLEAR := 95.0           # stand-off from the blocker (lair radius 58)
+
+## Called after a movement tick. A detour in progress suppresses re-checks
+## (the waypoint itself may face a wall briefly while rounding the corner).
+func _check_stuck() -> void:
+	if npc._waypoint != Vector2.INF:
+		return
+	_stuck_window += get_physics_process_delta_time()
+	if npc.global_position.distance_to(_last_stuck_pos) > STUCK_MOVE_EPS:
+		_last_stuck_pos = npc.global_position
+		_stuck_window = 0.0
+		return
+	if _stuck_window < STUCK_WINDOW:
+		return
+	_stuck_window = 0.0
+	_last_stuck_pos = npc.global_position
+	_place_detour()
+
+## Ray into scenery (layer 1) toward the current goal; set a waypoint at the
+## blocker center + outward stand-off + tangent bias so the seek slides around.
+## Three parallel rays (shadow cast) — a single widthless ray slips past
+## circular obstacles; if even the shadow misses, sidestep anyway (flipping
+## sign each retry) so a detected stuck never becomes a forever-stuck.
+const RAY_EXTRA := 160.0  # reach ahead of the goal direction
+const RAY_SPREAD := 26.0  # perpendicular ray spacing (shadow width)
+
+var _detour_flip: int = 1
+
+func _place_detour() -> void:
+	var goal := npc.flee_target if state == State.FLEEING \
+		else (current_activity.target if current_activity != null else Vector2.INF)
+	if goal == Vector2.INF or npc.global_position.distance_to(goal) < 40.0:
+		return  # arrived or nowhere to go
+	var to_goal := (goal - npc.global_position)
+	var forward := to_goal.normalized()
+	var perp := forward.rotated(PI / 2.0)
+	var space := npc.get_world_2d().direct_space_state
+	var blocker := Vector2.INF
+	var nearest := INF
+	var best_tangent := INF
+	for offset: float in [0.0, RAY_SPREAD, -RAY_SPREAD]:
+		var from := npc.global_position + perp * offset
+		var ray := PhysicsRayQueryParameters2D.create(from, from + forward * RAY_EXTRA, 1)
+		var hit := space.intersect_ray(ray)
+		if hit.is_empty():
+			continue
+		var length := npc.global_position.distance_to(hit["position"] as Vector2)
+		if length < nearest:
+			nearest = length
+			blocker = hit["position"] as Vector2
+	if blocker != Vector2.INF:
+		var outward := (npc.global_position - blocker).normalized()
+		var tangent_axis := outward.rotated(PI / 2.0)
+		# Grow the sideways hop until clearing the obstacle: the smaller
+		# tangent start orbits large convex blockers (mountain blobs). Both
+		# sides compete; the side that clears with the shorter hop wins, and
+		# candidates outside the world bounds (scenery/edge walls are also
+		# layer 1) are rejected — a waypoint against the boundary wedges the
+		# body inside the wall's collision overlap.
+		for side: int in [1, -1]:
+			for tangent_len: float in [50.0, 110.0, 170.0, 230.0, 300.0]:
+				var candidate := blocker + outward * DETOUR_CLEAR \
+					+ tangent_axis * (tangent_len * float(side))
+				if not _in_world(candidate) or not _shadow_clear(candidate, goal):
+					continue
+				if npc._waypoint == Vector2.INF \
+						or tangent_len < best_tangent:
+					best_tangent = tangent_len
+					npc._waypoint = candidate
+		if npc._waypoint == Vector2.INF:
+			# No clearing candidate in reach: alternate perpendicular
+			# sidesteps — collisions slide while seeking, so the loop
+			# eventually rounds convex blockers without ever aiming outside
+			# the world (the old blind 300px tangent wedged into boundary
+			# walls).
+			_detour_flip = -_detour_flip
+			var wide := perp * DETOUR_CLEAR * float(_detour_flip)
+			if not _in_world(npc.global_position + wide):
+				wide = -wide
+			npc._waypoint = npc.global_position + wide
+	else:
+		# Rays clear but still grinding (wedged body, corner pocket):
+		# sidestep perpendicular, alternate the side on consecutive retries,
+		# and never step outside the world.
+		_detour_flip = -_detour_flip
+		var sideways := perp * DETOUR_CLEAR * float(_detour_flip)
+		if not _in_world(npc.global_position + sideways):
+			sideways = -sideways
+		npc._waypoint = npc.global_position + sideways
+	_last_stuck_pos = npc.global_position
+
+
+## World-bounds guard (best effort: needs the WorldManager's world_size).
+func _in_world(point: Vector2) -> bool:
+	var world := get_tree().get_first_node_in_group("world_manager") as WorldManager
+	if world == null:
+		return true
+	var half: Vector2 = world.world_size * 0.5 - Vector2(70, 70)
+	return absf(point.x) < half.x and absf(point.y) < half.y
+
+
+## True when the direct seek from `from` to `goal` casts no scenery hit on the
+## 3-ray shadow (same width as the self body, approximately).
+func _shadow_clear(from: Vector2, goal: Vector2) -> bool:
+	var forward := (goal - from).normalized()
+	var perp := forward.rotated(PI / 2.0)
+	var space := npc.get_world_2d().direct_space_state
+	for offset: float in [0.0, RAY_SPREAD, -RAY_SPREAD]:
+		var ray_origin := from + perp * offset
+		var ray := PhysicsRayQueryParameters2D.create(
+			ray_origin, goal + perp * offset, 1)
+		if not space.intersect_ray(ray).is_empty():
+			return false
+	return true
 
 func _tick_working(delta: float) -> void:
 	if current_activity == null:
