@@ -257,12 +257,19 @@ func eat_food(food_value: int) -> void:
 	health = mini(health + food_value, max_health)
 	health_changed.emit(health)
 
-## Animal snacking (called by AnimalPen): health AND flame charges (each
-## capped; overfeed is a waste of a perfectly good cow).
+## Animal snacking (called by AnimalPen): heals AND flame charges — but per
+## the rule change (2026-11-08), flames only return when the meal actually
+## heals: a full-health dragon gets nothing from the table.
 func eat_animal(health_gain: int, flame_recharge: int) -> void:
-	health = mini(health + health_gain, max_health)
-	health_changed.emit(health)
-	var had := flame_charges
-	flame_charges = minf(flame_charges + float(flame_recharge), float(max_flame_charges))
-	if flame_charges != had:
-		flame_charges_changed.emit(int(flame_charges), max_flame_charges)
+	var healed := 0
+	if health < max_health:
+		healed = mini(health_gain, max_health - health)
+		health += healed
+		health_changed.emit(health)
+	if healed > 0:
+		var had := flame_charges
+		flame_charges = minf(flame_charges + float(flame_recharge), float(max_flame_charges))
+		if flame_charges != had:
+			flame_charges_changed.emit(int(flame_charges), max_flame_charges)
+	else:
+		print("Dragon is at full health — eating gives no flame recharge!")

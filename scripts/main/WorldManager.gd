@@ -88,11 +88,23 @@ var field_positions: Array[Vector2] = []
 ## Pending NPC respawns: {"type", "position", "timer_left"} — gated on the
 ## matching pen having a live animal (farmer↔pig, miner↔cow).
 var _respawn_queue: Array[Dictionary] = []
-var _respawn_check_timer: float = 0.0
 var _soldier_timer: Timer
 var _swarm_timer: Timer
 ## Blocking scenery footprint (position + radius) for spawn-clearance checks.
+## Grows during world generation: landmarks, fields and mines all register,
+## so every later placement (scenery, mines, NPC jitter) keeps clear of all
+## of it — no more overlapping terrain.
 var _terrain_clearances: Array = []
+
+## Footprint radii used for registration/probing (visual, in px).
+const FOOTPRINT_RADIUS := {
+	"city": 120.0, "pig_pen": 85.0, "cow_pen": 85.0, "lair": 100.0,
+	"tower": 75.0, "field": 55.0, "tree": 30.0, "lake": 85.0,
+	"mountain": 80.0, "mine": 30.0,
+}
+
+func register_footprint(position: Vector2, radius: float) -> void:
+	_terrain_clearances.append({"pos": position, "radius": radius})
 
 
 func _ready() -> void:
@@ -128,12 +140,18 @@ func _ready() -> void:
 
 func generate_world() -> void:
 	spawn_entity("city", 1, city_position)
+	register_footprint(city_position, FOOTPRINT_RADIUS["city"])
 	spawn_entity("pig_pen", 1, pig_pen_position)
+	register_footprint(pig_pen_position, FOOTPRINT_RADIUS["pig_pen"])
 	spawn_entity("cow_pen", 1, cow_pen_position)
+	register_footprint(cow_pen_position, FOOTPRINT_RADIUS["cow_pen"])
 	spawn_entity("lair", 1, lair_position)     # solid like other mountains
+	register_footprint(lair_position, FOOTPRINT_RADIUS["lair"])
 	spawn_entity("tower", 1, tower_position)   # wizard upgrades landmark
+	register_footprint(tower_position, FOOTPRINT_RADIUS["tower"])
 	spawn_fields()
-	# Scenery avoids ALL landmarks (incl. lair + tower) with clearances.
+	# Scenery avoids ALL registered footprints (landmarks + fields) with
+	# per-spot radius padding — no more visual overlaps with the farm belt.
 	spawn_scenery()
 	spawn_entity("mine", mine_count, mine_center, 180.0)
 	spawn_farmers()
@@ -145,16 +163,22 @@ func generate_world() -> void:
 
 
 ## Fields ring the farm belt — deliberately FARTHER from the city (user
-## request): the dragon burning crops is the consequence loop, but the pen
-## cluster stays defensible. Clamped inside the world bounds.
+## request): each placement resolves against the whole footprint registry
+## (landmarks AND each other) so plots never collide before anything is
+## placed on top.
 func spawn_fields() -> void:
 	var margin := 80.0
+	var field_radius: float = FOOTPRINT_RADIUS["field"]
 	for i in field_count:
 		var angle := TAU * float(i) / float(field_count) + 0.4
-		var position := city_position + Vector2.RIGHT.rotated(angle) * 420.0
-		position.x = clampf(position.x, -world_size.x / 2 + margin, world_size.x / 2 - margin)
-		position.y = clampf(position.y, -world_size.y / 2 + margin, world_size.y / 2 - margin)
+		var anchor := city_position + Vector2.RIGHT.rotated(angle) * 420.0
+		anchor.x = clampf(anchor.x, -world_size.x / 2 + margin, world_size.x / 2 - margin)
+		anchor.y = clampf(anchor.y, -world_size.y / 2 + margin, world_size.y / 2 - margin)
+		var position := _terrain_free_position(anchor, field_radius)
+		if position == Vector2.INF:
+			position = anchor  # map too crowded at this spot; never lose a field
 		spawn_entity("field", 1, position)
+		register_footprint(position, field_radius)
 		field_positions.append(position)
 
 
@@ -172,15 +196,13 @@ func spawn_farmers() -> void:
 		entity_spawned.emit("farmer", position)
 
 
-## Blocking scenery: trees, lakes, mountains — placed clear of all features
-## (city, fields, pens, dragon start) so travel routes stay open.
+## Blocking scenery: trees, lakes, mountains — placed clear of EVERYTHING in
+## the footprint registry (landmarks, fields) with proper radius padding.
+## Only the dragon's spawn clearing stays a special protected spot.
 func spawn_scenery() -> void:
 	var protected: Array = [
-		city_position, Vector2.ZERO, pig_pen_position, cow_pen_position,
-		lair_position, tower_position,
+		{"pos": Vector2.ZERO, "pad": 90.0},  # dragon start
 	]
-	for field_pos: Vector2 in field_positions:
-		protected.append(field_pos)
 	var counts := [tree_count, lake_count, mountain_count]
 	for kind_id in counts.size():
 		for i in counts[kind_id]:
@@ -193,11 +215,13 @@ func spawn_scenery() -> void:
 			var obstacle := scene.instantiate()
 			obstacle.global_position = position
 			add_child(obstacle)
-			_terrain_clearances.append({"pos": position, "radius": radius})
+			register_footprint(position, radius)
 			entity_spawned.emit("terrain", position)
 
 
-## Jitter around an anchor until the spot is reasonably free of scenery.
+## Jitter around an anchor until the spot is reasonably free (checks the
+## whole footprint registry); `protected` overrides use dict spots:
+## {"pos": Vector2, "pad": float} — blocked inside protected_margin + pad.
 func _terrain_free_position(anchor: Vector2, self_radius: float,
 	protected := [] as Array, protected_margin := 90.0) -> Vector2:
 	var rng := RandomNumberGenerator.new()
@@ -219,8 +243,9 @@ func _terrain_free_position(anchor: Vector2, self_radius: float,
 		if blocked:
 			continue
 		var clear := true
-		for spot: Vector2 in protected:
-			if candidate.distance_to(spot) < protected_margin:
+		for spot: Dictionary in protected:
+			if candidate.distance_to(spot["pos"]) \
+					< protected_margin + float(spot.get("pad", 0.0)):
 				clear = false
 				break
 		if clear:
@@ -288,6 +313,10 @@ func setup_entity(entity_type: String, instance: Node) -> void:
 			if soldier != null:
 				soldier.home_position = soldier.global_position
 				soldier.npc_died.connect(_on_npc_died.bind(soldier))
+		"mine":
+			var mine := instance as Node2D
+			if mine != null:
+				register_footprint(mine.global_position, FOOTPRINT_RADIUS["mine"])
 
 
 ## Jittered position inside the mining district (spreads miners across it).
@@ -422,6 +451,19 @@ func _on_food_delivered(amount: int) -> void:
 func _on_resource_delivered(_npc_type: String, res_type: String, amount: int) -> void:
 	if game_manager != null:
 		game_manager.deposit_treasury(res_type, amount)
+	# A payment reaching the treasury sows one burnt field again (rule
+	# 2026-11-08) — gold literally makes the farm belt come back.
+	if res_type == "gold":
+		_regrow_fields_on_gold()
+
+## One STUBBLE field per gold delivery (fields in the RP order they appear
+## in the group; the rest keep waiting on the fund).
+func _regrow_fields_on_gold() -> void:
+	for node: Node in get_tree().get_nodes_in_group("fields"):
+		var field := node as Field
+		if field != null and not field.is_workable():
+			field.regrow()
+			return
 
 ## Farm cycle pays for livestock: one pig-pen slot and one cow-pen slot
 ## attempt per delivery, each paid from the food pool.

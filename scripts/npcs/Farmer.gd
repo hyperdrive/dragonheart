@@ -45,6 +45,9 @@ func _ready() -> void:
 	behavior_tree = BehaviorTree.new()
 	add_child(behavior_tree)
 	behavior_tree.setup(self)
+	# Aborted work (burnt mid-tend, flee preemption) leaves a stale field
+	# claim — hand the plot back the instant work is no longer in progress.
+	behavior_tree.state_changed.connect(_on_tree_state_changed)
 	behavior_tree.register_activity(
 		"tend_fields", 20,
 		_pick_field_target, tend_work_time * level_multiplier(),
@@ -88,21 +91,27 @@ func _physics_process(delta: float) -> void:
 
 # --- activity providers & completers --------------------------------------
 
-## Nearest GROWN field; TARGET_NONE when town has no workable fields
-## (burnt acreage temporarily removes targets — the consequence loop).
-## Stateful: caches the chosen field node for the mid-work abort gate.
+## Nearest GROWN field that is not claimed by another farmer (rule
+## 2026-11-08: one farmer per field at a time); TARGET_NONE when town has no
+## workable unclaimed acreage. Stateful: caches the chosen field node for the
+## mid-work abort gate, and takes the field's claim lease.
 func _pick_field_target() -> Vector2:
 	_current_field = null
 	var best: Vector2 = BehaviorTree.TARGET_NONE
 	var best_dist := INF
 	for field: Node2D in get_tree().get_nodes_in_group("fields"):
-		if not field.has_method("is_workable") or not field.is_workable():
+		var plot := field as Field
+		if plot == null:
+			continue
+		if not plot.is_workable() or plot.is_claimed_other(get_instance_id()):
 			continue
 		var dist := global_position.distance_squared_to(field.global_position)
 		if dist < best_dist:
 			best_dist = dist
 			best = field.global_position
-			_current_field = field
+			_current_field = plot
+	if _current_field != null:
+		_current_field.claim(get_instance_id(), _claim_lease_ms())
 	return best
 
 ## Work-phase gate: field burnt (or freed) while working → abort without yield.
@@ -110,6 +119,28 @@ func _field_still_workable() -> bool:
 	return _current_field != null \
 		and is_instance_valid(_current_field) \
 		and _current_field.is_workable()
+
+## Claim lease: comfortably covers the walk to a far field + work + slack.
+## Abandonment (flee, garbage-death) self-heals when the lease lapses.
+func _claim_lease_ms() -> int:
+	return int((tend_work_time * level_multiplier() + 14.0) * 1000.0)
+
+## The plot is free again once this farmer is done with it.
+func _release_field() -> void:
+	if _current_field != null and is_instance_valid(_current_field):
+		(_current_field as Field).release(get_instance_id())
+	_current_field = null
+
+## Work is no longer in progress (flee preemption, burnt-mid-tend abort):
+## drop the stale claim immediately instead of making the town wait out the
+## lease. Normal completion already released (this becomes a no-op). Gated to
+## FLEEING/IDLE so the claim survives its own pick → MOVING commit.
+func _on_tree_state_changed(new_state: BehaviorTree.State) -> void:
+	if new_state == BehaviorTree.State.MOVING \
+			or new_state == BehaviorTree.State.WORKING:
+		return
+	if _current_field != null:
+		_release_field()
 
 func _pick_pigs_target() -> Vector2:
 	return pig_pen_position + Vector2(randf_range(-40, 40), randf_range(-40, 40))
@@ -129,6 +160,7 @@ func _have_food_to_deliver() -> bool:
 func _complete_field_tend() -> void:
 	field_tended.emit()
 	food_carrying += food_per_tend * npc_level
+	_release_field()  # plot up for grabs again (incl. re-picking it himself)
 	print("Farmer tended fields — carrying %d food" % food_carrying)
 
 func _complete_pigs_tend() -> void:
@@ -142,3 +174,8 @@ func _complete_deliver() -> void:
 		food_delivered.emit(food_carrying)
 		print("Farmer delivered %d food to town" % food_carrying)
 		food_carrying = 0
+
+## A dead farmer cannot keep a field claimed.
+func die() -> void:
+	_release_field()
+	super.die()

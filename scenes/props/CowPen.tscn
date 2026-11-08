@@ -6,7 +6,7 @@
 [node name="CowPen" type="Node2D" groups=["cow_pens"]]
 script = ExtResource("2_pen_script")
 animal_name = "cow"
-heal_amount = 25
+heal_amount = 10
 flame_recharge = 2
 
 [node name="FenceBack" type="ColorRect" parent="."]
