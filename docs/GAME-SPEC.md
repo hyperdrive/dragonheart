@@ -165,17 +165,19 @@ deliberate path, no burn-out spill).
   forward dot ≥ 0.25) — they panic-run randomly and die at burn-out.
   Burning panic runs reuse the flee wobble (§11 presentation layer).
 - **Bold rule (2026-11-09, decision record
-  `2026-11-09-bold-soldiers-and-flames.md`)**: a bold
+  `2026-11-09-gate-handoff-and-aggressive-bold.md`, superseding
+  `2026-11-09-bold-soldiers-and-flames.md`'s 360px sight)**: a bold
   soldier ignores the calm-town aggro gate and hunts the dragon alone.
   Boldness is presence-based, NEVER sticky — re-checked on every
   activity pick: King within **180px** (his fatness doubles the 5-width
   morale radius), or **≥2 soldier pals within 90px** (5 body widths;
-  body = 18px). Bold sight/pursue reach = **360px** (20 widths):
-  pursue **until contact**, fight there with the contact DPS channel
-  ("fight until escape"), break off only when the dragon leaves the
-  reach — an in-flight pursuit leg lands first (work_checks run in
-  WORKING). Released swarm (ATTACK) unchanged; the King does not
-  count as a pal.
+  body = 18px). Bold sight/pursue reach = **whole map (4000px)** —
+  user escalation "more aggressive, attack the dragon when they are
+  bold": pursue **until contact**, fight there with the contact DPS
+  channel; the ONLY brake is morale decaying (King/pals leave the band
+  → the straggler finishes the in-flight leg, then re-picks home).
+  Released swarm (ATTACK) unchanged; the King IS bold himself but does
+  not count as a pal for the ≥2 rule.
 - **E-strike lottery**: an explicit E within `strike_reach` 100px has a
   **15% chance** to kill a soldier outright (0.5s recharge between
   strikes). "Brute Force" wizard purchases add **+5% each** (cap 35%).
@@ -193,6 +195,7 @@ deliberate path, no burn-out spill).
 - Defeating him triggers the victory tally and ends the run.
 
 ### 5.5 Kills by fire vs by E
+
 
 | Death path | Effect |
 |---|---|
@@ -236,6 +239,28 @@ be silently wedged or circle-loop forever:
 - Time-based thresholds (not audit counts) so cadence changes never skew
   escalation; all knobs live under the WorldManager `StuckMonitor` export
   group. BehaviorTree exposes `force_detour()` / `force_repick()` bridges.
+
+### 5.7 Gate hand-off exemption + city spending (2026-11-09)
+
+- **Gate hand-off**: `BehaviorTree._tick_danger` skips the flee
+  preemption when `npc._handoff_stretch()` is true — a LOADED carrier
+  ON his deliver leg finishes the trip even with the dragon inside his
+  flee ring (Miner/Farmer overrides). Without it a dragon parking near
+  the north gate wedged every loaded carrier in a flee/deliver
+  ping-pong exactly over the delivery point: forensic sim showed 45s+
+  of circling carts and ZERO deliveries in 90s → treasury starved →
+  no soldier purchases ("we still fail to spawn soldiers").
+- **Theft paths intact**: the miner's drop rule (spill at `drop_radius`
+  85) and the GoldInterceptionSystem (pockets at 100) run regardless of
+  the exemption — the dragon robbing carts mid-map is still how the
+  player keeps the town poor; the exemption only trades panic-looping
+  for a brave straight walk into the gate zone.
+- **City spending messages**: soldier purchases print the exact spend
+  (`City bought N soldier(s) — spent X gold, Y gems (... left)`) on the
+  1s spend heartbeat and every delivery; pen refills print via
+  AnimalPen (`a new pig grew up at the pen — town paid 10 food`). Every
+  city resource use is narrated on the console.
+
 
 ---
 
@@ -369,7 +394,8 @@ strings and gates affordability through the SAME
 | Miner support gate | ≥3 farmers, ≥10 food, 30s timer | Miner/WorldManager exports |
 | StuckMonitor audit / detour / teleport / hold | 2.5s / 5s / 10s / 30s | WorldManager StuckMonitor group |
 | Soldier purchase prices | 2 gold : 1 soldier, 1 gem : 2 soldiers | WorldManager SoldierPurchases group |
-| Bold morale radii (2026-11-09) | pals 90px (5 widths, ≥2) / King 180px / sight 360px | Soldier morale consts |
+| Bold morale radii (2026-11-09) | pals 90px (5 widths, ≥2) / King 180px / hunt reach whole-map (4000) | Soldier morale consts |
+| Gate hand-off (2026-11-09) | loaded deliver legs skip flee preemption; claws still spill at 85px | Miner/Farmer `_handoff_stretch` |
 
 
 ## 11. Implementation notes (engine mapping)
@@ -436,3 +462,4 @@ strings and gates affordability through the SAME
 - `2026-11-09-town-purchases-and-stuck-fixes.md` — pen species pricing (pig 10/cow 20), treasury soldier buys (2g=1, 1gem=2, instant drain, King at 15 fielded), terrain-safe trip goals + rescue landings, FLEEING ladder coverage
 - `2026-11-09-mine-visuals-and-npc-animations.md` — hill SVG mines, code-driven flee wobble (all NPCs), miner pickaxe hammering, flee-target border clamp
 - `2026-11-09-bold-soldiers-and-flames.md` — width-based soldier morale (bold phalanx/king presence, fight-until-escape, re-check each pick), flame overlay on all burning NPCs, burning panic runs reuse the flee wobble
+- `2026-11-09-gate-handoff-and-aggressive-bold.md` — gate hand-off exemption (the delivery choke that starved soldier purchases), bold reach escalated to whole-map, city-spend console messages

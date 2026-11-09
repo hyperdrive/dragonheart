@@ -75,21 +75,22 @@ func _swarm_released() -> bool:
 ##    presence reads farther), or
 ##  • phalanx: at least 2 pals within one morale radius (five body widths,
 ##    user spec "base distance on soldier width").
-## The pursuit leg breaks off when the dragon escapes the bold sight reach
-## ("fight until escape" — contact DPS keeps the fight going inside reach).
+## Escalation (2026-11-09, user: "more aggressive, attack the dragon when
+## they are bold"): bold sight is now the WHOLE MAP (same reach as a
+## released swarm) — a bold phalanx pursues until contact no matter where
+## the dragon flies; the only brake is morale decaying (pals/King leave
+## the band) → the straggler finishes the current leg and goes home
+## (work_check now falls back to aggro_range for a non-bold soldier).
 const BODY_WIDTH := 18.0        # matches Soldier.tscn Body ColorRect width
 const MORALE_WIDTHS := 5.0      # pal proximity = five soldier widths
 const MORALE_KING_DOUBLE := 2.0 # King presence = doubled radius
-const BOLD_SIGHT_WIDTHS := 20.0 # pursue/break-off leg reach
+const BOLD_HUNT_REACH := 4000.0 # whole-map pursuit (2026-11-09 escalation)
 
 func _bold_pals_radius() -> float:
 	return BODY_WIDTH * MORALE_WIDTHS
 
 func _bold_king_radius() -> float:
 	return BODY_WIDTH * MORALE_WIDTHS * MORALE_KING_DOUBLE
-
-func _bold_sight_radius() -> float:
-	return BODY_WIDTH * BOLD_SIGHT_WIDTHS
 
 func _is_bold() -> bool:
 	var king := get_tree().get_first_node_in_group("king") as Node2D
@@ -114,34 +115,28 @@ func _attack_ready() -> bool:
 # --- activity providers & completers ---------------------------------------
 
 ## During ATTACK the aggro range widens hugely: the whole swarm hunts.
-## BOLD soldiers hunt too (morale), but only within the bold sight reach —
-## "pursue until contact, break off when the dragon escapes" (user spec).
+## BOLD soldiers hunt too (morale) — across the WHOLE MAP (user escalation
+## 2026-11-09: "attack the dragon when they are bold").
 func _pick_dragon_target() -> Vector2:
 	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return BehaviorTree.TARGET_NONE
 	var reach := aggro_range
-	if _swarm_released():
-		reach = maxf(reach, 4000.0)
-	elif _is_bold():
-		reach = maxf(reach, _bold_sight_radius())
+	if _swarm_released() or _is_bold():
+		reach = maxf(reach, BOLD_HUNT_REACH)
 	if global_position.distance_to(dragon.global_position) > reach:
 		return BehaviorTree.TARGET_NONE
 	return dragon.global_position
 
-## Chase gate: the dragon must still exist and stay inside this soldier's
-## current reach — a bold leg ends when the dragon escapes the sight reach
-## (a released-swarm leg keeps its whole-army chase: same as before).
+## Chase gate: bold → chase until contact (morale re-checked per pick);
+## non-bold running an old leg stops when the dragon is beyond aggro_range.
 func _dragon_in_chase_range() -> bool:
 	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return false
-	if _swarm_released():
+	if _swarm_released() or _is_bold():
 		return true
-	var reach := _bold_sight_radius()
-	if _is_bold():
-		reach = maxf(reach, aggro_range)
-	return global_position.distance_to(dragon.global_position) <= reach
+	return global_position.distance_to(dragon.global_position) <= aggro_range
 
 func _complete_attack() -> void:
 	pass  # contact DPS is applied in _contact_damage()

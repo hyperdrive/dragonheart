@@ -161,6 +161,28 @@ func _pick_idle_target() -> Vector2:
 func _has_payload() -> bool:
 	return payload_amount > 0
 
+## Gate hand-off band (2026-11-09, see BehaviorTree._tick_danger): a loaded
+## miner on his deliver leg finishes it even when the dragon is inside his
+## flee ring — the dragon camps AT the gates used to wedge him in a
+## 180px panic loop with a full cart for minutes (forensic sim: 45s+,
+## ZERO deliveries, treasury starved = "we still fail to spawn soldiers").
+## Robbery stays intact: the claws still spill the cart below drop_radius
+## (_check_dragon_drop) and the interception system still picks pockets —
+## so the exemption only trades panic for a brave straight walk.
+const HANDOFF_PX := 100.0
+
+func _handoff_stretch() -> bool:
+	if payload_amount <= 0 or behavior_tree == null:
+		return false
+	var act := behavior_tree.current_activity
+	if act == null or str(act.id) != "deliver":
+		return false
+	# the claws rule still wins: below drop_radius the cart dumps anyway
+	var dragon: Node2D = get_tree().get_first_node_in_group("dragon")
+	if dragon != null and is_instance_valid(dragon):
+		return global_position.distance_to(dragon.global_position) > drop_radius
+	return true
+
 ## Mine emptied/damaged mid-work → abort without yield.
 func _mine_still_available() -> bool:
 	return mining_cooldown <= 0.0

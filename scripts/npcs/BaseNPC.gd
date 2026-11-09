@@ -301,6 +301,15 @@ func steal_payload() -> Dictionary:
 	set_payload("", 0)
 	return stolen
 
+## Gate hand-off exemption (2026-11-09), see BehaviorTree._tick_danger:
+## loaded cargo keepers inside the town-gate handoff band finish their
+## delivery even with the dragon in the flee ring — a parked dragon used
+## to wedge every carrier in the panic loop forever and starve the
+## treasury (zero deliveries → zero soldier purchases). Types override
+## this (Miner/Farmer); the default means "no exemption".
+func _handoff_stretch() -> bool:
+	return false
+
 ## Explicit E-kill by the dragon (decision record 2026-11-08-dragon-attack-eat):
 ## guaranteed death. Burn flags are cleared so a burning target killed by
 ## E takes the deliberate-death path (no extra spill semantics).

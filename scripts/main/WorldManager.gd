@@ -670,17 +670,22 @@ func _try_buy_soldiers() -> void:
 	if king_spawned or game_manager == null or game_manager.run_finished:
 		return
 	var bought := 0
+	var gold_spent := 0
+	var gems_spent := 0
 	while game_manager.spend_treasury("gold", soldier_gold_cost):
 		bought += 1
+		gold_spent += soldier_gold_cost
 	while game_manager.spend_treasury("gems", 1):
 		bought += soldiers_per_gem
+		gems_spent += 1
 	if bought == 0:
 		return
 	spawn_entity("soldier", bought, rally_point, 90.0)
 	for i in bought:
 		_escalation_soldier_spawned()
-	print("Town bought %d soldiers with treasury funds (%d fielded total)" % [
-		bought, soldiers_spawned])
+	print("City bought %d soldier(s) with treasury funds — spent %d gold, %d gems (%d fielded total, %d gold / %d gems left)"
+		% [bought, gold_spent, gems_spent, soldiers_spawned,
+			game_manager.treasury["gold"], game_manager.treasury["gems"]])
 
 
 ## The final boss arrives at the city; defeating him ends the run.

@@ -157,6 +157,18 @@ func _pick_idle_target() -> Vector2:
 func _have_food_to_deliver() -> bool:
 	return food_carrying > 0
 
+## Gate hand-off (2026-11-09, same rule as the miner's): a farmer on the
+## deliver leg finishes the food hand-off even with the dragon inside his
+## flee ring — the ring sits right on the gates and used to wedge every
+## loaded farmer in a panic loop (food never reaching the pens). Robbery
+## of food is physical: eating the farmer is what costs the town, and
+## that path is untouched.
+func _handoff_stretch() -> bool:
+	if food_carrying <= 0 or behavior_tree == null:
+		return false
+	var act := behavior_tree.current_activity
+	return act != null and str(act.id) == "deliver"
+
 func _complete_field_tend() -> void:
 	field_tended.emit()
 	food_carrying += food_per_tend * npc_level

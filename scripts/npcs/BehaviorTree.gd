@@ -183,6 +183,16 @@ func _tick_cooldowns(delta: float) -> void:
 func _tick_danger() -> void:
 	if state == State.FLEEING:
 		return
+	# Gate hand-off exemption (2026-11-09): a loaded cargo keeper inside the
+	# gates' handoff band finishes the delivery even with the dragon inside
+	# his flee ring (Miner/Farmer override _handoff_stretch) — otherwise a
+	# dragon parked near the town wedges every carrier in the 180px panic
+	# loop forever (miners circled 45s with full carts, ZERO deliveries,
+	# treasury starved, no soldier purchases = "we still fail to spawn
+	# soldiers"). The drop rule still wins: below drop_radius (85) the
+	# claws spill the payload as before (Miner._check_dragon_drop).
+	if npc._handoff_stretch():
+		return
 	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
 	if dragon == null:
 		return
