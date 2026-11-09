@@ -16,8 +16,37 @@ signal eat_refused(what: String)
 signal shield_changed(points: int)
 
 @export_group("Controls")
-@export var speed: float = 200.0
+@export var walk_speed: float = 150.0
 @export var fire_rate: float = 1.0
+
+@export_group("Flight")
+## Walking is deliberately slower than the old single speed (user spec:
+## "walking will be a little more slow"); flight is the fast lane.
+@export var fly_speed: float = 300.0
+## Q launches a burst of flight; it auto-lands when the burst runs out.
+@export var fly_duration: float = 3.0
+## Full recovery after landing (user spec: "recharge over 5s"). Any landing
+## — auto or early Q — pays the same 5s: cancelling wastes the burst, it
+## never shortens the wait.
+@export var flight_recharge: float = 5.0
+## Wing-flap cadence while airborne (code-driven visuals, like the soldier
+## weapon swing — the AnimationPlayer owns Sprite position/rotation, so the
+## flap lives on the wing pivots only).
+@export var flap_hz: float = 3.2
+## How high the dragon rises over the ground while airborne.
+@export var flight_lift: float = 34.0
+
+## Flight state (2026-11-09): WALK is the default; Q bursts into FLY for
+## fly_duration seconds, then lands and recharges. The HUD chip mirrors
+## all three phases via flight_state_changed.
+var _flying: bool = false
+var _flight_left: float = 0.0
+var _flight_recharge_left: float = 0.0
+var _flap_phase: float = 0.0
+var _lift_current: float = 0.0
+var _chip_flying: Variant = null
+var _chip_seconds: Variant = null
+signal flight_state_changed(flying: bool, seconds_left: float, charging: bool)
 
 @export_group("Fire breath")
 @export var fire_reach: float = 95.0        # ignition distance from the mouth
@@ -52,7 +81,11 @@ var _dying: bool = false
 
 var game_manager: GameManager
 
-@onready var sprite: Node2D = $Sprite
+@onready var vis: Node2D = $Vis
+@onready var sprite: Node2D = $Vis/Sprite
+@onready var shadow: ColorRect = $Shadow
+@onready var near_wing_pivot: Node2D = $Vis/Sprite/NearWingPivot
+@onready var far_wing_pivot: Node2D = $Vis/Sprite/FarWingPivot
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var fire_area: Area2D = $FireArea
 @onready var flame: Node2D = $FireArea/Flame
@@ -72,6 +105,7 @@ func _ready() -> void:
 
 	# Fire breath window wiring handled in fire_breath(); the idle starts on play.
 	fire_area.monitoring = false  # breath window only, set in fire_breath()
+	flight_state_changed.emit(false, 0.0, false)  # initial HUD chip state
 
 func sync_from_game_manager() -> void:
 	# Armor (scales) sets max health; fire power sets breath damage per burn tick.
@@ -93,6 +127,17 @@ func _physics_process(delta: float) -> void:
 		_speed_boost_left -= delta
 	if _strike_cooldown > 0.0:
 		_strike_cooldown = maxf(_strike_cooldown - delta, 0.0)
+	if Input.is_action_just_pressed("fly"):
+		_try_flight()
+	if _flying:
+		_flight_left -= delta
+		if _flight_left <= 0.0:
+			land_flight()
+	elif _flight_recharge_left > 0.0:
+		_flight_recharge_left -= delta
+		if _flight_recharge_left <= 0.0:
+			_flight_recharge_left = 0.0
+			print("Dragon's wings are rested — the sky awaits! (Q)")
 
 	var input_direction := Vector2.ZERO
 	if Input.is_action_pressed("move_left"):
@@ -109,6 +154,8 @@ func _physics_process(delta: float) -> void:
 
 	velocity = input_direction * effective_speed()
 	move_and_slide()
+
+	_tick_flight_visual(delta)
 
 	# While the breath window is open, flammable actors/fields in the cone
 	# catch fire.
@@ -395,6 +442,75 @@ func take_damage(amount: int) -> void:
 	if health <= 0:
 		die()
 
+# --- flight (2026-11-09, user spec: Q, 3s fast flight, 5s recharge) ------------
+
+## Q toggles: ground+ready → take off; airborne → deliberate early landing
+## (refund: unused burst seconds shorten the recharge); recharging → refused
+## with the wait printed.
+func _try_flight() -> void:
+	if _dying:
+		return
+	if _flying:
+		land_flight()
+		return
+	if _flight_recharge_left > 0.0:
+		print("Wing muscles still aching — airborne again in %ds!"
+			% ceili(_flight_recharge_left))
+		return
+	_flying = true
+	_flight_left = fly_duration
+	print("Your wings snap wide — AIRBORNE! (%.0fx speed for %ds)" % [
+		fly_speed / walk_speed, int(fly_duration)])
+	_emit_flight_chip(true)
+
+## Touch down: the recharge always pays in full (spec: "recharge over 5s").
+## An early Q costs the unused burst — it never buys back wait time.
+func land_flight() -> void:
+	_flying = false
+	_flight_left = 0.0
+	_flight_recharge_left = flight_recharge
+	print("Dragon folds back to the ground — wings tire (%ds till ready)."
+		% ceili(_flight_recharge_left))
+	_emit_flight_chip(true)
+
+## One visual state machine: lift/bob on the Vis wrapper (the AnimationPlayer
+## animates Sprite itself — Vis keeps code and tracks from fighting), wing
+## pivots flap while airborne, and the detached Shadow stays on the ground,
+## shrinking + fading with altitude.
+func _tick_flight_visual(delta: float) -> void:
+	if _dying:
+		return
+	if _flying:
+		_flap_phase += delta * flap_hz
+	var lift_target: float = flight_lift if _flying else 0.0
+	_lift_current = move_toward(_lift_current, lift_target, flight_lift * 5.0 * delta)
+	var lift_ratio: float = _lift_current / flight_lift
+	var bob: float = sin(_flap_phase * TAU) * 3.5 * lift_ratio if _flying else 0.0
+	vis.position.y = -_lift_current + bob * 0.4
+	# Wings: folded rest pose on the ground, full stroke while airborne. The
+	# far wing trails the near one and swings lower (depth read).
+	var rest := rad_to_deg(0.42)
+	if _flying:
+		near_wing_pivot.rotation_degrees = rest - 55.0 \
+			+ sin(_flap_phase * TAU) * 55.0
+		far_wing_pivot.rotation_degrees = rest - 48.0 \
+			+ sin(_flap_phase * TAU - 0.9) * 36.0
+	else:
+		near_wing_pivot.rotation_degrees = rest
+		far_wing_pivot.rotation_degrees = rest * 0.8
+	shadow.scale = Vector2(1.0 - lift_ratio * 0.28, 1.0 - lift_ratio * 0.1)
+	shadow.modulate.a = 1.0 - lift_ratio * 0.5
+	_emit_flight_chip()
+
+## Push chip updates on phase changes AND at each whole-second boundary so
+## the HUD shows a readable countdown without a per-frame signal storm.
+func _emit_flight_chip(force: bool = false) -> void:
+	var seconds := ceili(_flight_left) if _flying else ceili(_flight_recharge_left)
+	if force or seconds != _chip_seconds or _flying != _chip_flying:
+		_chip_flying = _flying
+		_chip_seconds = seconds
+		flight_state_changed.emit(_flying, float(seconds), _flight_recharge_left > 0.0)
+
 # --- wizard-shop upgrades (purchased via GameManager.prices) -------------------
 
 ## Flame capacity +n (max). The purchased charges arrive loaded — a bought
@@ -446,9 +562,11 @@ func add_strike_chance(add: float) -> bool:
 	print("Dragon strike chance now %d%%!" % int(soldier_strike_chance * 100.0))
 	return true
 
-## Effective move speed in _physics_process — boost multiplier while active.
+## Effective move speed in _physics_process — the flight lane replaces the
+## old single `speed` (walking slowed, flying fast); boost stacks on both.
 func effective_speed() -> float:
-	return speed * (speed_boost_multiplier if _speed_boost_left > 0.0 else 1.0)
+	var base := fly_speed if _flying else walk_speed
+	return base * (speed_boost_multiplier if _speed_boost_left > 0.0 else 1.0)
 
 func die() -> void:
 	# Re-entry guard: several attacks can land during the death animation;
@@ -456,6 +574,17 @@ func die() -> void:
 	if _dying:
 		return
 	_dying = true
+	# A falling-dying dragon lands HARD: reset every flight visual so the
+	# death animation plays from the ground pose.
+	_flying = false
+	_flight_left = 0.0
+	_flight_recharge_left = 0.0
+	_lift_current = 0.0
+	vis.position.y = 0.0
+	near_wing_pivot.rotation_degrees = rad_to_deg(0.42)
+	far_wing_pivot.rotation_degrees = rad_to_deg(0.34)
+	shadow.scale = Vector2.ONE
+	shadow.modulate.a = 1.0
 	animation_player.play("death")
 	await animation_player.animation_finished
 	# After the await the scene may already be torn down (double reload) or

@@ -14,6 +14,7 @@ class_name GameHUD
 @onready var carry_label: Label = $TopBar/TopBarMargin/HBox/CarryLabel
 @onready var scales_label: Label = $TopBar/TopBarMargin/HBox/ScalesLabel
 @onready var fire_label: Label = $TopBar/TopBarMargin/HBox/FireLabel
+@onready var wings_label: Label = $TopBar/TopBarMargin/HBox/WingsLabel
 @onready var threat_label: Label = $TopBar/TopBarMargin/HBox/ThreatLabel
 @onready var message_label: Label = $MessageLabel
 @onready var minimap: MinimapPanel = $Minimap
@@ -62,6 +63,8 @@ func bind_manager(mgr: GameManager) -> void:
 		if dragon_ref.has_signal("shield_changed"):
 			dragon_ref.shield_changed.connect(_on_dragon_shield)
 			_on_dragon_shield(int((dragon_ref as CharacterBody2D).get("shield_points")))
+		if dragon_ref.has_signal("flight_state_changed"):
+			dragon_ref.flight_state_changed.connect(_on_flight_state)
 	_refresh_pools()
 	_refresh_dragon_stats()
 	refresh_threat()
@@ -104,6 +107,20 @@ func _on_flame_charges(charges: int, max_charges: int) -> void:
 	fire_label.text = "Fire %d • %d/%d" % [
 		game_manager.fire_power_level if game_manager != null else 1,
 		charges, max_charges]
+
+## Flight chip (2026-11-09): FLYING shows the burst seconds left, then the
+## grounded recharge countdown, then "ready". Dragon pushes on phase edge
+## + whole second (no per-frame spam).
+func _on_flight_state(flying: bool, seconds_left: float, charging: bool) -> void:
+	if flying:
+		wings_label.text = "✈ %ds" % ceili(seconds_left)
+		wings_label.modulate = Color(0.75, 1.0, 0.9)
+	elif charging:
+		wings_label.text = "Wings %ds" % ceili(seconds_left)
+		wings_label.modulate = Color(1.0, 0.85, 0.6)
+	else:
+		wings_label.text = "Wings: ready (Q)"
+		wings_label.modulate = Color.WHITE
 
 func _refresh_pools() -> void:
 	if game_manager == null:
