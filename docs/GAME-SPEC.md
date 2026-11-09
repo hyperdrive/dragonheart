@@ -377,6 +377,29 @@ strings and gates affordability through the SAME
   `SCRIPT ERROR`. Behavior validations are disposable SceneTree probes
   that state expectations on the print (see `/tmp/opencode/probe_*.gd`
   during the original build for the pattern).
+- **Presentation layer** (2026-11-09): NPC visuals are `$Sprite` (Node2D)
+  ColorRect composites mirrored whole via `_apply_facing` — animations are
+  code-driven on that container, no skeletons/spritesheets:
+  - Fleeing = wobbly cartoon run for EVERY NPC: alternating foot-to-foot
+    hop (±4.5px at 9Hz), lean wobble (±0.18 rad), squash on landings
+    (scale.y −12%); instant reset to rest pose when not fleeing
+    (`BaseNPC._animate_flee`).
+  - Mining = pickaxe hammering during the miner's `mine` WORKING phase:
+    handle-top pivot, raise→slam arc (2.2Hz, −62°→+12°), warm modulate
+    flash at the bottom of each slam + body dip (`Miner._animate_mining`).
+  - Mines render as grassy hills (assets/sprites/mine.svg, palette matched
+    to mountain/lair/tree) with timber-framed entrances; the script's
+    Gold/Gems toggles are ore piles flanking the arch — node names are
+    load-bearing (Mine.gd shows/hides for depletion/respawn).
+- **NOT a comment format**: scene files (.tscn) use `;` comments;
+  free-text `##` prose inside one corrupts node parsing (silent fallback
+  renaming) — keep design prose in scripts/docs only.
+- **Flee border clamp**: `WorldManager.clamp_into_playfield()` is applied
+  to escape targets in `BehaviorTree.check_danger` so pushed runners slide
+  along boundary walls instead of pinning into them (note: BehaviorTree's
+  world ref is deliberately UNTYPED — a typed WorldManager field there
+  creates the WorldManager→Miner.tscn→Miner.gd preload cycle and breaks
+  scene compilation).
 
 ## 12. Decision record index (theory behind every rule above)
 
@@ -391,3 +414,4 @@ strings and gates affordability through the SAME
 - `2026-11-08-farmer-nan-spawn.md` mentioned in dragon-strikes record — INF spawn fallback, lost-in-space watchdog *(addendum: see commit be4f2f9)*
 - `2026-11-09-stuck-monitor.md` — NPC supervision: movement/activity stall alarms, detour→teleport ladder, 3-rescue abort valve
 - `2026-11-09-town-purchases-and-stuck-fixes.md` — pen species pricing (pig 10/cow 20), treasury soldier buys (2g=1, 1gem=2, instant drain, King at 15 fielded), terrain-safe trip goals + rescue landings, FLEEING ladder coverage
+- `2026-11-09-mine-visuals-and-npc-animations.md` — hill SVG mines, code-driven flee wobble (all NPCs), miner pickaxe hammering, flee-target border clamp

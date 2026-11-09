@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://d4x9c2e1n7f8g"]
+[gd_scene load_steps=4 format=3 uid="uid://d4x9c2e1n7f8g"]
 
 [ext_resource type="Script" path="res://scripts/objects/Mine.gd" id="1_q8w3p"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mine.svg" id="2_hill_tex"]
 
 [sub_resource type="RectangleShape2D" id="1_mine_shape"]
 size = Vector2(30, 20)
@@ -25,7 +26,7 @@ collision_layer = 0
 collision_mask = 2
 
 [node name="GoldCollision" type="CollisionShape2D" parent="GoldArea"]
-position = Vector2(-15, -35)
+position = Vector2(-13, -6)
 shape = SubResource("2_gold_shape")
 
 [node name="GemArea" type="Area2D" parent="."]
@@ -33,26 +34,22 @@ collision_layer = 0
 collision_mask = 2
 
 [node name="GemCollision" type="CollisionShape2D" parent="GemArea"]
-position = Vector2(5, -35)
+position = Vector2(13, -6)
 shape = SubResource("3_gem_shape")
 
 [node name="Sprite" type="Node2D" parent="."]
 
-[node name="Entrance" type="ColorRect" parent="Sprite"]
-size = Vector2(30, 20)
-color = Color(0.3, 0.3, 0.3, 1.0)
+[node name="Hill" type="Sprite2D" parent="Sprite"]
+position = Vector2(0, -23)
+scale = Vector2(0.72, 0.72)
+texture = ExtResource("2_hill_tex")
 
-[node name="Shaft" type="ColorRect" parent="Sprite"]
-position = Vector2(0, -20)
-size = Vector2(20, 40)
-color = Color(0.2, 0.2, 0.2, 1.0)
+[node name="Gold" type="Polygon2D" parent="Sprite"]
+position = Vector2(-13, -6)
+color = Color(1, 0.8, 0.2, 1)
+polygon = PackedVector2Array(-5, 3, 5, 3, 3, -2, 0, -4, -3, -2)
 
-[node name="Gold" type="ColorRect" parent="Sprite"]
-position = Vector2(-15, -35)
-size = Vector2(10, 10)
-color = Color(1.0, 0.8, 0.0, 1.0)
-
-[node name="Gems" type="ColorRect" parent="Sprite"]
-position = Vector2(5, -35)
-size = Vector2(8, 12)
-color = Color(0.0, 0.8, 1.0, 1.0)
+[node name="Gems" type="Polygon2D" parent="Sprite"]
+position = Vector2(13, -6)
+color = Color(0, 0.8, 1, 1)
+polygon = PackedVector2Array(-5, 3, -2, -3, 2, -5, 5, 3)

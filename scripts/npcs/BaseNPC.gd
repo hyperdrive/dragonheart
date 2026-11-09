@@ -57,6 +57,14 @@ var payload_amount: int = 0
 ## left/right representation — composites mirror cleanly, see _apply_facing).
 var facing: int = 1
 
+## Flee wobble (2026-11-09): code-driven cartoon run on the Sprite container.
+const FLEE_BOUNCE_HZ := 9.0
+const FLEE_WOBBLE_RAD := 0.18
+const FLEE_HOP_PX := 4.5
+var _flee_phase := 0.0
+var _flee_animating := false
+var _sprite_home := Vector2.ZERO
+
 ## Burning status (see catch_fire). Guarded re-entry; killed behavior tree.
 var _burning_left: float = 0.0
 var _burn_move_timer: float = 0.0
@@ -68,6 +76,7 @@ var _burn_debt: float = 0.0
 func _ready() -> void:
 	# sync health — subclasses MUST set max_health before calling super._ready()
 	health = max_health
+	_sprite_home = sprite.position if sprite != null else Vector2.ZERO
 	home_position = global_position
 	town_position = global_position + Vector2(0, 200)
 	mine_position = global_position + Vector2(0, -200)
@@ -87,6 +96,33 @@ func _physics_process(delta: float) -> void:
 		return
 	if is_alive and behavior_tree != null:
 		behavior_tree.tick(delta)
+	_animate_flee(delta)
+
+# --- flee wobble (2026-11-09) -------------------------------------------------
+
+## Code-driven cartoon run (no spritesheet rig): while FLEEING with actual
+## velocity, the whole Sprite container hops foot-to-foot (alternating
+## bounce), leans into a wobble, and squashes on each landing. Defaults
+## back to rest pose the frame it's not fleeing. All NPCs inherit it.
+func _animate_flee(delta: float) -> void:
+	if sprite == null:
+		return
+	var running: bool = is_alive and _burning_left <= 0.0 \
+		and behavior_tree != null \
+		and behavior_tree.state == BehaviorTree.State.FLEEING \
+		and velocity.length() > 5.0
+	if running:
+		_flee_animating = true
+		_flee_phase += delta * TAU * FLEE_BOUNCE_HZ
+		sprite.position = _sprite_home + Vector2(0.0,
+			-absf(sin(_flee_phase)) * FLEE_HOP_PX)
+		sprite.rotation = sin(_flee_phase * 0.5) * FLEE_WOBBLE_RAD
+		sprite.scale.y = 1.0 - 0.12 * maxf(0.0, cos(_flee_phase))
+	elif _flee_animating:
+		_flee_animating = false
+		sprite.rotation = 0.0
+		sprite.position = _sprite_home
+		sprite.scale.y = 1.0
 
 # --- ablaze status -----------------------------------------------------------
 

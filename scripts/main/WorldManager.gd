@@ -477,6 +477,15 @@ func terrain_free_target(anchor: Vector2, self_radius: float) -> Vector2:
 		else spot
 
 
+## PUBLIC playfield clamp (2026-11-09): flee targets use it so an NPC pushed
+## toward the boundary keeps a slide-along-the-wall target instead of a pin-
+## point into the walls (the neighboring body keeps the pressure and the
+## runner wedges — "miners stuck on the border"). Same interior band as all
+## placement, padded by the caller's own radius.
+func clamp_into_playfield(pos: Vector2, self_radius := 0.0) -> Vector2:
+	return _clamp_to_interior(pos, self_radius)
+
+
 # --- spawn plumbing ---------------------------------------------------------
 
 ## Position rules: anchor INF → random on the map; spread 0 → anchor exact

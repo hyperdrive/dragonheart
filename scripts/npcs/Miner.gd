@@ -25,6 +25,16 @@ const GOLD_DROP_SCENE := preload("res://scenes/objects/GoldDrop.tscn")
 var can_mine: bool = true
 var mining_cooldown: float = 0.0
 
+## Mining swing (2026-11-09): code-driven hammering on the Pick ColorRect.
+## Pivot is the top of the handle (overhead grip); the swing raises the pick
+## then slams it down, flashing warm on impact, with a little body dip.
+const PICK_SWING_HZ := 2.2
+const PICK_RAISED_DEG := -62.0
+const PICK_SLAMMED_DEG := 12.0
+var _pick_swing_phase := 0.0
+var _pick_animating := false
+var _pick: ColorRect
+
 @onready var cart: Node2D = $Cart
 
 func _physics_process(delta: float) -> void:
@@ -32,8 +42,38 @@ func _physics_process(delta: float) -> void:
 	if mining_cooldown > 0.0:
 		mining_cooldown -= delta
 	super._physics_process(delta)
+	_animate_mining(delta)
 	_push_cart()
 	_check_dragon_drop()
+
+# --- mining hammering (2026-11-09) --------------------------------------------
+
+func _animate_mining(delta: float) -> void:
+	if _pick == null:
+		return
+	var working: bool = is_alive and _burning_left <= 0.0 \
+		and behavior_tree != null \
+		and behavior_tree.state == BehaviorTree.State.WORKING \
+		and behavior_tree.current_activity != null \
+		and str(behavior_tree.current_activity.id) == "mine"
+	if working:
+		_pick_animating = true
+		_pick_swing_phase += delta * TAU * PICK_SWING_HZ
+		# 0 = fully raised (overswing), 1 = slammed into the seam.
+		var t := 0.5 + 0.5 * sin(_pick_swing_phase - PI / 2.0)
+		_pick.pivot_offset = Vector2(2.0, 1.0)
+		_pick.rotation_degrees = lerpf(PICK_RAISED_DEG, PICK_SLAMMED_DEG, t)
+		# the little body dip into every hit keeps the whole figure alive
+		sprite.position = _sprite_home + Vector2(
+			0.0, 2.0 * maxf(0.0, sin(_pick_swing_phase)))
+		# impact flash: the pick glints warm at the bottom of each slam
+		var slam := t > 0.82
+		_pick.modulate = Color(1.0, 0.85, 0.55) if slam else Color.WHITE
+	elif _pick_animating:
+		_pick_animating = false
+		_pick.rotation_degrees = 0.0
+		_pick.modulate = Color.WHITE
+		sprite.position = _sprite_home
 
 
 ## The claws arriving under the dropper's nose (not the flee trigger at 180)
@@ -58,6 +98,7 @@ func _ready() -> void:
 	flee_speed_multiplier = 1.3
 
 	super._ready()
+	_pick = get_node_or_null("Sprite/Pick") as ColorRect
 
 	# Cart visibility tracks the payload slot (shown while gold/gems aboard).
 	cart.visible = payload_amount > 0

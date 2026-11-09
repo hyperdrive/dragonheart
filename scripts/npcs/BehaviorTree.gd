@@ -136,6 +136,20 @@ func interrupt_current_activity() -> void:
 
 # --- StuckMonitor bridges (world supervision, decision 2026-11-09) -----------
 
+## Lazy world cache for target clamping (playfield band), set once.
+## Deliberately UNTYPED: a WorldManager annotation here would add a compile
+## edge BehaviorTree→WorldManager and break the WorldManager→Miner.tscn→
+## Miner.gd preload cycle (ext_resource "non-existent" parse error).
+var _world_cache = null
+var _world_cache_checked := false
+
+func _cached_world():
+	if not _world_cache_checked:
+		_world_cache_checked = true
+		_world_cache = get_tree() \
+			.get_first_node_in_group("world_manager")
+	return _world_cache
+
 ## World-level watchdog: force the tangent-hop detour without waiting for
 ## the tree's own stuck window (same math, superseding trigger).
 func force_detour() -> void:
@@ -189,7 +203,14 @@ func _tick_fleeing() -> void:
 		if dist < npc.danger_radius:
 			# Refresh the escape vector while still too close.
 			var away := (npc.global_position - dragon.global_position).normalized()
-			npc.flee_target = npc.global_position + away * npc.safe_radius
+			var target := npc.global_position + away * npc.safe_radius
+			# Border fix (2026-11-09): clamp the escape inside the playfield
+			# band so the runner slides along boundary walls instead of
+			# pinning into them while the dragon keeps up the pressure.
+			var world: Variant = _cached_world()
+			if world != null:
+				target = world.clamp_into_playfield(target, 12.0)
+			npc.flee_target = target
 	var flee_speed := npc.speed * npc.flee_speed_multiplier
 	# Detour hop takes precedence over the raw escape vector.
 	var flee_direction_target := npc.flee_target
