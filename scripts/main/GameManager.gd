@@ -29,13 +29,16 @@ signal victory_achieved(tally: Dictionary)
 ## Wizard-shop price table (decision 2026-11-08-dragon-strikes-respawn-prices):
 ## {kind: {"gold": int, "gems": int}} — retuned ("too steep") with a HARD gem
 ## requirement on the flagship items. Gold part may be gem-topped 10:1.
+## Wizard-shop prices (re-priced 2026-11-09, user: "lower prices for all
+## upgrades"; the claw-strike upgrade 'brute' explicitly at 8g so the claw
+## attack improves early and often).
 const WIZARD_PRICES := {
-	"flame_1": {"gold": 20, "gems": 0},
-	"flame_2": {"gold": 40, "gems": 2},
-	"shield": {"gold": 15, "gems": 0},
-	"speed": {"gold": 25, "gems": 0},
-	"range": {"gold": 30, "gems": 1},
-	"brute": {"gold": 20, "gems": 0},
+	"flame_1": {"gold": 10, "gems": 0},
+	"flame_2": {"gold": 20, "gems": 1},
+	"shield": {"gold": 8, "gems": 0},
+	"speed": {"gold": 12, "gems": 0},
+	"range": {"gold": 15, "gems": 1},
+	"brute": {"gold": 8, "gems": 0},
 }
 
 var wizard_menu: CanvasLayer

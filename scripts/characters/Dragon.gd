@@ -48,6 +48,17 @@ var _chip_flying: Variant = null
 var _chip_seconds: Variant = null
 signal flight_state_changed(flying: bool, seconds_left: float, charging: bool)
 
+## Claw swing (2026-11-09, user: "give dragon claw attack animations").
+## Code-driven on the ClawPivot — same pattern as the soldier pickaxe
+## swing: a raised slash sweeps down to a slam, glints warm at impact,
+## then eases back, with a little body lunge into the strike. Plays on
+## every E-strike attempt (hit or miss — the claw swipes either way).
+const CLAW_SWING_TIME := 0.26
+const CLAW_RAISED_DEG := -52.0
+const CLAW_SLAMMED_DEG := 26.0
+var _claw_animating := false
+var _claw_phase := 0.0
+
 @export_group("Fire breath")
 @export var fire_reach: float = 95.0        # ignition distance from the mouth
 @export var fire_ignite_cone: float = 0.25  # facing half-plane dot threshold
@@ -86,6 +97,7 @@ var game_manager: GameManager
 @onready var shadow: ColorRect = $Shadow
 @onready var near_wing_pivot: Node2D = $Vis/Sprite/NearWingPivot
 @onready var far_wing_pivot: Node2D = $Vis/Sprite/FarWingPivot
+@onready var claw_pivot: Node2D = $Vis/Sprite/ClawPivot
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var fire_area: Area2D = $FireArea
 @onready var flame: Node2D = $FireArea/Flame
@@ -156,6 +168,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	_tick_flight_visual(delta)
+	_tick_claw_visual(delta)
 
 	# While the breath window is open, flammable actors/fields in the cone
 	# catch fire.
@@ -271,6 +284,7 @@ func _soldier_in_strike_reach() -> BaseNPC:
 ## A miss flashes the threat chip via strike_missed (decision record).
 func _strike_soldier(soldier: BaseNPC) -> void:
 	_strike_cooldown = strike_recharge
+	_play_claw_swing()
 	var odds := int(soldier_strike_chance * 100.0)
 	if randf() >= soldier_strike_chance:
 		strike_missed.emit()
@@ -282,6 +296,7 @@ func _strike_soldier(soldier: BaseNPC) -> void:
 ## Deliberate kill: steal payload BEFORE death so an E-killed loaded miner
 ## banks the cart into the claws; +5 health after regardless.
 func _strike_kill(npc: BaseNPC) -> void:
+	_play_claw_swing()
 	var loot := npc.steal_payload()
 	if int(loot["amount"]) > 0 and str(loot["res_type"]) != "":
 		take_loot(str(loot["res_type"]), int(loot["amount"]))
@@ -511,6 +526,41 @@ func _emit_flight_chip(force: bool = false) -> void:
 		_chip_seconds = seconds
 		flight_state_changed.emit(_flying, float(seconds), _flight_recharge_left > 0.0)
 
+# --- claw swing (2026-11-09) ---------------------------------------------------
+
+## Arm the one-shot swing: raised → slam → ease home, glint at impact.
+## Called on every E-strike attempt, hit or miss.
+func _play_claw_swing() -> void:
+	if claw_pivot == null or _dying:
+		return
+	_claw_animating = true
+	_claw_phase = 0.0
+
+## One-shot progress in _physics_process (synchronous state, no coroutines).
+func _tick_claw_visual(delta: float) -> void:
+	if not _claw_animating:
+		return
+	_claw_phase = minf(_claw_phase + delta / CLAW_SWING_TIME, 1.0)
+	var deg: float
+	if _claw_phase < 0.45:      # raise high → slam down
+		deg = lerpf(CLAW_RAISED_DEG, CLAW_SLAMMED_DEG,
+			minf(_claw_phase / 0.45, 1.0))
+	else:                        # slam → ease back to resting stride
+		deg = lerpf(CLAW_SLAMMED_DEG, 0.0,
+			(_claw_phase - 0.45) / 0.55)
+	claw_pivot.rotation_degrees = deg
+	# warm metal glint right at impact
+	var glint: bool = _claw_phase > 0.32 and _claw_phase < 0.58
+	(claw_pivot.get_node("Claw") as ColorRect).modulate = \
+		Color(1.0, 0.82, 0.5) if glint else Color.WHITE
+	# body lunge into the strike (flight only owns vis.y — x is free)
+	vis.position.x = sin(_claw_phase * PI) * 7.0
+	if _claw_phase >= 1.0:
+		_claw_animating = false
+		claw_pivot.rotation_degrees = 0.0
+		(claw_pivot.get_node("Claw") as ColorRect).modulate = Color.WHITE
+		vis.position.x = 0.0
+
 # --- wizard-shop upgrades (purchased via GameManager.prices) -------------------
 
 ## Flame capacity +n (max). The purchased charges arrive loaded — a bought
@@ -581,8 +631,12 @@ func die() -> void:
 	_flight_recharge_left = 0.0
 	_lift_current = 0.0
 	vis.position.y = 0.0
+	vis.position.x = 0.0
 	near_wing_pivot.rotation_degrees = rad_to_deg(0.42)
 	far_wing_pivot.rotation_degrees = rad_to_deg(0.34)
+	_claw_animating = false
+	claw_pivot.rotation_degrees = 0.0
+	(claw_pivot.get_node("Claw") as ColorRect).modulate = Color.WHITE
 	shadow.scale = Vector2.ONE
 	shadow.modulate.a = 1.0
 	animation_player.play("death")

@@ -764,13 +764,13 @@ func on_king_defeated() -> bool:
 
 ## He emerges from HIS tower when the dragon has crossed one of the
 ## provocation lines: bought 3+ upgrades AND visited the tower more than
-## 3 times, OR hoarded 30+ gold in the stash. Then he hunts the dragon
-## across the whole map with lightning (30 dmg / 2s / long range) and
-## never stops — see scripts/npcs/Wizard.gd.
+## 3 times, OR hoarded 20+ gold in the stash (repriced 2026-11-09: was
+## 30). Then he hunts the dragon across the whole map with lightning
+## (30 dmg / 2s / long range) and never stops — see scripts/npcs/Wizard.gd.
 @export_group("Wizard")
 @export var wizard_upgrade_threshold: int = 3
 @export var wizard_visit_threshold: int = 3     # "more than 3" → 4+
-@export var wizard_stash_trigger: int = 30
+@export var wizard_stash_trigger: int = 20
 var wizard_spawned: bool = false
 
 func _try_spawn_wizard() -> void:
@@ -778,7 +778,7 @@ func _try_spawn_wizard() -> void:
 		return
 	var bought_enough: bool = game_manager.upgrade_purchases >= wizard_upgrade_threshold \
 		and game_manager.tower_visits > wizard_visit_threshold
-	var greedy: bool = int(game_manager.stash["gold"]) > wizard_stash_trigger
+	var greedy: bool = int(game_manager.stash["gold"]) >= wizard_stash_trigger
 	if not (bought_enough or greedy):
 		return
 	wizard_spawned = true

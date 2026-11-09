@@ -332,7 +332,8 @@ be silently wedged or circle-loop forever:
   dragon has **bought ≥3 upgrades AND visited the tower more than 3
   times** (counters on GameManager: `tower_visits` increments on every
   door opening, `upgrade_purchases` on every successful purchase) OR
-  has **more than 30g hoarded in the stash**.
+  has **20g or more hoarded in the stash** (repriced 2026-11-09: was
+  30; the greedy line fires AT 20).
 - Emerged profile: 80 HP, speed 75, never flees; **lightning**: instant
   long-range bolt (500px reach) at **30 damage, 2s recharge** with a
   Line2D flash visual and a print; NO melee contact at all.
@@ -446,16 +447,17 @@ The tower is the mandatory upgrade site: driving the dragon into the tower
 Area opens a paused overlay menu (world procession stops — pause live
 world, menu survives reopen). Mouse or number keys 1–6; ESC leaves.
 Prices in one `WIZARD_PRICES` const on `GameManager` as
-`{kind: {"gold": int, "gems": int}}`:
+`{kind: {"gold": int, "gems": int}}` (**re-priced 2026-11-09**, user:
+"lower prices for all upgrades" + claw upgrade at 8g):
 
 | Key | Item | Cost | Effect |
 |---|---|---|---|
-| 1 flame_1 | +1 Flame | 20g | max flame charges +1, arrives loaded |
-| 2 flame_2 | +2 Flames | 40g + 2 gems | capacity +2, loaded |
-| 3 shield | Shield 10 | 15g | absorb pool +10; eats damage first; gone when spent; refused while any shield remains |
-| 4 speed | Speed Boost | 25g | ×1.6 for 6s (refresh), AND first-ever buy drops soldier strike recharge to 0.2s |
-| 5 range | Longer Flame | 30g + 1 gem | +20px breath reach, permanent |
-| 6 brute | Brute Force | 20g | soldier E-kill odds +5%, repeatable to 35% cap |
+| 1 flame_1 | +1 Flame | 10g | max flame charges +1, arrives loaded |
+| 2 flame_2 | +2 Flames | 20g + 1 gem | capacity +2, loaded |
+| 3 shield | Shield 10 | 8g | absorb pool +10; eats damage first; gone when spent; refused while any shield remains |
+| 4 speed | Speed Boost | 12g | ×1.6 for 6s (refresh), AND first-ever buy drops soldier strike recharge to 0.2s |
+| 5 range | Longer Flame | 15g + 1 gem | +20px breath reach, permanent |
+| 6 brute | Brute Force (claw) | 8g | soldier E-kill odds +5%, repeatable to 35% cap |
 
 Payment rule: **the gems part is a hard requirement**; the gold part may be
 topped up with spare gems at 10:1 (matching the legacy `_pay_stash` rule).
@@ -510,7 +512,9 @@ strings and gates affordability through the SAME
 | King respawns (2026-11-09) | 3 (4 deaths total); 3s re-materialize at city each; last death = victory | WorldManager king_respawn_count |
 | Weapon swing (2026-11-09) | ~2.2Hz, -55°→+25° arc (pivot at the GRIP), glint at strike bottom, 0.09 rad lean | Soldier swing consts |
 | Archer (2026-11-09) | every 3rd fielded recruit; arrow 5 dmg / 2s in 350px reach; never misses a stationary dragon | Archer.gd / _next_recruit_type |
-| Wizard (2026-11-09) | emerges (≥3 buys AND >3 tower visits) OR stash >30g; lightning 30 dmg / 2s / 500px; fire shield 5s; relentless whole-map hunt | Wizard.gd / WorldManager Wizard group |
+| Wizard (2026-11-09, trigger repriced) | emerges (≥3 buys AND >3 tower visits) OR stash ≥20g; lightning 30 dmg / 2s / 500px; fire shield 5s; relentless whole-map hunt | Wizard.gd / WorldManager Wizard group |
+| Prices (2026-11-09 reprice) | flame_1 10g / flame_2 20g+1gem / shield 8g / speed 12g / range 15g+1gem / brute (claw) 8g | GameManager.WIZARD_PRICES |
+| Dragon claw swing (2026-11-09) | one-shot 0.26s on every E-strike attempt: −52°→+26° slash, warm glint at impact, 7px body lunge, plays on hit or miss | Dragon `_play_claw_swing` / ClawPivot |
 | Burn | 10/s for 3s then death | BaseNPC |
 | Lair banking radius | 150 | Dragon |
 | Wizard prices | Section 8 table | GameManager.WIZARD_PRICES |
@@ -595,3 +599,4 @@ strings and gates affordability through the SAME
 - `2026-11-09-farm-animal-visuals.md` — pig/cow SVG art in the pens + layered furrow-row field visuals with a single state-visual funnel
 - `2026-11-09-dragon-flight-visuals.md` — walking/flight split (Q, 3s/5s), wing flaps + lift + shadow, the Vis wrapper that keeps animation/code from fighting
 - `2026-11-09-miner-haul-lottery.md` — miner haul size 50/25/25 (×1/×2/×3 per trip), accumulation-until-delivery untouched
+- `2026-11-09-pricing-and-claws.md` — wizard shop re-price (brute 8g, all cheaper), wizard greedy trigger 30→20g, code-driven dragon claw swing
