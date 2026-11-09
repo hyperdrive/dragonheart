@@ -358,6 +358,13 @@ be silently wedged or circle-loop forever:
   soon as farmers deliver food".
 - Dragon meals are E-commanded (Section 7), one animal per press, refused
   when full. Pig +5 HP/+1 flame, cow +10 HP/+2 flame.
+- **Visuals (2026-11-09)**: proper SVG art per species on a 48px canvas —
+  `assets/pig.svg` (pink pig: curly tail, hooves, shaded belly, snout
+  with nostrils) and `assets/cow.svg` (white cow with brown patches,
+  horns, muzzle, udder, dark hooves). Pen scenes reference the SVGs with
+  resize scales (pig 0.75, cow 0.8 — pigs read slightly smaller); the
+  slot pool copies the template texture/scale, so refilled slots get the
+  real art automatically.
 
 ### Fields
 
@@ -367,6 +374,14 @@ be silently wedged or circle-loop forever:
 - **Gold regrow fast lane**: every GOLD miner delivery regrows exactly ONE
   stubble field instantly (RP: the treasury funds re-sowing). Food/gem
   deliveries do NOT regrow.
+- **Layered farm visuals (2026-11-09)**: soil plot base + pen-style fence
+  rails/posts around `Crops` (name kept — the color-flip node). Plowed
+  furrow ROWS (`CropRows`, lighter-green strips) show when GROWN;
+  `StubbleRows` (tan strips) show when burnt — one `_apply_state_visuals()`
+  funnel drives base color AND both row overlays from burn()/regrow()
+  regrow timeout, so they can never disagree. Each field gets a small
+  random brightness/warmth modulate jitter in `_ready` so identical plots
+  don't look cloned.
 
 ### Food chain summary
 
@@ -485,6 +500,8 @@ strings and gates affordability through the SAME
 | Miner support gate | ≥3 farmers, ≥10 food, 30s timer | Miner/WorldManager exports |
 | StuckMonitor audit / detour / teleport / hold | 2.5s / 5s / 10s / 30s | WorldManager StuckMonitor group |
 | Soldier purchase prices | 2 gold : 1 soldier, 1 gem : 2 soldiers | WorldManager SoldierPurchases group |
+| Animal art (2026-11-09) | pig.svg / cow.svg, 48px canvas; pens scale 0.75 / 0.8 | assets/*.svg, pen scenes |
+| Field visuals (2026-11-09) | soil base + fence, CropRows green / StubbleRows tan overlays, per-field modulate jitter | Field.tscn / `_apply_state_visuals` |
 | Bold morale radii (2026-11-09) | pals 90px (5 widths, ≥2) / King 180px / hunt reach whole-map (4000) | Soldier morale consts |
 | Gate hand-off (2026-11-09) | loaded deliver legs skip flee preemption; claws still spill at 85px | Miner/Farmer `_handoff_stretch` |
 
@@ -556,3 +573,4 @@ strings and gates affordability through the SAME
 - `2026-11-09-gate-handoff-and-aggressive-bold.md` — gate hand-off exemption (the delivery choke that starved soldier purchases), bold reach escalated to whole-map, city-spend console messages
 - `2026-11-09-king-lives-and-swing.md` — King 3 respawns + fire cloak + 50-DPS magic sword, weapon swing for Soldiers/King, and the Soldier._ready profile-stomp bug it exposed
 - `2026-11-09-archer-and-wizard.md` — Archer (range attack, stand-off) + backstabbing Wizard (tower-count triggers, lightning, fire shield) + tower revisit counters
+- `2026-11-09-farm-animal-visuals.md` — pig/cow SVG art in the pens + layered furrow-row field visuals with a single state-visual funnel

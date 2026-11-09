@@ -24,12 +24,36 @@ var claim_expires: int = 0
 @onready var crops_visual: ColorRect = $Crops
 @onready var regrow_timer: Timer = $RegrowTimer
 
+## Layered farm visuals (2026-11-09): the Crops rect is the color-flip base,
+## the row overlays read as plowed furrows — green strips when GROWN, tan
+## stubble strips when burnt. Optional nodes (get_node_or_null) so older
+## field variants without overlays still work.
+@onready var crop_rows: Node2D = get_node_or_null("CropRows")
+@onready var stubble_rows: Node2D = get_node_or_null("StubbleRows")
+
 const COLOR_GROWN := Color(0.3, 0.75, 0.2, 1.0)
 const COLOR_STUBBLE := Color(0.45, 0.33, 0.2, 1.0)
 
 func _ready() -> void:
 	add_to_group("fields")
+	_apply_state_visuals()
 	regrow_timer.timeout.connect(_on_regrow_timeout)
+	# Per-field tint variation (2026-11-09): identical plots look cloned;
+	# a small brightness/hue jitter breaks the grid pattern.
+	var tint := randf_range(0.9, 1.1)
+	var warmth := randf_range(-0.04, 0.04)
+	modulate = Color(tint, tint + warmth, tint - warmth * 0.5, 1.0)
+
+## Single source of truth for the whole visual state machine — burn(),
+## regrow() and the regrow timeout all funnel through here so the base
+## color and the furrow rows can never disagree.
+func _apply_state_visuals() -> void:
+	var grown := state == FieldState.GROWN
+	crops_visual.color = COLOR_GROWN if grown else COLOR_STUBBLE
+	if crop_rows != null:
+		crop_rows.visible = grown
+	if stubble_rows != null:
+		stubble_rows.visible = not grown
 
 ## Dragon fire entry point: the Dragon's breath-cone scan calls burn() on
 ## this node (see Dragon._ignite_flammables). Burning is instant: crops
@@ -39,7 +63,7 @@ func burn() -> void:
 	if state != FieldState.GROWN:
 		return
 	state = FieldState.STUBBLE
-	crops_visual.color = COLOR_STUBBLE
+	_apply_state_visuals()
 	regrow_timer.start(regrow_time)
 	print("Field burnt at ", global_position)
 	field_burnt.emit(self)
@@ -50,7 +74,7 @@ func regrow() -> void:
 	if state != FieldState.STUBBLE:
 		return
 	state = FieldState.GROWN
-	crops_visual.color = COLOR_GROWN
+	_apply_state_visuals()
 	regrow_timer.stop()
 	field_ready.emit(self)
 	print("Field regrown (sown by city gold) at ", global_position)
@@ -83,6 +107,6 @@ func release(claimant: int) -> void:
 
 func _on_regrow_timeout() -> void:
 	state = FieldState.GROWN
-	crops_visual.color = COLOR_GROWN
+	_apply_state_visuals()
 	field_ready.emit(self)
 	print("Field regrown at ", global_position)

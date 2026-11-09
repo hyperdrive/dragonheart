@@ -1,14 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <ellipse cx="16" cy="20" rx="12" ry="8" fill="#8B4513"/>
-  <ellipse cx="8" cy="16" rx="6" ry="5" fill="#8B4513"/>
-  <ellipse cx="24" cy="16" rx="6" ry="5" fill="#8B4513"/>
-  <rect x="6" y="10" width="4" height="6" fill="#FFFFFF"/>
-  <rect x="22" y="10" width="4" height="6" fill="#FFFFFF"/>
-  <circle cx="8" cy="12" r="1" fill="#000000"/>
-  <circle cx="24" cy="12" r="1" fill="#000000"/>
-  <rect x="14" y="24" width="4" height="4" fill="#8B4513"/>
-  <rect x="10" y="22" width="3" height="4" fill="#8B4513"/>
-  <rect x="19" y="22" width="3" height="4" fill="#8B4513"/>
-  <text x="16" y="19" font-family="Arial" font-size="8" fill="#FFFFFF" text-anchor="middle">C</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- swishing tail -->
+  <path d="M9 21 q-7 2 -6.5 9" fill="none" stroke="#EDE7DC" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="2.8" cy="31" r="1.6" fill="#6B4A2F"/>
+  <!-- legs (behind body) with dark hooves -->
+  <rect x="12" y="32" width="5" height="10.5" rx="2.2" fill="#E7DFD2"/>
+  <rect x="20" y="34.5" width="5" height="10.5" rx="2.2" fill="#E7DFD2"/>
+  <rect x="29" y="34.5" width="5" height="10.5" rx="2.2" fill="#E7DFD2"/>
+  <rect x="36.5" y="32" width="5" height="10.5" rx="2.2" fill="#E7DFD2"/>
+  <rect x="12" y="40" width="5" height="3" rx="1.2" fill="#4A3623"/>
+  <rect x="20" y="42.5" width="5" height="3" rx="1.2" fill="#4A3623"/>
+  <rect x="29" y="42.5" width="5" height="3" rx="1.2" fill="#4A3623"/>
+  <rect x="36.5" y="40" width="5" height="3" rx="1.2" fill="#4A3623"/>
+  <!-- udder with teats -->
+  <path d="M27 33 q4 5.5 8.5 3 q1 -0.6 1.5 -3 z" fill="#F3C3C9"/>
+  <path d="M30.5 36.8 h1 M33.3 35.6 h1" stroke="#D8939E" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- body + brown patches -->
+  <ellipse cx="24" cy="24.5" rx="16.5" ry="10.5" fill="#F5F0E6"/>
+  <path d="M14 17 q6 -3.5 9.5 1.5 q2.5 4 -2.5 6.5 q-6 2.5 -8 -2 q-1 -3.5 1 -6 z" fill="#7A4E2B"/>
+  <ellipse cx="31.5" cy="30.5" rx="5.5" ry="4" fill="#8A5A33"/>
+  <!-- head -->
+  <circle cx="36.5" cy="21" r="8.3" fill="#F5F0E6"/>
+  <!-- horns -->
+  <path d="M30.5 14.5 q1 -4.5 5 -4 q1.5 0.3 2 1.6 q-3.5 0.4 -4.8 4 z" fill="#D9CCA8"/>
+  <path d="M43.5 14.2 q3.8 -2.6 4.4 1.8 q-1.6 1.2 -3.6 1.2 z" fill="#D9CCA8"/>
+  <!-- ears -->
+  <path d="M28.5 18.5 l1.6 5 l4.6 -2.8 z" fill="#DDD3C4"/>
+  <!-- muzzle -->
+  <rect x="39.5" y="22.5" width="7" height="6" rx="2.8" fill="#F0BBBE"/>
+  <circle cx="41.8" cy="25.4" r="0.9" fill="#8C5A62"/>
+  <circle cx="44.4" cy="25.4" r="0.9" fill="#8C5A62"/>
+  <!-- eye + forehead patch glint -->
+  <circle cx="34" cy="18.2" r="1.2" fill="#2E2318"/>
+  <ellipse cx="39" cy="16.5" rx="3.4" ry="2.2" fill="#7A4E2B" opacity="0.9"/>
 </svg>

@@ -1,15 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <ellipse cx="16" cy="20" rx="10" ry="7" fill="#FFB6C1"/>
-  <ellipse cx="8" cy="16" rx="5" ry="4" fill="#FFB6C1"/>
-  <ellipse cx="24" cy="16" rx="5" ry="4" fill="#FFB6C1"/>
-  <circle cx="8" cy="13" r="1" fill="#000000"/>
-  <circle cx="24" cy="13" r="1" fill="#000000"/>
-  <ellipse cx="16" cy="11" rx="3" ry="2" fill="#FF69B4"/>
-  <ellipse cx="14" cy="10" rx="1.5" ry="1" fill="#FFC0CB"/>
-  <ellipse cx="18" cy="10" rx="1.5" ry="1" fill="#FFC0CB"/>
-  <rect x="14" y="23" width="3" height="3" fill="#FFB6C1"/>
-  <rect x="11" y="21" width="2" height="3" fill="#FFB6C1"/>
-  <rect x="19" y="21" width="2" height="3" fill="#FFB6C1"/>
-  <text x="16" y="18" font-family="Arial" font-size="8" fill="#000000" text-anchor="middle">P</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- curly tail -->
+  <path d="M9.5 27 q-6.5 -1 -5 -6 q1.2 -4 5 -2.8 q2.8 1 0.8 3.2"
+        fill="none" stroke="#E58AA5" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- hind/front legs (behind body) -->
+  <rect x="11.5" y="33" width="4.6" height="9" rx="2.2" fill="#EE9DB5"/>
+  <rect x="19.5" y="35" width="4.6" height="9" rx="2.2" fill="#EE9DB5"/>
+  <rect x="29.5" y="35" width="4.6" height="9" rx="2.2" fill="#EE9DB5"/>
+  <rect x="36.5" y="33" width="4.6" height="9" rx="2.2" fill="#EE9DB5"/>
+  <!-- hooves -->
+  <path d="M11.5 40.5 h4.6 M19.5 42.5 h4.6 M29.5 42.5 h4.6 M36.5 40.5 h4.6"
+        stroke="#9C5468" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- body + shaded belly -->
+  <ellipse cx="24" cy="25.5" rx="15" ry="10.2" fill="#F2A0BB"/>
+  <ellipse cx="23" cy="29.5" rx="11.5" ry="5.6" fill="#F7BED0"/>
+  <!-- head -->
+  <circle cx="35.5" cy="22.5" r="8" fill="#F2A0BB"/>
+  <!-- ear picks facing the muzzle line -->
+  <path d="M29.5 16.5 l1.2 6 l5.4 -2.2 z" fill="#DE8AA4"/>
+  <path d="M40.5 13.8 l2.8 6.2 l-6 -0.6 z" fill="#DE8AA4"/>
+  <!-- snout -->
+  <rect x="39.5" y="20.8" width="6.6" height="5.8" rx="2.4" fill="#F08CB2"/>
+  <circle cx="41.8" cy="23.6" r="0.9" fill="#8C4A63"/>
+  <circle cx="44.1" cy="23.6" r="0.9" fill="#8C4A63"/>
+  <!-- eye + forehead glint -->
+  <circle cx="33" cy="19.4" r="1.2" fill="#3A1A25"/>
+  <circle cx="29.5" cy="22" r="1" fill="#F9D3E0" opacity="0.85"/>
 </svg>

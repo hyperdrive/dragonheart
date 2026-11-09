@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://k3s8j1m7b5v2"]
 
-[ext_resource type="Texture2D" path="res://assets/cow.png" id="1_cow_tex"]
+[ext_resource type="Texture2D" path="res://assets/cow.svg" id="1_cow_tex"]
 [ext_resource type="Script" path="res://scripts/props/AnimalPen.gd" id="2_pen_script"]
 
 [node name="CowPen" type="Node2D" groups=["cow_pens"]]
@@ -42,10 +42,10 @@ color = Color(0.42, 0.28, 0.15, 1.0)
 
 [node name="Cow1" type="Sprite2D" parent="."]
 position = Vector2(-26, 6)
-scale = Vector2(1.2, 1.2)
+scale = Vector2(0.8, 0.8)
 texture = ExtResource("1_cow_tex")
 
 [node name="Cow2" type="Sprite2D" parent="."]
 position = Vector2(24, -10)
-scale = Vector2(1.2, 1.2)
+scale = Vector2(0.8, 0.8)
 texture = ExtResource("1_cow_tex")

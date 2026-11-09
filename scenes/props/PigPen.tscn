@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://p9w2d5r8f1k4"]
 
-[ext_resource type="Texture2D" path="res://assets/pig.png" id="1_pig_tex"]
+[ext_resource type="Texture2D" path="res://assets/pig.svg" id="1_pig_tex"]
 [ext_resource type="Script" path="res://scripts/props/AnimalPen.gd" id="2_pen_script"]
 
 [node name="PigPen" type="Node2D" groups=["pig_pens"]]
@@ -42,15 +42,15 @@ color = Color(0.42, 0.28, 0.15, 1.0)
 
 [node name="Pig1" type="Sprite2D" parent="."]
 position = Vector2(-30, 8)
-scale = Vector2(1.1, 1.1)
+scale = Vector2(0.75, 0.75)
 texture = ExtResource("1_pig_tex")
 
 [node name="Pig2" type="Sprite2D" parent="."]
 position = Vector2(18, -12)
-scale = Vector2(1.1, 1.1)
+scale = Vector2(0.75, 0.75)
 texture = ExtResource("1_pig_tex")
 
 [node name="Pig3" type="Sprite2D" parent="."]
 position = Vector2(40, 14)
-scale = Vector2(1.1, 1.1)
+scale = Vector2(0.75, 0.75)
 texture = ExtResource("1_pig_tex")
