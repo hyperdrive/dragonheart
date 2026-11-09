@@ -1,0 +1,48 @@
+[gd_scene load_steps=2 format=3 uid="uid://st9rypopup01"]
+
+[ext_resource type="Script" path="res://scripts/ui/StoryPopup.gd" id="1_story_script"]
+
+[node name="StoryPopup" type="CanvasLayer"]
+layer = 12
+process_mode = 3
+script = ExtResource("1_story_script")
+
+[node name="Center" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Panel" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(640, 460)
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel"]
+
+[node name="Title" type="Label" parent="Center/Panel/VBox"]
+theme_override_font_sizes/font_size = 24
+text = "A Story"
+
+[node name="ImageBox" type="Control" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 96)
+
+[node name="ImageBg" type="ColorRect" parent="Center/Panel/VBox/ImageBox"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.3, 0.2, 0.1, 1)
+
+[node name="ImageRect" type="TextureRect" parent="Center/Panel/VBox/ImageBox"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="StoryText" type="Label" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 130)
+autowrap_mode = 3
+
+[node name="Choices" type="VBoxContainer" parent="Center/Panel/VBox"]
+theme_override_constants/separation = 8
+
+[node name="Hint" type="Label" parent="Center/Panel/VBox"]
+text = "Pick an answer (1–3 • ESC for the last line)"

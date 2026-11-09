@@ -41,6 +41,61 @@ const WIZARD_PRICES := {
 	"brute": {"gold": 8, "gems": 0},
 }
 
+# --- TTRPG story popups (2026-11-09) -------------------------------------------
+
+## The story overlay system: six events open a PAUSED popup (field burn,
+## miner burn, King emerge, King defeat, wizard emerge, first pig/cow).
+## Each story shows ONCE per run; answers land in ttrpg_choices — the
+## "progression policy" ledger every story-answer joins.
+const STORY_SCENE := preload("res://scenes/ui/StoryPopup.tscn")
+var story_popup: CanvasLayer
+var story_open: bool = false
+var story_shown: Dictionary = {}        # kind → true (once per run)
+var story_queue: Array[String] = []     # told-while-paused stories wait here
+var ttrpg_choices: Dictionary = {}      # kind → chosen answer index
+signal story_choice_made(kind: String, choice_index: int)
+
+## Fire-and-forget from any gameplay node (Field.burn, BaseNPC.catch_fire,
+## WorldManager king/wizard paths, Dragon meals). While a popup or any
+## pause-menu is up the story waits in the queue instead.
+func notify_story(kind: String) -> void:
+	if story_shown.get(kind, false):
+		return
+	story_shown[kind] = true
+	if story_open or get_tree().paused:
+		story_queue.append(kind)
+		return
+	_open_story_now(kind)
+
+## Open the shared popup for one kind and pause the world beneath it.
+func _open_story_now(kind: String) -> void:
+	story_open = true
+	if story_popup == null:
+		story_popup = STORY_SCENE.instantiate()
+		story_popup.process_mode = Node.PROCESS_MODE_ALWAYS
+		story_popup.story_close_requested.connect(_on_story_closed)
+		story_popup.story_choice_made.connect(_on_story_choice)
+		add_child(story_popup)
+	story_popup.call("open", kind)
+	get_tree().paused = true
+
+## The chosen answer joins the run's progression policy.
+func _on_story_choice(kind: String, choice_index: int) -> void:
+	ttrpg_choices[kind] = choice_index
+	story_choice_made.emit(kind, choice_index)
+	print("TTRPG — '%s' answered: choice %d" % [kind, choice_index + 1])
+
+## Story resolution: close, unpause, then serve anything queued behind it.
+func _on_story_closed() -> void:
+	story_open = false
+	get_tree().paused = false
+	_drain_story_queue()
+
+func _drain_story_queue() -> void:
+	if story_queue.is_empty() or story_open:
+		return
+	_open_story_now(story_queue.pop_front())
+
 var wizard_menu: CanvasLayer
 
 signal wizard_menu_opened
@@ -230,6 +285,7 @@ func open_wizard_menu() -> void:
 func _on_wizard_menu_close() -> void:
 	get_tree().paused = false
 	wizard_menu_closed.emit()
+	_drain_story_queue()  # stories that arrived while shopping wait politely
 
 # --- escalation ------------------------------------------------------------
 
@@ -253,6 +309,7 @@ func start_boss_battle(king) -> void:
 func notify_king_defeated() -> void:
 	if run_finished:
 		return
+	notify_story("king_defeat")  # the FINAL fall gets its epic chapter
 	run_finished = true
 	king_defeated.emit()
 	var tally := {

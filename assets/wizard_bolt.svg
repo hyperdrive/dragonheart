@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <!-- wizard hat -->
+  <path d="M14 72 L82 72 L70 58 L58 66 L52 50 L44 58 L36 44 L28 58 L20 52 z" fill="#3A2060"/>
+  <rect x="14" y="70" width="68" height="10" rx="4" fill="#2C1848"/>
+  <!-- star on hat -->
+  <path d="M48 58 l3.2 6.5 7.2 .8 -5.3 5 1.4 7.1 -6.5 -3.5 -6.4 3.5 1.4 -7.1 -5.2 -5 7.1 -.8 z" fill="#C7A0F2"/>
+  <!-- treacherous lightning -->
+  <path d="M66 10 L54 40 L62 38 L44 66 L70 34 L60 36 L78 10 z" fill="#7BD2F2"/>
+  <path d="M66 10 L54 40 L62 38 L44 66 L70 34 L60 36 L78 10 z" fill="#FFFFFF" opacity="0.35" transform="translate(-3 0)"/>
+  <!-- crescent moon -->
+  <path d="M22 16 q10 -4 14 4 q-8 -1 -9 8 q-6 -5 -5 -12 z" fill="#EDE7DC"/>
+</svg>

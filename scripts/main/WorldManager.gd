@@ -730,6 +730,7 @@ func _materialize_king() -> void:
 	if king_npc != null:
 		king_npc.home_position = king.global_position
 	if game_manager != null:
+		game_manager.notify_story("king_emerge")
 		game_manager.start_boss_battle(king)
 	entity_spawned.emit("king", king.global_position)
 	_set_swarm_state(SwarmState.ATTACK)
@@ -789,6 +790,8 @@ func _try_spawn_wizard() -> void:
 	(wizard as BaseNPC).home_position = spawn_anchor
 	entity_spawned.emit("wizard", wizard.global_position)
 	print("The wizard emerges from his tower — he has seen enough of your robberies!")
+	if game_manager != null:
+		game_manager.notify_story("wizard_emerge")
 
 # --- signal handlers: NPC → GameManager (the hub) ---------------------------
 

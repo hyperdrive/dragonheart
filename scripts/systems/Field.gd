@@ -67,6 +67,9 @@ func burn() -> void:
 	regrow_timer.start(regrow_time)
 	print("Field burnt at ", global_position)
 	field_burnt.emit(self)
+	var story := get_tree().get_first_node_in_group("game_manager") as GameManager
+	if story != null:
+		story.notify_story("field_burn")
 
 ## City gold sows the field again (rule 2026-11-08): instant regrow, one field
 ## per gold delivery (WorldManager picks which).

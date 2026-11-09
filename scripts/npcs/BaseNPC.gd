@@ -160,6 +160,12 @@ func catch_fire() -> void:
 		sprite.modulate = Color(1.0, 0.4, 0.1)  # scorched tint
 		_flames_spawn()
 	print(npc_type + " caught fire — panicking!")
+	# TTRPG story beat: the first miner torching is a chapter title
+	# ("refuse to work" is the criers' version; the crate of mead is real).
+	if npc_type == "miner":
+		var story := get_tree().get_first_node_in_group("game_manager") as GameManager
+		if story != null:
+			story.notify_story("miner_burn")
 
 ## Ablaze physics: random-burst running, burn damage in int chunks, then death.
 func _tick_burning(delta: float) -> void:

@@ -319,6 +319,11 @@ func _eat_meal_from(pen: AnimalPen) -> void:
 	var meal := pen.take_animal_for_dragon(self)
 	if meal.is_empty():
 		return
+	# TTRPG first-meal chapters (once per run each): the pig and the cow
+	# both earned their own story before becoming calories.
+	var meal_kind := "pig_eaten" if pen.animal_name == "pig" else "cow_eaten"
+	if game_manager != null:
+		game_manager.notify_story(meal_kind)
 	var healed := mini(int(meal["heal"]), max_health - health)
 	health += healed
 	health_changed.emit(health)

@@ -494,6 +494,41 @@ strings and gates affordability through the SAME
   gold/gems stolen, treasury left, fire/scales levels. There is no
   other win/loss condition beyond dragon death.
 
+### 9.1 TTRPG story popups (2026-11-09)
+
+- **The overlay** (`scripts/ui/StoryPopup.gd` + `scenes/ui/StoryPopup.tscn`):
+  a full-screen story chapter while the live world is PAUSED beneath it —
+  one image + fantasy-novel-told story text + 2–3 answer choices. Mouse
+  click or the matching number key (1–4) picks; **ESC picks the LAST
+  choice** (the story always answers; it never closes unanswered).
+- **Progression policy**: the chosen answer lands in the run ledger
+  `GameManager.ttrpg_choices` (kind → chosen choice index) via
+  `story_choice_made(kind, index)` — every recorded answer is part of the
+  run's TTRPG progression policy.
+- **Once per run each**: `GameManager.notify_story(kind)` marks the kind
+  in `story_shown` the first time and ignores repeats; story kinds told
+  while another popup/menu is up queue in `story_queue` and open when the
+  current one closes (`_drain_story_queue` — also flushed when the
+  wizard menu closes).
+- **The seven chapters** (all defined in `StoryPopup.STORIES`, image art
+  per chapter: field_fire / pick_flame / king_crown / wizard_bolt /
+  pig / cow SVGs):
+
+| Kind | Opens on | What the chapter tells |
+|---|---|---|
+| `field_burn` | `Field.burn()` | the farmers scream "THE DRAGON BURNS OUR FIELDS!" |
+| `miner_burn` | `BaseNPC.catch_fire()` for MINERS only | the criers claim "Miners refuse to work because of dragon terror!" (the tavern tells another tale) |
+| `king_emerge` | `WorldManager._materialize_king()` | the King's epic arrival speech |
+| `king_defeat` | `GameManager.notify_king_defeated()` — the FINAL fall only | the crown tumbles; victory |
+| `wizard_emerge` | wizard spawn path in WorldManager | the shopkeeper unmasked as the treacherous evil overlord |
+| `pig_eaten` / `cow_eaten` | `Dragon._eat_meal_from` after the meal | first pig / first cow of the war |
+
+- **Pause ownership is ALL GameManager's** (2026-11-09): `_open_story_now`
+  instantiates one shared popup (layer 12, PROCESS_MODE_ALWAYS) and sets
+  `get_tree().paused = true`; `_on_story_closed` unpauses and drains.
+  Story calls pass through `get_first_node_in_group("game_manager")`
+  from the source nodes — popup never owns state.
+
 
 ## 10. Tuning reference (all live as exports)
 
@@ -532,6 +567,7 @@ strings and gates affordability through the SAME
 | Miner haul lottery (2026-11-09) | per trip: 50% ×1, 25% ×2, 25% ×3 (×tier) | Miner `_roll_haul_size` |
 | Bold morale radii (2026-11-09) | pals 90px (5 widths, ≥2) / King 180px / hunt reach whole-map (4000) | Soldier morale consts |
 | Gate hand-off (2026-11-09) | loaded deliver legs skip flee preemption; claws still spill at 85px | Miner/Farmer `_handoff_stretch` |
+| TTRPG story popups (2026-11-09) | 7 kinds, each ONCE per run; choices recorded (kind→index); keys 1–4 pick, ESC = last line; queue drains on close | StoryPopup.STORIES / GameManager story group |
 
 
 ## 11. Implementation notes (engine mapping)
@@ -546,6 +582,8 @@ strings and gates affordability through the SAME
   pools/levels/prices and re-emits signal-driven HUD refreshes.
 - **UI**: retirable HUD chips; wizard menu is a `CanvasLayer` overlay with
   `get_tree().paused` — NEVER `change_scene` (the economy must survive).
+  TTRPG story popups use the same shape (CanvasLayer layer 12 +
+  PROCESS_MODE ALWAYS + GameManager-owned pause) — see Section 9.1.
 - **Input Map actions**: `move_left/right/up/down`, `fire` (Space),
   `eat` (physical E), `upgrade` (retired U-panel; keep wizard-site flow).
 - **Verification convention**: headless runs
@@ -606,3 +644,4 @@ strings and gates affordability through the SAME
 - `2026-11-09-miner-haul-lottery.md` — miner haul size 50/25/25 (×1/×2/×3 per trip), accumulation-until-delivery untouched
 - `2026-11-09-pricing-and-claws.md` — wizard shop re-price (brute 8g, all cheaper), wizard greedy trigger 30→20g, code-driven dragon claw swing
 - `2026-11-09-wizard-4-buys-shield-bypass.md` — wizard provocation now four upgrades, lightning pierces the shop shield
+- `2026-11-09-ttrpg-story-popups.md` — paused story overlay (7 chapters, once per run), multiple-choice answers in the ttrpg_choices progression ledger

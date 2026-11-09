@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <!-- crown band -->
+  <path d="M16 66 L80 66 L74 76 L22 76 z" fill="#B8862E"/>
+  <rect x="16" y="62" width="64" height="8" rx="3" fill="#D9A43C"/>
+  <!-- points -->
+  <path d="M18 62 L26 30 L36 56 L48 24 L60 56 L70 30 L78 62 z" fill="#D9A43C"/>
+  <path d="M26 34 L36 56 L30 60 z" fill="#EFC65C"/>
+  <path d="M48 28 L60 56 L52 60 z" fill="#F2D06A"/>
+  <path d="M70 34 L78 62 L68 60 z" fill="#EFC65C"/>
+  <!-- gems -->
+  <circle cx="48" cy="66" r="4" fill="#B3273A"/>
+  <circle cx="30" cy="66" r="3" fill="#2E6FB8"/>
+  <circle cx="66" cy="66" r="3" fill="#2E9E55"/>
+  <!-- king's fall shadow -->
+  <ellipse cx="48" cy="86" rx="26" ry="5" fill="#000000" opacity="0.28"/>
+</svg>

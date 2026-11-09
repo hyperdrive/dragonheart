@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <!-- burnt soil -->
+  <rect x="10" y="62" width="76" height="24" fill="#3A2617"/>
+  <rect x="10" y="62" width="76" height="6" fill="#26170D"/>
+  <!-- burnt stubble rows -->
+  <rect x="18" y="56" width="5" height="18" rx="1.5" fill="#171008"/>
+  <rect x="34" y="58" width="5" height="16" rx="1.5" fill="#171008"/>
+  <rect x="50" y="55" width="5" height="19" rx="1.5" fill="#171008"/>
+  <rect x="66" y="58" width="5" height="16" rx="1.5" fill="#171008"/>
+  <!-- lonely sprouting straw -->
+  <path d="M24 58 q3 -10 0 -18 q4 8 1 18 z" fill="#5A3A1C"/>
+  <!-- licking flames -->
+  <path d="M38 54 q6 -14 14 -18 q-1 8 5 12 q9 6 20 2 q-6 14 -22 15 q-14 1 -17 -11 z" fill="#E8542B"/>
+  <path d="M46 50 q5 -10 12 -12 q0 6 6 9 q6 3 11 1 q-5 9 -14 10 q-10 1 -15 -8 z" fill="#F2A63B"/>
+  <path d="M52 47 q3 -6 7 -8 q1 4 4 6 q3 2 5 1 q-3 5 -8 6 q-6 0 -8 -5 z" fill="#F8D66A"/>
+  <!-- smoke -->
+  <circle cx="72" cy="30" r="7" fill="#8A8378" opacity="0.75"/>
+  <circle cx="80" cy="22" r="5" fill="#9C948A" opacity="0.6"/>
+</svg>
