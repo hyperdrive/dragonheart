@@ -15,6 +15,62 @@ signal story_choice_made(kind: String, choice_index: int)
 ## Story library — per kind: panel title, one image (SVG), its backdrop
 ## tint, the fantasy-novel body text, and the dragon's possible answers.
 const STORIES := {
+	# --- peasant-burn horror stories (2026-11-09): five random variants ---
+	"peasant_burn_1": {
+		"title": "The Screaming Harvest",
+		"image": "res://assets/field_fire.svg",
+		"tint": Color(0.4, 0.18, 0.1),
+		"text": "The peasant's scream cuts the night like a sickle through fog. His home collapses into flame, walls groaning as the dragon's shadow swallows the firelight whole. In the ashes, a charred hand still clutches a broken cradle — the dragon decides to keep it. A souvenir.",
+		"choices": [
+			"Snatch the cradle. Roar with the embers.",
+			"Swallow the scream whole. Taste the grief.",
+			"Leave one coal for the widows. A charitable tax.",
+		],
+	},
+	"peasant_burn_2": {
+		"title": "Ashes of the Cradle",
+		"image": "res://assets/field_fire.svg",
+		"tint": Color(0.42, 0.15, 0.08),
+		"text": "One house, then another, then the whole row — the dragon's fire does not discriminate. The peasant's wife runs into the flames, a white smock blazing like a surrender flag. The dragon catches her in mid-leap, cradles her burning frame, and lets her fall. Some feasts must be witnessed.",
+		"choices": [
+			"Roar a dirge in the smoke. The sound is mournful.",
+			"Grab her wedding band. Gold in the firelight gleams.",
+			"Leave a single intact door. The town needs a shelter.",
+		],
+	},
+	"peasant_burn_3": {
+		"title": "The Fire That Speaks",
+		"image": "res://assets/field_fire.svg",
+		"tint": Color(0.38, 0.16, 0.12),
+		"text": "The peasant begs for mercy with trembling hands. The dragon answers with a column of flame that lifts the thatch roof into the stars. In the silence after, a single child cowers behind a stone foundation — the dragon spares the child. Some stories need a witness.",
+		"choices": [
+			"Lick the child's forehead. A brief blessing.",
+			"Carry the child to safety on one claw. Gentle.",
+			"Swallow the child whole. Mercy is inefficient.",
+		],
+	},
+	"peasant_burn_4": {
+		"title": "Soot on the Soul",
+		"image": "res://assets/field_fire.svg",
+		"tint": Color(0.4, 0.2, 0.1),
+		"text": "The peasant runs, barefoot, toward the dragon with hands open — not in surrender, but in plea. The dragon burns him where he stands. The smell of roasting flesh hangs for miles. The dragon remembers: this is how kings hear you.",
+		"choices": [
+			"Sniff the air. Savor the message.",
+			"Crush the peasant's hoe under one talon. A warning.",
+			"Leave his bones in a circle. A grim garden.",
+		],
+	},
+	"peasant_burn_5": {
+		"title": "The Burnt Letter",
+		"image": "res://assets/field_fire.svg",
+		"tint": Color(0.36, 0.19, 0.11),
+		"text": "The peasant clutches a charred scroll — a plea to the king, a promise to the dragon. The dragon burns the scroll first, then the peasant. The words turn to ash: \"Please, please, I have children, I have debts, I have nothing left to give.\" The dragon takes the last page, unburnt. A keepsake.",
+		"choices": [
+			"Read it. Then burn it. Some promises must die.",
+			"Take the unburnt page. History needs a signature.",
+			"Drop the page back into the flames. Let it suffer too.",
+		],
+	},
 	"field_burn": {
 		"title": "Ash on the Wind",
 		"image": "res://assets/field_fire.svg",

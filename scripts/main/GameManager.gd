@@ -93,6 +93,22 @@ func notify_story(kind: String) -> void:
 		return
 	_open_story_now(kind)
 
+## Peasant-burn story (2026-11-09): when a farmer catches fire, pick ONE of
+## the five horror stories and open it. Once-per-run, so only the FIRST
+## farmer fire triggers the story.
+func notify_peasant_burn() -> void:
+	if story_shown.get("peasant_burn", false):
+		return
+	story_shown["peasant_burn"] = true
+	if story_popup == null:
+		story_popup = STORY_SCENE.instantiate()
+		story_popup.process_mode = Node.PROCESS_MODE_ALWAYS
+		story_popup.story_close_requested.connect(_on_story_closed)
+		story_popup.story_choice_made.connect(_on_story_choice)
+		add_child(story_popup)
+	var story_kind := "peasant_burn_%d" % (randi() % 5 + 1)
+	_open_story_now(story_kind)
+
 ## Open the shared popup for one kind and pause the world beneath it.
 func _open_story_now(kind: String) -> void:
 	story_open = true

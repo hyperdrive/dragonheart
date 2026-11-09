@@ -166,6 +166,12 @@ func catch_fire() -> void:
 		var story := get_tree().get_first_node_in_group("game_manager") as GameManager
 		if story != null:
 			story.notify_story("miner_burn")
+	# Peasant-burn horror story (2026-11-09): first farmer fire this run
+	# triggers one of five random horror stories.
+	if npc_type == "farmer":
+		var story := get_tree().get_first_node_in_group("game_manager") as GameManager
+		if story != null:
+			story.notify_peasant_burn()
 
 ## Ablaze physics: random-burst running, burn damage in int chunks, then death.
 func _tick_burning(delta: float) -> void:
