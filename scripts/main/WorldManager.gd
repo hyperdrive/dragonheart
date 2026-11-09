@@ -647,7 +647,11 @@ func _escalation_soldier_spawned() -> void:
 		spawn_king()
 
 func _on_escalation_tick() -> void:
-	if king_spawned or game_manager == null:
+	# Recruit trickle keeps running during the boss battle (2026-11-09,
+	# user: "soldiers should always be coming") — the King fights a living
+	# army, and _escalation_soldier_spawned's spawn_king() call is already
+	# a no-op while one is out.
+	if game_manager == null:
 		return
 	spawn_entity(ESCALATING, 1, rally_point, 90.0)
 	_escalation_soldier_spawned()
@@ -667,7 +671,11 @@ func _on_escalation_tick() -> void:
 var _purchase_timer: Timer
 
 func _try_buy_soldiers() -> void:
-	if king_spawned or game_manager == null or game_manager.run_finished:
+	# king_spawned removed from the guard (2026-11-09, user: "soldiers should
+	# always be coming, especially if there are treasure in the treasury"):
+	# the town keeps buying through the boss battle, so the King fights a
+	# constantly refreshed army instead of a frozen 15.
+	if game_manager == null or game_manager.run_finished:
 		return
 	var bought := 0
 	var gold_spent := 0
@@ -698,7 +706,8 @@ func spawn_king() -> void:
 	if king_spawned:
 		return
 	king_spawned = true
-	_soldier_timer.stop()
+	# _soldier_timer deliberately KEEPS running (2026-11-09): recruits keep
+	# arriving at the rally point during the boss battle.
 	king_respawns_left = king_respawn_count
 	_materialize_king()
 	print("The King has arrived! (%d soldiers spawned)" % soldiers_spawned)
@@ -737,7 +746,6 @@ func on_king_defeated() -> bool:
 	respawn_timer.timeout.connect(func() -> void:
 		print("The King rises again at the city! (%d respawn(s) left after this)"
 			% king_respawns_left)
-		_soldier_timer.stop()
 		_materialize_king()
 	)
 	add_child(respawn_timer)

@@ -49,6 +49,27 @@ profile used to overwrite.
 - BaseNPC's fire cloak ticks down ONLY in the non-burning `_physics_process`
   branch; tests force re-ignition by zeroing `_fire_immune_left` manually.
 
+## Addendum — the town recruits through the boss battle (same day)
+
+User follow-up: "Soldiers should always be coming and especially if
+there are treasure in the treasury. When the King comes out new
+soldiers stop spawning."
+
+Supersedes this record's frozen-economy intent: `king_spawned` no
+longer gates recruitment anywhere —
+- `_try_buy_soldiers` drops the `king_spawned` check (purchases fire
+  while the King is alive AND during respawn gaps),
+- `_on_escalation_tick` drops its `king_spawned` check (the trickle
+  keeps ticking; its `spawn_king()` back-call is a no-op while one is
+  out),
+- `spawn_king` and the respawn timer no longer `_soldier_timer.stop()`.
+
+Only `game_manager.run_finished` still stops purchases (post-victory).
+Probe `probe_always_spawning.gd` 6/6: purchases during boss phase
+(spawned 4→6, treasury drained), trickle keeps running, purchases
+during a respawn gap (7→10, lives decrementing), recruit timer never
+stopped; 14400-frame regression 0 script errors.
+
 ## Verified
 
 `probe_king_lives.gd` 23/23: boss stats land (200 HP / "king" / 50 DPS /

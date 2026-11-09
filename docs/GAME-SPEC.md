@@ -219,9 +219,15 @@ deliberate path, no burn-out spill).
 - **Three respawns after defeat (`king_respawn_count = 3`)**: each
   defeat calls `WorldManager.on_king_defeated()` — while respawns
   remain the death schedules a 3s one-shot Timer that re-materializes
-  the King at the city (the swarm stays ATTACK; purchases/farming
-  stay frozen via `king_spawned`), printing falls/rises. The FOURTH
-  death (all lives spent) is the true one → victory tally, run ends.
+  the King at the city (the swarm stays ATTACK), printing falls/rises.
+  The FOURTH death (all lives spent) is the true one → victory tally,
+  run ends.
+- **The town recruits THROUGH the boss battle (2026-11-09)**: the
+  recruit trickle never stops at `king_spawned` and treasury purchases
+  keep firing while he is alive or mid-respawn-gap — the King fights a
+  constantly refreshed army. (Earlier rule "purchases stop at the
+  King" superseded by user: "soldiers should always be coming,
+  especially if there are treasure in the treasury".)
 - **Weapon swing**: the King inherits Soldier's code-driven combat
   swing (`Sprite/Sword` resolves the same weapon lookup as spear) —
   see Section 5.3's swing notes and
@@ -404,8 +410,9 @@ strings and gates affordability through the SAME
   initial + trickle + treasury-bought (15).
 - Victory = the King STAYS dead. With `king_respawn_count = 3`
   (2026-11-09) he rises up to THREE times after each defeat (3s timer,
-  re-materialized at the city, swarm pinned ATTACK, economy frozen);
-  only the defeat that spends the last life calls
+  re-materialized at the city, swarm pinned ATTACK); soldier spawning
+  keeps running through all of it (Section 5.4). Only the defeat that
+  spends the last life calls
   `GameManager.notify_king_defeated()` for the tally: time survived,
   gold/gems stolen, treasury left, fire/scales levels. There is no
   other win/loss condition beyond dragon death.
