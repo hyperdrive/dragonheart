@@ -71,6 +71,13 @@ var _burn_move_timer: float = 0.0
 var _burn_direction: Vector2 = Vector2.ONE
 var _burn_debt: float = 0.0
 
+## Fire cloak (2026-11-09 King lives): once ignited, the cloak burns off and
+## blocks catch_fire for this many seconds — flame re-breaths cannot chain
+## a burn right after burn-out (burn 3s inside the 5s window, sober 2s,
+## then the next hit re-ignites and re-arms). 0.0 = normal, no cloak.
+@export var fire_immunity_seconds: float = 0.0
+var _fire_immune_left: float = 0.0
+
 @onready var sprite: Node2D = $Sprite
 
 func _ready() -> void:
@@ -99,6 +106,8 @@ func _physics_process(delta: float) -> void:
 		return
 	if _flames != null:
 		_flames_teardown()      # fire out (or dead): overlay goes with it
+	if _fire_immune_left > 0.0:
+		_fire_immune_left = maxf(0.0, _fire_immune_left - delta)
 	if is_alive and behavior_tree != null:
 		behavior_tree.tick(delta)
 	_animate_flee(delta)
@@ -137,9 +146,14 @@ func _animate_flee(delta: float) -> void:
 func catch_fire() -> void:
 	if not is_flammable or _burning_left > 0.0 or not is_alive:
 		return
+	if _fire_immune_left > 0.0:
+		return  # cloak active: the flames slide right off
 	_burning_left = burn_duration
 	_burn_move_timer = 0.0
 	_burn_debt = 0.0
+	# grant the cloak NOW so its countdown covers the burn itself
+	if fire_immunity_seconds > 0.0:
+		_fire_immune_left = fire_immunity_seconds
 	if behavior_tree != null:
 		behavior_tree.kill()
 	if sprite != null:

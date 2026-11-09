@@ -20,12 +20,20 @@ var _contact_debt: float = 0.0
 
 func _ready() -> void:
 	# Configure before super._ready() — it syncs health from max_health.
-	npc_type = "soldier"
-	max_health = 50
-	speed = 80.0
-	danger_radius = 0.0  # soldiers never flee the dragon
+	# Stomp fix (2026-11-09): this profile previously ran UNCONDITIONALLY and
+	# silently discarded the King's boss config — King._ready sets its stats
+	# before super._ready(), then Soldier._ready overwrote npc_type/health/
+	# speed/attack stats: every King in history ran as a 50-HP soldier-flavored
+	# unit (10 DPS, npc_type "soldier"). Gate on the BaseNPC default instead:
+	# a subclass (King) that already configured itself keeps its values.
+	if npc_type == "villager":
+		npc_type = "soldier"
+		max_health = 50
+		speed = 80.0
+		danger_radius = 0.0  # soldiers never flee the dragon
 
 	super._ready()
+	_resolve_weapon()
 	behavior_tree = BehaviorTree.new()
 	add_child(behavior_tree)
 	behavior_tree.setup(self)
@@ -169,11 +177,56 @@ func _cleared_trip_target(anchor: Vector2, radius: float) -> Vector2:
 	var world := _world_manager()
 	return world.terrain_free_target(anchor, radius) if world != null else anchor
 
+# --- combat swing (2026-11-09) ------------------------------------------------
+
+## Code-driven attack animation: while ACTIVELY fighting (dragon inside
+## attack_range, alive, not burning) the carried weapon hammers an
+## overhead→strike arc; the body leans into each swing. The weapon node
+## differs per type (Spear/Sword) but King.tscn's Sword resolves by the
+## same lookup, so the King inherits the swing through this override.
+const SWORD_SWING_HZ := 2.2
+const WEAPON_RAISED_DEG := -55.0
+const WEAPON_STRIKED_DEG := 25.0
+const COMBAT_LEAN_RAD := 0.09
+
+var _swing_phase := 0.0
+var _swing_animating := false
+var _weapon: ColorRect
+
+func _resolve_weapon() -> void:
+	_weapon = get_node_or_null("Sprite/Spear") as ColorRect
+	if _weapon == null:
+		_weapon = get_node_or_null("Sprite/Sword") as ColorRect
+
+func _animate_combat(delta: float) -> void:
+	if _weapon == null:
+		return
+	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var fighting := is_alive and _burning_left <= 0.0 \
+		and dragon != null and is_instance_valid(dragon) \
+		and global_position.distance_to(dragon.global_position) <= attack_range
+	if fighting:
+		_swing_animating = true
+		_swing_phase += delta * TAU * SWORD_SWING_HZ
+		# 0 = fully raised overhead, 1 = strike into the dragon
+		var t := 0.5 + 0.5 * sin(_swing_phase - PI / 2.0)
+		_weapon.pivot_offset = Vector2(_weapon.size.x * 0.5, 2.0)
+		_weapon.rotation_degrees = lerpf(WEAPON_RAISED_DEG, WEAPON_STRIKED_DEG, t)
+		# the weapon glints at the bottom of every strike
+		_weapon.modulate = Color(1.0, 0.9, 0.6) if t > 0.82 else Color.WHITE
+		sprite.rotation = COMBAT_LEAN_RAD * sin(_swing_phase)
+	elif _swing_animating:
+		_swing_animating = false
+		_weapon.rotation_degrees = 0.0
+		_weapon.modulate = Color.WHITE
+		sprite.rotation = 0.0
+
 ## Soldiers spot the dragon → alarm (swarm sighting), plus contact DPS on the
 ## dragon. Burning status (catch_fire/_tick_burning) is inherited from BaseNPC.
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	_contact_damage(delta)
+	_animate_combat(delta)
 	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
 	if dragon != null and is_instance_valid(dragon) \
 			and global_position.distance_to(dragon.global_position) < aggro_range:

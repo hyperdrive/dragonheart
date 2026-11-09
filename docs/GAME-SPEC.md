@@ -178,6 +178,15 @@ deliberate path, no burn-out spill).
   → the straggler finishes the in-flight leg, then re-picks home).
   Released swarm (ATTACK) unchanged; the King IS bold himself but does
   not count as a pal for the ≥2 rule.
+- **Weapon swing (2026-11-09)**: while ACTIVELY fighting (alive, not
+  burning, dragon inside `attack_range`) every soldier's carried
+  weapon (`Sprite/Spear`, King: `Sprite/Sword` via the same lookup)
+  hammers a ~2.2Hz overhead→strike arc (`-55°→+25°`) with a
+  bottom-of-arc glint and a slight combat lean on the body sprite;
+  the exact rest pose is restored when the fight ends (guaranteed
+  reset leg). Burning soldiers keep the flee wobble (no swing), and
+  the dragon-killing DPS stays the `_contact_damage` channel — the
+  swing is presentation only.
 - **E-strike lottery**: an explicit E within `strike_reach` 100px has a
   **15% chance** to kill a soldier outright (0.5s recharge between
   strikes). "Brute Force" wizard purchases add **+5% each** (cap 35%).
@@ -186,12 +195,39 @@ deliberate path, no burn-out spill).
   cooldown soldiers are NOT valid E-targets (the context action falls
   through to pens/townsfolk). The **King is excluded** from E-strikes.
   Soldier kills heal nothing.
-- **No respawn**: soldiers (and the King) never return.
+- **No respawn**: soldiers never return (the King does — Section 5.4).
 
 ### 5.4 King — the final boss
 
-- 200 HP, inherits Soldier (and is thus also burnable — retune if that
-  trivializes the boss). Spawns at the King threshold (Section 9).
+- **Boss profile (2026-11-09 stomp fix)**: 200 HP, 60 speed, 30 DPS→**50
+  DPS magic sword** (5× a soldier; his main threat is contact damage),
+  `attack_range 70`, whole-map `aggro_range`, `danger_radius 0` (never
+  flees), reward_gold 0. He extends Soldier — his own config is set
+  BEFORE `super._ready()`, and Soldier's defaults now apply only when
+  `npc_type` is still the BaseNPC default (`"villager"`) so the boss
+  values survive. History note: the old unconditional Soldier
+  profile-stomp silently overwrote the King to 50 HP / `"soldier"` /
+  10 DPS since his introduction; the leak surfaced while wiring his
+  fire cloak (he began fleeing with the default 150 danger radius).
+- Spawns at the King threshold (Section 9).
+- **Fire cloak (`fire_immunity_seconds = 5.0`)**: every successful
+  ignition arms a 5s cloak — re-breaths inside the window slide right
+  off (`catch_fire` bails), the burn itself (3s) runs inside the cloak,
+  and after it expires the next hit ignites AND re-arms. Generic
+  `BaseNPC.fire_immunity_seconds` (= 0 elsewhere), so any NPC can
+  opt into the rule. The King prints his cloak activation line.
+- **Three respawns after defeat (`king_respawn_count = 3`)**: each
+  defeat calls `WorldManager.on_king_defeated()` — while respawns
+  remain the death schedules a 3s one-shot Timer that re-materializes
+  the King at the city (the swarm stays ATTACK; purchases/farming
+  stay frozen via `king_spawned`), printing falls/rises. The FOURTH
+  death (all lives spent) is the true one → victory tally, run ends.
+- **Weapon swing**: the King inherits Soldier's code-driven combat
+  swing (`Sprite/Sword` resolves the same weapon lookup as spear) —
+  see Section 5.3's swing notes and
+  `docs/decisions/2026-11-09-king-lives-and-swing.md`.
+- His periodic area special attack (30% chance × `attack_damage ×
+  1.5`, 80px) is unchanged and independent of the weapon swing.
 - Defeating him triggers the victory tally and ends the run.
 
 ### 5.5 Kills by fire vs by E
@@ -366,9 +402,13 @@ strings and gates affordability through the SAME
 - At the King threshold the swarm musters (rally, ATTACK state) and the
   King spawns. The threshold counts EVERY soldier the town has fielded —
   initial + trickle + treasury-bought (15).
-- Victory = the King dies. `GameManager.notify_king_defeated()` emits the
-  tally: time survived, gold/gems stolen, treasury left, fire/scales
-  levels. There is no other win/loss condition beyond dragon death.
+- Victory = the King STAYS dead. With `king_respawn_count = 3`
+  (2026-11-09) he rises up to THREE times after each defeat (3s timer,
+  re-materialized at the city, swarm pinned ATTACK, economy frozen);
+  only the defeat that spends the last life calls
+  `GameManager.notify_king_defeated()` for the tally: time survived,
+  gold/gems stolen, treasury left, fire/scales levels. There is no
+  other win/loss condition beyond dragon death.
 
 
 ## 10. Tuning reference (all live as exports)
@@ -388,6 +428,10 @@ strings and gates affordability through the SAME
 | Brute Force | +5%, cap 0.35 | STRIKE_CHANCE_CAP |
 | Interception | range 100, 3s min cooldown, risk-scaled | GoldInterceptionSystem |
 | Soldier contact DPS | 10/s within 60px | Soldier exports |
+| King boss stats (2026-11-09) | 200 HP / 50 DPS sword / 70px range / never flees / whole-map aggro | King._ready (pre-super config) |
+| King fire cloak (2026-11-09) | immune 5s from every ignition (burn runs inside it); re-arms on re-ignite | BaseNPC.fire_immunity_seconds |
+| King respawns (2026-11-09) | 3 (4 deaths total); 3s re-materialize at city each; last death = victory | WorldManager king_respawn_count |
+| Weapon swing (2026-11-09) | ~2.2Hz, -55°→+25° arc, glint at strike bottom, 0.09 rad lean | Soldier swing consts |
 | Burn | 10/s for 3s then death | BaseNPC |
 | Lair banking radius | 150 | Dragon |
 | Wizard prices | Section 8 table | GameManager.WIZARD_PRICES |
@@ -463,3 +507,4 @@ strings and gates affordability through the SAME
 - `2026-11-09-mine-visuals-and-npc-animations.md` — hill SVG mines, code-driven flee wobble (all NPCs), miner pickaxe hammering, flee-target border clamp
 - `2026-11-09-bold-soldiers-and-flames.md` — width-based soldier morale (bold phalanx/king presence, fight-until-escape, re-check each pick), flame overlay on all burning NPCs, burning panic runs reuse the flee wobble
 - `2026-11-09-gate-handoff-and-aggressive-bold.md` — gate hand-off exemption (the delivery choke that starved soldier purchases), bold reach escalated to whole-map, city-spend console messages
+- `2026-11-09-king-lives-and-swing.md` — King 3 respawns + fire cloak + 50-DPS magic sword, weapon swing for Soldiers/King, and the Soldier._ready profile-stomp bug it exposed

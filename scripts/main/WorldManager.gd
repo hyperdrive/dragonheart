@@ -689,11 +689,22 @@ func _try_buy_soldiers() -> void:
 
 
 ## The final boss arrives at the city; defeating him ends the run.
+## 2026-11-09-king-lives: he rises THREE times after each defeat; the
+## last defeat is the true one and ends the run.
+@export var king_respawn_count: int = 3
+var king_respawns_left: int = 3
+
 func spawn_king() -> void:
 	if king_spawned:
 		return
 	king_spawned = true
 	_soldier_timer.stop()
+	king_respawns_left = king_respawn_count
+	_materialize_king()
+	print("The King has arrived! (%d soldiers spawned)" % soldiers_spawned)
+
+## The re-summon path: scheduled by on_king_defeated one defeat at a time.
+func _materialize_king() -> void:
 	var king := entity_scenes["king"].instantiate() as King
 	king.global_position = city_position + Vector2(0, -140)
 	add_child(king)
@@ -704,7 +715,33 @@ func spawn_king() -> void:
 		game_manager.start_boss_battle(king)
 	entity_spawned.emit("king", king.global_position)
 	_set_swarm_state(SwarmState.ATTACK)
-	print("The King has arrived! (%d soldiers spawned)" % soldiers_spawned)
+
+## The King has fallen — schedule the next life if any remain.
+## Returns true when a respawn is planned (King.die skips the victory
+## path then); false = last life spent → caller declares victory.
+## Lives semantics: king_respawn_count = 3 → the King dies FOUR times in
+## total (first life + three rises). king_respawns_left counts remaining
+## respawns after each decrement.
+func on_king_defeated() -> bool:
+	if game_manager == null or game_manager.run_finished:
+		return false
+	if king_respawns_left <= 0:
+		return false
+	king_respawns_left -= 1
+	print("The King falls for now! (%d respawn(s) still to come)"
+		% king_respawns_left)
+	var respawn_timer := Timer.new()
+	respawn_timer.wait_time = 3.0
+	respawn_timer.one_shot = true
+	respawn_timer.autostart = true
+	respawn_timer.timeout.connect(func() -> void:
+		print("The King rises again at the city! (%d respawn(s) left after this)"
+			% king_respawns_left)
+		_soldier_timer.stop()
+		_materialize_king()
+	)
+	add_child(respawn_timer)
+	return true
 
 # --- signal handlers: NPC → GameManager (the hub) ---------------------------
 

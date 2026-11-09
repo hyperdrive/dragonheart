@@ -4,7 +4,10 @@ class_name King
 
 ## Final boss: spawned by WorldManager once the soldier threshold is met
 ## (docs/decisions/2026-11-08-behavior-system.md — escalation row).
-## Stronger soldier profile + periodic area special attack. Defeat = victory.
+## Stronger soldier profile + periodic area special attack. Defeat = victory
+## ONLY after the last respawn is spent (user spec 2026-11-09-king-lives:
+## the King rises again THREE times, each time immune to fire for 5s per
+## ignition via his cloak, and swinging a magic sword for heavy damage).
 
 @export_group("Boss stats")
 @export var special_attack_cooldown: float = 10.0
@@ -20,10 +23,16 @@ func _ready() -> void:
 	npc_type = "king"
 	max_health = 200
 	speed = 60.0
-	attack_damage = 30
+	# Magic sword (2026-11-09): contact DPS is the main threat — 5x the
+	# soldier's 10/s so a botched contact costs real dragon skin.
+	attack_damage = 50
 	attack_range = 70.0
 	aggro_range = 10000.0  # hunts the dragon across the whole map
 	reward_gold = 0
+	fire_immunity_seconds = 5.0
+	# Bosses never flee (was incidentally zeroed by the old Soldier._ready
+	# stomp; honoring the King's own config exposed the leak).
+	danger_radius = 0.0
 
 	super._ready()
 
@@ -35,6 +44,15 @@ func _physics_process(delta: float) -> void:
 	if _special_attack_timer > 0.0:
 		_special_attack_timer -= delta
 	super._physics_process(delta)
+
+## The cloak grants itself inside super.catch_fire (base grant path);
+## surfacing the moment it activates so the player can read the rules.
+func catch_fire() -> void:
+	var cloak_was_down: bool = _fire_immune_left <= 0.0
+	super.catch_fire()
+	if cloak_was_down and _burning_left > 0.0:
+		print("The King's magic cloak flares bright — fire-proof for %ds!"
+			% int(fire_immunity_seconds))
 
 ## King employs the periodic area special between regular attacks.
 func _complete_attack() -> void:
@@ -64,6 +82,13 @@ func _perform_special_attack() -> void:
 		_sprite.modulate = Color.WHITE
 
 func die() -> void:
+	# Three respawns after the first defeat (user spec 2026-11-09-king-lives):
+	# while lives remain, the death hands out to the WorldManager which
+	# re-summons the King at the city; the run only ENDS on the last life.
+	var world := get_tree().get_first_node_in_group("world_manager") as WorldManager
+	if world != null and world.on_king_defeated():
+		super.die()  # corpse out; the respawn is the world's business now
+		return
 	print("King defeated! Victory achieved!")
 	if game_manager != null:
 		game_manager.notify_king_defeated()
