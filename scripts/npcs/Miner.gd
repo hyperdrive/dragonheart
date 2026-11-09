@@ -188,17 +188,28 @@ func _mine_still_available() -> bool:
 	return mining_cooldown <= 0.0
 
 ## ~70% gold, ~30% gems; tiered yield; payload grows until delivery.
+## Haul-size lottery (user spec: "50% one time, 25% 2 and 25% 3"): every
+## working trip rolls how rich the strike is — a bone-lean pick, a good
+## haul, or a lucky double-pocket seam.
+func _roll_haul_size() -> int:
+	var roll := randf()
+	if roll < 0.50:
+		return 1
+	elif roll < 0.75:
+		return 2
+	return 3
+
 func _complete_mine() -> void:
 	var res_type := "gold" if randf() < 0.7 else "gems"
-	var amount := npc_level  # tiered level multiplies later at delivery; base = level
+	var amount := npc_level * _roll_haul_size()
 	set_payload(res_type, payload_amount + amount)
 	mining_cooldown = mine_cooldown
 	if res_type == "gold":
 		gold_collected.emit()
-		print("Miner collected gold — carrying %d %s" % [payload_amount, payload_res_type])
+		print("Miner collected %d gold — carrying %d %s" % [amount, payload_amount, payload_res_type])
 	else:
 		gems_collected.emit()
-		print("Miner collected gems — carrying %d %s" % [payload_amount, payload_res_type])
+		print("Miner collected %d gems — carrying %d %s" % [amount, payload_amount, payload_res_type])
 
 ## Delivery: fill the town treasury (GameManager), clear the payload.
 func _complete_deliver() -> void:

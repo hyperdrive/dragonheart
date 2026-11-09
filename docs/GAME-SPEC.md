@@ -137,6 +137,11 @@ deliberate path, no burn-out spill).
 - **Cycle**: mine at the mine sites → accumulate payload (tiered, ~70%
   gold / 30% gems, payload grows until delivery) → deliver at the city
   (treasury).
+- **Haul-size lottery (2026-11-09)**: every working trip rolls its size —
+  **50% one item, 25% two, 25% three** (×miner tier, so a level-2 miner
+  hauls 2/4/6). The dice roll is per pickaxe trip, not per miner lifetime;
+  deliveries, panic drops, and interceptions each carry whatever the haul
+  rolled.
 - **Exposed while hauling**: a cart sprite shows during payload; miners run
   faster with payload exposed. When the dragon comes within fear distance
   (180px), the miner **panics and drops the payload as a ground GoldDrop**
@@ -515,6 +520,7 @@ strings and gates affordability through the SAME
 | Animal art (2026-11-09) | pig.svg / cow.svg, 48px canvas; pens scale 0.75 / 0.8 | assets/*.svg, pen scenes |
 | Field visuals (2026-11-09) | soil base + fence, CropRows green / StubbleRows tan overlays, per-field modulate jitter | Field.tscn / `_apply_state_visuals` |
 | Dragon flight (2026-11-09) | Q: fly 300 for 3s → auto-land → 5s recharge; walk 150; lift 34px, flap ~3.2Hz, detached shadow | Dragon.gd Flight group / Dragon.tscn Vis+Shadow+wing pivots |
+| Miner haul lottery (2026-11-09) | per trip: 50% ×1, 25% ×2, 25% ×3 (×tier) | Miner `_roll_haul_size` |
 | Bold morale radii (2026-11-09) | pals 90px (5 widths, ≥2) / King 180px / hunt reach whole-map (4000) | Soldier morale consts |
 | Gate hand-off (2026-11-09) | loaded deliver legs skip flee preemption; claws still spill at 85px | Miner/Farmer `_handoff_stretch` |
 
@@ -588,3 +594,4 @@ strings and gates affordability through the SAME
 - `2026-11-09-archer-and-wizard.md` — Archer (range attack, stand-off) + backstabbing Wizard (tower-count triggers, lightning, fire shield) + tower revisit counters
 - `2026-11-09-farm-animal-visuals.md` — pig/cow SVG art in the pens + layered furrow-row field visuals with a single state-visual funnel
 - `2026-11-09-dragon-flight-visuals.md` — walking/flight split (Q, 3s/5s), wing flaps + lift + shadow, the Vis wrapper that keeps animation/code from fighting
+- `2026-11-09-miner-haul-lottery.md` — miner haul size 50/25/25 (×1/×2/×3 per trip), accumulation-until-delivery untouched
