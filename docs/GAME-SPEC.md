@@ -80,6 +80,20 @@ by jittering around an anchor and rejecting candidates that violate
 the city at 420px. Walls/unknown obstacles: NPCs raycast for blockers and
 sidestep via tangent detours (stuck watchdog: 0.7s of ≤6px movement).
 
+Pseudo-3D terrain collision (2026-11-09, two physics layers):
+
+- **Layer 1 "solid"**: mountains, the lair, lakes, boundary walls — full
+  circle blockers for EVERYONE, including a flying dragon.
+- **Layer 5 "wood" (value 16)**: trees — their collision is a thin
+  rectangle ONLY at the trunk base (~30×10 at the shadow line). Walking
+  NPCs (masks 17: solid + wood) cross freely through the canopy zone
+  ("walking behind the tree") but never cut across the base.
+- **Dragon** (mask 19 grounded): Q take-off releases the wood layer
+  (`set_collision_mask_value(5, false)` — flies THROUGH/over trees);
+  landing restores it. Mountains still block the flight lane.
+- BehaviorTree detour/shadow rays query mask 17 (`SCENERY_RAY_MASK`) so
+  walkers plan around trunk bases.
+
 `FOOTPRINT_RADIUS` const + `_clamp_to_interior()` in
 `scripts/main/WorldManager.gd`.
 
@@ -522,12 +536,20 @@ strings and gates affordability through the SAME
 | `king_defeat` | `GameManager.notify_king_defeated()` — the FINAL fall only | the crown tumbles; victory |
 | `wizard_emerge` | wizard spawn path in WorldManager | the shopkeeper unmasked as the treacherous evil overlord |
 | `pig_eaten` / `cow_eaten` | `Dragon._eat_meal_from` after the meal | first pig / first cow of the war |
+| `dragon_death_soldier` / `_archer` / `_king` / `_wizard` / `_dragon_death` | `Dragon.die()` after the death animation — `take_damage`'s killer arg picks the slayer's chapter (unknowns: the generic "hoard goes cold") | the dragon's fall, told in the killer's voice; his choices are last words |
 
 - **Pause ownership is ALL GameManager's** (2026-11-09): `_open_story_now`
   instantiates one shared popup (layer 12, PROCESS_MODE_ALWAYS) and sets
   `get_tree().paused = true`; `_on_story_closed` unpauses and drains.
   Story calls pass through `get_first_node_in_group("game_manager")`
   from the source nodes — popup never owns state.
+- **The death hand-off** (2026-11-09): the dragon does NOT reload the
+  scene directly anymore. `Dragon.die()` plays the death animation, then
+  calls `GameManager.notify_dragon_death(killer_key)`, which opens the
+  killer-named chapter (`DRAGON_DEATH_KINDS`) and marks
+  `_pending_death_reload` — the scene reloads only when the chapter
+  CLOSES (`_run_scene_reload`). Once-per-run on its own
+  `dragon_death_served` flag (NOT `story_shown`, since the run ends).
 
 
 ## 10. Tuning reference (all live as exports)
@@ -567,7 +589,9 @@ strings and gates affordability through the SAME
 | Miner haul lottery (2026-11-09) | per trip: 50% ×1, 25% ×2, 25% ×3 (×tier) | Miner `_roll_haul_size` |
 | Bold morale radii (2026-11-09) | pals 90px (5 widths, ≥2) / King 180px / hunt reach whole-map (4000) | Soldier morale consts |
 | Gate hand-off (2026-11-09) | loaded deliver legs skip flee preemption; claws still spill at 85px | Miner/Farmer `_handoff_stretch` |
-| TTRPG story popups (2026-11-09) | 7 kinds, each ONCE per run; choices recorded (kind→index); keys 1–4 pick, ESC = last line; queue drains on close | StoryPopup.STORIES / GameManager story group |
+| TTRPG story popups (2026-11-09) | 12 kinds — 7 run beats + 5 dragon-death chapters; beats once per run (`story_shown`), death via `dragon_death_served`; choices recorded (kind→index); keys 1–4 pick, ESC = last line | StoryPopup.STORIES / GameManager story group |
+| Killer attribution (2026-11-09) | `take_damage(amount, bypass_shield, killer)` — soldier/archer/king/wizard callers pass their key; chapter opens after the death anim; reload on chapter close | Dragon._last_killer / GameManager.DRAGON_DEATH_KINDS |
+| Terrain layers (2026-11-09) | layer 1 solid (mountains/lair/lake/walls — block ALL incl. flight); layer 5 wood value 16 (trees: 30×10 BASE strip only); walkers mask 17; dragon 19 grounded, drops bit 5 airborne | Tree/Mountain tscn, Dragon _try_flight, BehaviorTree SCENERY_RAY_MASK |
 
 
 ## 11. Implementation notes (engine mapping)
@@ -645,3 +669,4 @@ strings and gates affordability through the SAME
 - `2026-11-09-pricing-and-claws.md` — wizard shop re-price (brute 8g, all cheaper), wizard greedy trigger 30→20g, code-driven dragon claw swing
 - `2026-11-09-wizard-4-buys-shield-bypass.md` — wizard provocation now four upgrades, lightning pierces the shop shield
 - `2026-11-09-ttrpg-story-popups.md` — paused story overlay (7 chapters, once per run), multiple-choice answers in the ttrpg_choices progression ledger
+- `2026-11-09-dragon-death-and-terrain-layers.md` — killer-named death chapters (reload on close) + wood/solid terrain layers: tree base strips, flight-over-trees, mountains still block

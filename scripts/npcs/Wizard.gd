@@ -61,7 +61,7 @@ func _tick_lightning(delta: float) -> void:
 	_lightning_left = LIGHTNING_RECHARGE
 	# bypass_shield: the backstabbing wizard pierces the shop shield
 	# (user 2026-11-09: no shield against his attacks).
-	dragon.take_damage(LIGHTNING_DAMAGE, true)
+	dragon.take_damage(LIGHTNING_DAMAGE, true, "wizard")
 	_spawn_bolt(dragon.global_position)
 	print("The wizard's lightning hits you for %d!" % LIGHTNING_DAMAGE)
 

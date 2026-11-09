@@ -55,6 +55,32 @@ var story_queue: Array[String] = []     # told-while-paused stories wait here
 var ttrpg_choices: Dictionary = {}      # kind → chosen answer index
 signal story_choice_made(kind: String, choice_index: int)
 
+## Death chapters (2026-11-09): the dragon's slayer names the tale —
+## each take_damage caller passes a killer key; unknowns get the
+## generic "hoard goes cold" chapter.
+const DRAGON_DEATH_KINDS := {
+	"soldier": "dragon_death_soldier",
+	"archer": "dragon_death_archer",
+	"king": "dragon_death_king",
+	"wizard": "dragon_death_wizard",
+}
+var dragon_death_served: bool = false   # one death chapter per run
+var _pending_death_reload: bool = false
+
+## Called by Dragon.die() (after the death animation). Opens the
+## killer-named chapter; the scene reloads when the chapter closes.
+func notify_dragon_death(killer_key: String) -> void:
+	if dragon_death_served:
+		_run_scene_reload()   # chapter already told: end the run now
+		return
+	dragon_death_served = true
+	_pending_death_reload = true
+	_open_story_now(DRAGON_DEATH_KINDS.get(killer_key, "dragon_death"))
+
+func _run_scene_reload() -> void:
+	if get_tree() != null and get_tree().current_scene != null:
+		get_tree().reload_current_scene()
+
 ## Fire-and-forget from any gameplay node (Field.burn, BaseNPC.catch_fire,
 ## WorldManager king/wizard paths, Dragon meals). While a popup or any
 ## pause-menu is up the story waits in the queue instead.
@@ -86,9 +112,15 @@ func _on_story_choice(kind: String, choice_index: int) -> void:
 	print("TTRPG — '%s' answered: choice %d" % [kind, choice_index + 1])
 
 ## Story resolution: close, unpause, then serve anything queued behind it.
+## A dragon-death chapter ENDS the run instead: the chapter has played,
+## so the world reloads (hub owns the teardown; Dragon.die only asks).
 func _on_story_closed() -> void:
 	story_open = false
 	get_tree().paused = false
+	if _pending_death_reload:
+		_pending_death_reload = false
+		_run_scene_reload()
+		return
 	_drain_story_queue()
 
 func _drain_story_queue() -> void:

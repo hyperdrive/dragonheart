@@ -87,7 +87,7 @@ _data = {
 
 [node name="Dragon" type="CharacterBody2D" groups=["dragon"]]
 collision_layer = 2
-collision_mask = 3
+collision_mask = 19
 script = ExtResource("1_m3q8w")
 
 [node name="Shadow" type="ColorRect" parent="."]

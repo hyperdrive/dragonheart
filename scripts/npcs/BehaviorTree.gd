@@ -22,6 +22,10 @@ enum State { IDLE, MOVING, WORKING, FLEEING, DEAD }
 ## (Also the initial value of Activity.target.)
 const TARGET_NONE := Vector2.INF
 const ARRIVAL_DISTANCE := 12.0
+## Scenery mask for detour/shadow rays: boundary + terrain (layer 1) AND
+## trees (layer 5, value 16) — walkers must route around trunks even
+## though only their BASE strip blocks (mountains/lakes stay layer 1).
+const SCENERY_RAY_MASK := 17
 
 ## One schedulable piece of work. Subclasses define activities in code
 ## (decision record: no .tres behavior configs).
@@ -301,7 +305,8 @@ func _place_detour() -> void:
 	var best_tangent := INF
 	for offset: float in [0.0, RAY_SPREAD, -RAY_SPREAD]:
 		var from := npc.global_position + perp * offset
-		var ray := PhysicsRayQueryParameters2D.create(from, from + forward * RAY_EXTRA, 1)
+		var ray := PhysicsRayQueryParameters2D.create(
+			from, from + forward * RAY_EXTRA, SCENERY_RAY_MASK)
 		var hit := space.intersect_ray(ray)
 		if hit.is_empty():
 			continue
@@ -369,7 +374,7 @@ func _shadow_clear(from: Vector2, goal: Vector2) -> bool:
 	for offset: float in [0.0, RAY_SPREAD, -RAY_SPREAD]:
 		var ray_origin := from + perp * offset
 		var ray := PhysicsRayQueryParameters2D.create(
-			ray_origin, goal + perp * offset, 1)
+			ray_origin, goal + perp * offset, SCENERY_RAY_MASK)
 		if not space.intersect_ray(ray).is_empty():
 			return false
 	return true

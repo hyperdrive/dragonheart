@@ -90,6 +90,64 @@ const STORIES := {
 			"Adopt a moment of silence — THE BITE ITSELF was tasteful.",
 		],
 	},
+	# --- dragon-death chapters (2026-11-09): the killer names the tale ---
+	# Every kind shares the dragon_fall.svg art; the tint and the text
+	# are the slayer's signature. Choices are the dragon's last words.
+	"dragon_death_soldier": {
+		"title": "The Last Wingbeat",
+		"image": "res://assets/dragon_fall.svg",
+		"tint": Color(0.3, 0.26, 0.24),
+		"text": "No magic. No prophecy. Just town steel, held shoulder to shoulder by men who did NOT flee — pikes braced while the great shadow dove, and a droning farmhand chorus singing their one rehearsed line: \"THE DRAGON IS SLAIN!\" The commonest metal in the realm spelled the end of the rarest. The song will outlive the hoard.",
+		"choices": [
+			"Fall growling: \"Enjoy the tax audit, mortals.\"",
+			"Bleed with a smirk — men with pitchforks will REMEMBER this.",
+			"Whisper: \"A farmer. A FARMER. History is unkind.\"",
+		],
+	},
+	"dragon_death_archer": {
+		"title": "The Well-Aimed Silence",
+		"image": "res://assets/dragon_fall.svg",
+		"tint": Color(0.24, 0.3, 0.26),
+		"text": "The bolt that took him ran true from a hundred paces of patience — one archer, one arrow, one heartbeat at the draw. The town said dragons could not be whittled. The town was wrong. As the great wings fold, the archer lowers the bow without a word, and THAT silence is the loudest cheer the realm has ever heard.",
+		"choices": [
+			"Mutter: \"Outranged… by a Peasant with a stick.\"",
+			"Curse the quiet kill — dragons deserve LOUDER deaths.",
+			"Salute mid-fall. Some slayers earn the courtesy.",
+		],
+	},
+	"dragon_death_king": {
+		"title": "The Crown's Vengeance",
+		"image": "res://assets/dragon_fall.svg",
+		"tint": Color(0.28, 0.22, 0.3),
+		"text": "The magic sword falls one final time, and the King stands unbeaten on the mountain of scales — the realm's crown unbroken, the hoard reclaimed, the burning season OVER. \"I told you, beast,\" he says to the cooling dark, \"by my fathers and every golden coin.\" Hills away, farms and mines exhale: the war is decided.",
+		"choices": [
+			"Rasp: \"Rest… while your treasury… fills again.\"",
+			"Die defiant — a dragon kneels to NO crown, even now.",
+			"Slip him one hash-brown of respect. Fine king. Worthy kill.",
+		],
+	},
+	"dragon_death_wizard": {
+		"title": "The Overlord Collects",
+		"image": "res://assets/dragon_fall.svg",
+		"tint": Color(0.2, 0.16, 0.3),
+		"text": "The lightning was never a duel — it was an INVOICE. The wizard strolls through thunder to the fallen hoard, rolling up his sleeves: \"Every upgrade you bought… every coin you stole… plus interest, penalties, and MY board.\" The backstabbing merchant finally closes the account he opened the day the dragon first came cheap at his door.",
+		"choices": [
+			"Die mid-taunt: \"Your 8g shield… was STILL shoddy.\"",
+			"Warn with the last breath: \"Wizards… write reviews… posthumous.\"",
+			"Gurgle an apology for the customer complaints. History forgets.",
+		],
+	},
+	"dragon_death": {
+		"title": "The Hoard Goes Cold",
+		"image": "res://assets/dragon_fall.svg",
+		"tint": Color(0.22, 0.2, 0.22),
+		"text": "The dragon never knew which blow mattered — the realm's cuts arrived together, patient and grey, the way debts do. One more wing settles over an unguarded hoard. Somewhere the town bells ring, and ring, and ring upon a story that no longer features a dragon except as a scar on the harvest calendar.",
+		"choices": [
+			"Fall dramatic: \"Bury me ON the coin. I'll know the difference.\"",
+			"Curse generically — something about hematite and bureaucracy.",
+			"Sleep. Just… sleep. The hoard can keep its OWN books.",
+		],
+	},
 }
 
 const HOTKEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4]

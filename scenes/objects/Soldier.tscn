@@ -5,7 +5,7 @@
 
 [node name="Soldier" type="CharacterBody2D" groups=["soldiers"]]
 collision_layer = 4
-collision_mask = 1
+collision_mask = 17
 script = ExtResource("1_m2n7r")
 
 [node name="Sprite" type="Node2D" parent="."]

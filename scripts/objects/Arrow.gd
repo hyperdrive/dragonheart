@@ -37,5 +37,5 @@ func _physics_process(delta: float) -> void:
 		return
 	if global_position.distance_to(dragon.global_position) <= HIT_RADIUS:
 		_hit = true
-		dragon.take_damage(ARROW_DAMAGE)
+		dragon.take_damage(ARROW_DAMAGE, false, "archer")
 		queue_free()

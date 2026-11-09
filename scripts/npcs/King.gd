@@ -74,7 +74,7 @@ func _perform_special_attack() -> void:
 	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
 	if dragon != null and global_position.distance_to(dragon.global_position) < special_attack_radius \
 			and dragon.has_method("take_damage"):
-		dragon.take_damage(int(attack_damage * 1.5))
+		dragon.take_damage(int(attack_damage * 1.5), false, "king")
 	await get_tree().create_timer(0.5).timeout
 	if is_instance_valid(attack_effect):
 		attack_effect.queue_free()

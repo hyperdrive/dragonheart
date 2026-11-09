@@ -257,7 +257,7 @@ func _contact_damage(delta: float) -> void:
 	var whole := int(_contact_debt)
 	if whole > 0:
 		_contact_debt -= float(whole)
-		dragon.take_damage(whole)
+		dragon.take_damage(whole, false, "soldier")
 
 func take_damage(amount: int) -> void:
 	# Soldiers take fire/dragon damage; routed into the base class.

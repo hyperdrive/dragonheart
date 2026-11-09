@@ -48,6 +48,10 @@ var _chip_flying: Variant = null
 var _chip_seconds: Variant = null
 signal flight_state_changed(flying: bool, seconds_left: float, charging: bool)
 
+## Slayer attribution for the death chapter (take_damage's killer arg;
+## take_damage callers pass "soldier"/"archer"/"king"/"wizard").
+var _last_killer: String = ""
+
 ## Claw swing (2026-11-09, user: "give dragon claw attack animations").
 ## Code-driven on the ClawPivot — same pattern as the soldier pickaxe
 ## swing: a raised slash sweeps down to a slam, glints warm at impact,
@@ -442,9 +446,14 @@ func fire_breath() -> void:
 	if animation_player.has_animation("idle"):
 		animation_player.play("idle")
 
-func take_damage(amount: int, bypass_shield: bool = false) -> void:
+func take_damage(amount: int, bypass_shield: bool = false,
+		killer: String = "") -> void:
 	if _dying:
 		return
+	# Who came for the dragon's last hoard? The death chapter names the
+	# slayer (2026-11-09 user: "take into account which NPC killed it").
+	if killer != "":
+		_last_killer = killer
 	var damage_reduction := 0
 	if game_manager != null:
 		damage_reduction = (game_manager.scales_level - 1) * 2
@@ -481,6 +490,9 @@ func _try_flight() -> void:
 		return
 	_flying = true
 	_flight_left = fly_duration
+	# ALOFT: treeline is beneath the wings (trees, layer 5 / value 16) —
+	# mountains and boundary walls (layer 1) still block the flight lane.
+	set_collision_mask_value(5, false)
 	print("Your wings snap wide — AIRBORNE! (%.0fx speed for %ds)" % [
 		fly_speed / walk_speed, int(fly_duration)])
 	_emit_flight_chip(true)
@@ -491,6 +503,8 @@ func land_flight() -> void:
 	_flying = false
 	_flight_left = 0.0
 	_flight_recharge_left = flight_recharge
+	# Grounded again: trees block the dragon's lane exactly as for walkers.
+	set_collision_mask_value(5, true)
 	print("Dragon folds back to the ground — wings tire (%ds till ready)."
 		% ceili(_flight_recharge_left))
 	_emit_flight_chip(true)
@@ -649,8 +663,14 @@ func die() -> void:
 	animation_player.play("death")
 	await animation_player.animation_finished
 	# After the await the scene may already be torn down (double reload) or
-	# the node detached — reload only while we are still in a live tree.
-	if is_inside_tree() and get_tree() != null:
+	# the node detached — the death CHAPTER must play while we are still in
+	# a live tree, so hand the run's end to the story system: GameManager
+	# opens the killer-named chapter and reloads when it closes.
+	if not (is_inside_tree() and get_tree() != null):
+		return
+	if game_manager != null:
+		game_manager.notify_dragon_death(_last_killer)
+	else:
 		get_tree().reload_current_scene()
 
 # Animations (idle, fire_breath, death) live in Dragon.tscn's AnimationPlayer
