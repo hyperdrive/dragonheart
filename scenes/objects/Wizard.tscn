@@ -1,0 +1,48 @@
+[gd_scene load_steps=3 format=3 uid="uid://b9wizard0n22"]
+
+[ext_resource type="Script" path="res://scripts/npcs/Wizard.gd" id="1_wiz"]
+[ext_resource type="RectangleShape2D" path="res://assets/shapes/soldier_shape.tres" id="2_wiz"]
+
+[node name="Wizard" type="CharacterBody2D" groups=["wizard"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_wiz")
+
+[node name="Sprite" type="Node2D" parent="."]
+position = Vector2(0, -5)
+
+[node name="Body" type="ColorRect" parent="Sprite"]
+size = Vector2(18, 25)
+color = Color(0.55, 0.3, 0.8, 1)
+
+[node name="Hat" type="ColorRect" parent="Sprite"]
+position = Vector2(-5, -28)
+size = Vector2(10, 18)
+color = Color(0.3, 0.15, 0.55, 1)
+
+[node name="Beard" type="ColorRect" parent="Sprite"]
+position = Vector2(-4, 8)
+size = Vector2(8, 8)
+color = Color(0.9, 0.9, 0.95, 1)
+
+[node name="Staff" type="ColorRect" parent="Sprite"]
+position = Vector2(16, -14)
+size = Vector2(4, 26)
+color = Color(0.75, 0.68, 0.3, 1)
+
+[node name="Orb" type="ColorRect" parent="Sprite"]
+position = Vector2(15, -20)
+size = Vector2(6, 6)
+color = Color(0.5, 0.85, 1, 1)
+
+[node name="MainCollision" type="CollisionShape2D" parent="."]
+shape = ExtResource("2_wiz")
+position = Vector2(0, 5)
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
+shape = ExtResource("2_wiz")
+position = Vector2(0, 0)

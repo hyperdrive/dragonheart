@@ -303,6 +303,44 @@ be silently wedged or circle-loop forever:
   AnimalPen (`a new pig grew up at the pen — town paid 10 food`). Every
   city resource use is narrated on the console.
 
+### 5.8 Archer — the ranged soldier (2026-11-09)
+
+- Every THIRD fielded recruit (`WorldManager._next_recruit_type()`, in
+  both the 8s trickle and treasury purchases) is an **Archer**: a
+  soldier-family NPC (same 50 HP, 80 speed, never flees, morale/bold
+  rules, counts toward the King threshold) that attacks FROM RANGE.
+- **Fires one arrow every 2s** whenever the dragon is inside
+  `arrow_range` 350px — 5 damage per hit, INDEPENDENT of the behavior
+  tree and morale (a calm-town archer still shoots an in-range dragon;
+  morale only drives positioning).
+- **Aim is exact**: the arrow flies STRAIGHT to the dragon's position
+  captured at fire time — a STATIONARY dragon never misses; a moving
+  dragon naturally dodges (the projectile never tracks him).
+- Stand-off positioning: instead of pressing into contact he holds a
+  ring `arrow_range - 60px` from the dragon (via `_pick_dragon_target`
+  hold). No melee DPS channel at all.
+
+### 5.9 Wizard — the backstabbing caster (2026-11-09)
+
+- Lives at his tower and STAYS OUT of the war until provoked
+  (`WorldManager._try_spawn_wizard`, every frame): emerges when the
+  dragon has **bought ≥3 upgrades AND visited the tower more than 3
+  times** (counters on GameManager: `tower_visits` increments on every
+  door opening, `upgrade_purchases` on every successful purchase) OR
+  has **more than 30g hoarded in the stash**.
+- Emerged profile: 80 HP, speed 75, never flees; **lightning**: instant
+  long-range bolt (500px reach) at **30 damage, 2s recharge** with a
+  Line2D flash visual and a print; NO melee contact at all.
+- **Relentless**: every attack gate is unlocked — once out, he hunts
+  the dragon across the whole map and does not stop until the dragon
+  is dead (swarm morale/rally are irrelevant to him).
+- **Fire shield like the King**: `fire_immunity_seconds = 5.0` — every
+  ignition arms the 5s cloak (the burn runs inside it; re-ignition
+  re-arms), with his own shield-flare print.
+- The tower shop stays open for repeat visits: every entry reopens the
+  WizardMenu (world paused) and counts toward the visits counter —
+  buying 3–4 times in separate entries is the intended loop.
+
 
 ---
 
@@ -438,7 +476,9 @@ strings and gates affordability through the SAME
 | King boss stats (2026-11-09) | 200 HP / 50 DPS sword / 70px range / never flees / whole-map aggro | King._ready (pre-super config) |
 | King fire cloak (2026-11-09) | immune 5s from every ignition (burn runs inside it); re-arms on re-ignite | BaseNPC.fire_immunity_seconds |
 | King respawns (2026-11-09) | 3 (4 deaths total); 3s re-materialize at city each; last death = victory | WorldManager king_respawn_count |
-| Weapon swing (2026-11-09) | ~2.2Hz, -55°→+25° arc, glint at strike bottom, 0.09 rad lean | Soldier swing consts |
+| Weapon swing (2026-11-09) | ~2.2Hz, -55°→+25° arc (pivot at the GRIP), glint at strike bottom, 0.09 rad lean | Soldier swing consts |
+| Archer (2026-11-09) | every 3rd fielded recruit; arrow 5 dmg / 2s in 350px reach; never misses a stationary dragon | Archer.gd / _next_recruit_type |
+| Wizard (2026-11-09) | emerges (≥3 buys AND >3 tower visits) OR stash >30g; lightning 30 dmg / 2s / 500px; fire shield 5s; relentless whole-map hunt | Wizard.gd / WorldManager Wizard group |
 | Burn | 10/s for 3s then death | BaseNPC |
 | Lair banking radius | 150 | Dragon |
 | Wizard prices | Section 8 table | GameManager.WIZARD_PRICES |
@@ -515,3 +555,4 @@ strings and gates affordability through the SAME
 - `2026-11-09-bold-soldiers-and-flames.md` — width-based soldier morale (bold phalanx/king presence, fight-until-escape, re-check each pick), flame overlay on all burning NPCs, burning panic runs reuse the flee wobble
 - `2026-11-09-gate-handoff-and-aggressive-bold.md` — gate hand-off exemption (the delivery choke that starved soldier purchases), bold reach escalated to whole-map, city-spend console messages
 - `2026-11-09-king-lives-and-swing.md` — King 3 respawns + fire cloak + 50-DPS magic sword, weapon swing for Soldiers/King, and the Soldier._ready profile-stomp bug it exposed
+- `2026-11-09-archer-and-wizard.md` — Archer (range attack, stand-off) + backstabbing Wizard (tower-count triggers, lightning, fire shield) + tower revisit counters

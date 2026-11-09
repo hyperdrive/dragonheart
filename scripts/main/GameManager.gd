@@ -53,6 +53,12 @@ var king_spawned: bool = false
 var run_finished: bool = false
 var run_timer: float = 0.0
 
+## Tower provocation telemetry (2026-11-09 wizard emergence): every tower
+## door entry counts, every SUCCESSFUL upgrade purchase counts. WorldManager
+## spawns the wizard when (purchases >= 3 AND visits > 3) OR stash > 30g.
+var tower_visits: int = 0
+var upgrade_purchases: int = 0
+
 @onready var dragon: CharacterBody2D = $World/Dragon
 @onready var camera: Camera2D = $Camera
 @onready var world_manager: Node2D = $World/WorldManager
@@ -201,6 +207,7 @@ func purchase_upgrade(kind: String) -> bool:
 		"brute":
 			dragon_ref.call("add_strike_chance", 0.05)
 	upgrade_purchased.emit(kind, int(WIZARD_PRICES[kind]["gold"]))
+	upgrade_purchases += 1  # the wizard keeps count (emergence trigger)
 	return true
 
 ## Open the wizard overlay (pause the live world beneath it). Lazily built so

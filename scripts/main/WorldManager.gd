@@ -59,12 +59,13 @@ enum SwarmState { CALM, RALLY, ATTACK }
 @export var attack_range_city: float = 170.0    # dragon at the walls → ATTACK
 
 const ESCALATING := "soldier"   # entity spawned on the escalation curve
-
 var entity_scenes := {
 	"farmer": preload("res://scenes/npcs/Farmer.tscn"),
 	"miner": preload("res://scenes/npcs/Miner.tscn"),
 	"mine": preload("res://scenes/objects/Mine.tscn"),
 	"soldier": preload("res://scenes/objects/Soldier.tscn"),
+	"archer": preload("res://scenes/objects/Archer.tscn"),
+	"wizard": preload("res://scenes/objects/Wizard.tscn"),
 	"field": preload("res://scenes/systems/Field.tscn"),
 	"tower": preload("res://scenes/objects/WizardTower.tscn"),
 	"king": preload("res://scenes/objects/King.tscn"),
@@ -653,7 +654,7 @@ func _on_escalation_tick() -> void:
 	# a no-op while one is out.
 	if game_manager == null:
 		return
-	spawn_entity(ESCALATING, 1, rally_point, 90.0)
+	spawn_entity(_next_recruit_type(), 1, rally_point, 90.0)
 	_escalation_soldier_spawned()
 
 
@@ -688,8 +689,9 @@ func _try_buy_soldiers() -> void:
 		gems_spent += 1
 	if bought == 0:
 		return
-	spawn_entity("soldier", bought, rally_point, 90.0)
 	for i in bought:
+		# one spawn per bought unit so the Archer rotation lands per unit
+		spawn_entity(_next_recruit_type(), 1, rally_point, 90.0)
 		_escalation_soldier_spawned()
 	print("City bought %d soldier(s) with treasury funds — spent %d gold, %d gems (%d fielded total, %d gold / %d gems left)"
 		% [bought, gold_spent, gems_spent, soldiers_spawned,
@@ -701,6 +703,13 @@ func _try_buy_soldiers() -> void:
 ## last defeat is the true one and ends the run.
 @export var king_respawn_count: int = 3
 var king_respawns_left: int = 3
+
+## Recruit rotation (2026-11-09 archer addition): every THIRD fielded unit
+## is an Archer — a ranged soldier that peppers the dragon from the mortars-
+## out-of-breath range with 5-dmg arrows. Counts toward the King threshold
+## via _escalation_soldier_spawned like any soldier.
+func _next_recruit_type() -> String:
+	return "archer" if soldiers_spawned % 3 == 2 else "soldier"
 
 func spawn_king() -> void:
 	if king_spawned:
@@ -751,10 +760,41 @@ func on_king_defeated() -> bool:
 	add_child(respawn_timer)
 	return true
 
+# --- the backstabbing wizard (2026-11-09 user spec) ---------------------------
+
+## He emerges from HIS tower when the dragon has crossed one of the
+## provocation lines: bought 3+ upgrades AND visited the tower more than
+## 3 times, OR hoarded 30+ gold in the stash. Then he hunts the dragon
+## across the whole map with lightning (30 dmg / 2s / long range) and
+## never stops — see scripts/npcs/Wizard.gd.
+@export_group("Wizard")
+@export var wizard_upgrade_threshold: int = 3
+@export var wizard_visit_threshold: int = 3     # "more than 3" → 4+
+@export var wizard_stash_trigger: int = 30
+var wizard_spawned: bool = false
+
+func _try_spawn_wizard() -> void:
+	if wizard_spawned or game_manager == null or game_manager.run_finished:
+		return
+	var bought_enough: bool = game_manager.upgrade_purchases >= wizard_upgrade_threshold \
+		and game_manager.tower_visits > wizard_visit_threshold
+	var greedy: bool = int(game_manager.stash["gold"]) > wizard_stash_trigger
+	if not (bought_enough or greedy):
+		return
+	wizard_spawned = true
+	var wizard := entity_scenes["wizard"].instantiate() as Wizard
+	var spawn_anchor := tower_position + Vector2(60, -40)
+	wizard.global_position = spawn_anchor
+	add_child(wizard)
+	(wizard as BaseNPC).home_position = spawn_anchor
+	entity_spawned.emit("wizard", wizard.global_position)
+	print("The wizard emerges from his tower — he has seen enough of your robberies!")
+
 # --- signal handlers: NPC → GameManager (the hub) ---------------------------
 
 func _process(delta: float) -> void:
 	_tick_respawn_queue(delta)
+	_try_spawn_wizard()
 
 func _on_food_delivered(amount: int) -> void:
 	if game_manager != null:
