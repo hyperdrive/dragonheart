@@ -163,6 +163,19 @@ deliberate path, no burn-out spill).
   float debt, applied as int chunks) as long as the hitbox touches.
 - **Flame interaction**: breath sets soldiers ABLAZE (cone: within 95px,
   forward dot ≥ 0.25) — they panic-run randomly and die at burn-out.
+  Burning panic runs reuse the flee wobble (§11 presentation layer).
+- **Bold rule (2026-11-09, decision record
+  `2026-11-09-bold-soldiers-and-flames.md`)**: a bold
+  soldier ignores the calm-town aggro gate and hunts the dragon alone.
+  Boldness is presence-based, NEVER sticky — re-checked on every
+  activity pick: King within **180px** (his fatness doubles the 5-width
+  morale radius), or **≥2 soldier pals within 90px** (5 body widths;
+  body = 18px). Bold sight/pursue reach = **360px** (20 widths):
+  pursue **until contact**, fight there with the contact DPS channel
+  ("fight until escape"), break off only when the dragon leaves the
+  reach — an in-flight pursuit leg lands first (work_checks run in
+  WORKING). Released swarm (ATTACK) unchanged; the King does not
+  count as a pal.
 - **E-strike lottery**: an explicit E within `strike_reach` 100px has a
   **15% chance** to kill a soldier outright (0.5s recharge between
   strikes). "Brute Force" wizard purchases add **+5% each** (cap 35%).
@@ -356,6 +369,7 @@ strings and gates affordability through the SAME
 | Miner support gate | ≥3 farmers, ≥10 food, 30s timer | Miner/WorldManager exports |
 | StuckMonitor audit / detour / teleport / hold | 2.5s / 5s / 10s / 30s | WorldManager StuckMonitor group |
 | Soldier purchase prices | 2 gold : 1 soldier, 1 gem : 2 soldiers | WorldManager SoldierPurchases group |
+| Bold morale radii (2026-11-09) | pals 90px (5 widths, ≥2) / King 180px / sight 360px | Soldier morale consts |
 
 
 ## 11. Implementation notes (engine mapping)
@@ -391,6 +405,12 @@ strings and gates affordability through the SAME
     to mountain/lair/tree) with timber-framed entrances; the script's
     Gold/Gems toggles are ore piles flanking the arch — node names are
     load-bearing (Mine.gd shows/hides for depletion/respawn).
+  - Flames on burning NPCs (2026-11-09, ALL types): `Sprite/Flames` holds
+    3 ColorRect tongues (dark red → orange → yellow core, z_index 2)
+    spawned by `catch_fire`; per-tongue height waves (14Hz, harmonic
+    multipliers), rotation sway, x-wobble and alpha pulse in
+    `BaseNPC._animate_flames`; torn down the first frame the fire is out.
+    Burning NPCs panic-run with the flee wobble (same predicate cover).
 - **NOT a comment format**: scene files (.tscn) use `;` comments;
   free-text `##` prose inside one corrupts node parsing (silent fallback
   renaming) — keep design prose in scripts/docs only.
@@ -415,3 +435,4 @@ strings and gates affordability through the SAME
 - `2026-11-09-stuck-monitor.md` — NPC supervision: movement/activity stall alarms, detour→teleport ladder, 3-rescue abort valve
 - `2026-11-09-town-purchases-and-stuck-fixes.md` — pen species pricing (pig 10/cow 20), treasury soldier buys (2g=1, 1gem=2, instant drain, King at 15 fielded), terrain-safe trip goals + rescue landings, FLEEING ladder coverage
 - `2026-11-09-mine-visuals-and-npc-animations.md` — hill SVG mines, code-driven flee wobble (all NPCs), miner pickaxe hammering, flee-target border clamp
+- `2026-11-09-bold-soldiers-and-flames.md` — width-based soldier morale (bold phalanx/king presence, fight-until-escape, re-check each pick), flame overlay on all burning NPCs, burning panic runs reuse the flee wobble

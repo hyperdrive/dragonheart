@@ -93,7 +93,12 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 	if _burning_left > 0.0:
 		_tick_burning(delta)
+		if is_alive:
+			_animate_flee(delta)  # burning panic runs wobble too (user spec)
+			_animate_flames(delta)
 		return
+	if _flames != null:
+		_flames_teardown()      # fire out (or dead): overlay goes with it
 	if is_alive and behavior_tree != null:
 		behavior_tree.tick(delta)
 	_animate_flee(delta)
@@ -104,13 +109,14 @@ func _physics_process(delta: float) -> void:
 ## velocity, the whole Sprite container hops foot-to-foot (alternating
 ## bounce), leans into a wobble, and squashes on each landing. Defaults
 ## back to rest pose the frame it's not fleeing. All NPCs inherit it.
+## Burning NPCs (catch_fire) panic-run with the SAME wobble (user spec
+## 2026-11-09) via the burning branch in _physics_process.
 func _animate_flee(delta: float) -> void:
 	if sprite == null:
 		return
-	var running: bool = is_alive and _burning_left <= 0.0 \
-		and behavior_tree != null \
-		and behavior_tree.state == BehaviorTree.State.FLEEING \
-		and velocity.length() > 5.0
+	var running: bool = is_alive and velocity.length() > 5.0 \
+		and (_burning_left > 0.0 or (behavior_tree != null \
+			and behavior_tree.state == BehaviorTree.State.FLEEING))
 	if running:
 		_flee_animating = true
 		_flee_phase += delta * TAU * FLEE_BOUNCE_HZ
@@ -138,6 +144,7 @@ func catch_fire() -> void:
 		behavior_tree.kill()
 	if sprite != null:
 		sprite.modulate = Color(1.0, 0.4, 0.1)  # scorched tint
+		_flames_spawn()
 	print(npc_type + " caught fire — panicking!")
 
 ## Ablaze physics: random-burst running, burn damage in int chunks, then death.
@@ -155,6 +162,65 @@ func _tick_burning(delta: float) -> void:
 	if whole > 0:
 		_burn_debt -= float(whole)
 		take_damage(whole)
+
+# --- flame overlay (2026-11-09) -------------------------------------------------
+
+## Burning look beyond the scorched tint: three warm flame tongues over the
+## body, code-flickered (height waves, side sway, alpha pulse) — applies to
+## ALL burning NPC types (user-grilled). Torn down the frame the fire is
+## out or the body dies.
+const FLAME_FLICKER_HZ := 14.0
+
+var _flames: Node2D = null
+var _flame_phase := 0.0
+
+func _flames_spawn() -> void:
+	if _flames != null or sprite == null:
+		return
+	_flames = Node2D.new()
+	_flames.name = "Flames"
+	_flames.z_index = 2
+	sprite.add_child(_flames)
+	# body-top anchors: rise from ~waist to over the head; widths narrow
+	var spec := [
+		{"x": -7.0, "h": 10.0, "c": Color(0.85, 0.2, 0.08)},
+		{"x": 2.0, "h": 14.0, "c": Color(1.0, 0.5, 0.08)},
+		{"x": -3.0, "h": 18.0, "c": Color(1.0, 0.85, 0.25)},
+	]
+	for i in spec.size():
+		var tongue := ColorRect.new()
+		tongue.name = "Tongue%d" % i
+		var h: float = spec[i]["h"]
+		tongue.size = Vector2(6 + i, h)
+		tongue.position = Vector2(spec[i]["x"], -h + 2.0)
+		tongue.color = spec[i]["c"]
+		tongue.rotation = randf_range(-0.1, 0.1)
+		_flames.add_child(tongue)
+
+func _animate_flames(delta: float) -> void:
+	if _flames == null:
+		return
+	_flame_phase += delta * FLAME_FLICKER_HZ
+	for i in _flames.get_child_count():
+		var tongue := _flames.get_child(i) as ColorRect
+		if tongue == null:
+			continue
+		var w := 1.0 + 0.31 * float(i)
+		# breathing height wave, differing per tongue; zero stays >= 1 scale?
+		tongue.scale.y = 0.7 + 0.45 * absf(sin(_flame_phase * w + 2.1 * float(i)))
+		tongue.rotation = 0.16 * sin(_flame_phase * (0.6 + 0.17 * float(i)))
+		tongue.position.x = _flame_anchor_x(i) + 1.5 \
+			* sin(_flame_phase * (0.9 + 0.13 * float(i)))
+		tongue.modulate.a = 0.78 + 0.22 * absf(sin(_flame_phase * (1.3 + 0.09 * i)))
+
+func _flame_anchor_x(i: int) -> float:
+	var spec := [-7.0, 2.0, -3.0]
+	return spec[i] if i < spec.size() else 0.0
+
+func _flames_teardown() -> void:
+	if _flames != null and is_instance_valid(_flames):
+		_flames.queue_free()
+	_flames = null
 	if _burning_left <= 0.0:
 		die()
 
