@@ -763,12 +763,12 @@ func on_king_defeated() -> bool:
 # --- the backstabbing wizard (2026-11-09 user spec) ---------------------------
 
 ## He emerges from HIS tower when the dragon has crossed one of the
-## provocation lines: bought 3+ upgrades AND visited the tower more than
-## 3 times, OR hoarded 20+ gold in the stash (repriced 2026-11-09: was
-## 30). Then he hunts the dragon across the whole map with lightning
+## provocation lines: bought 4+ upgrades (user, 2026-11-09: four) AND
+## visited the tower more than 3 times, OR hoarded 20+ gold in the
+## stash. Then he hunts the dragon across the whole map with lightning
 ## (30 dmg / 2s / long range) and never stops — see scripts/npcs/Wizard.gd.
 @export_group("Wizard")
-@export var wizard_upgrade_threshold: int = 3
+@export var wizard_upgrade_threshold: int = 4
 @export var wizard_visit_threshold: int = 3     # "more than 3" → 4+
 @export var wizard_stash_trigger: int = 20
 var wizard_spawned: bool = false

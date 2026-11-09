@@ -329,7 +329,7 @@ be silently wedged or circle-loop forever:
 
 - Lives at his tower and STAYS OUT of the war until provoked
   (`WorldManager._try_spawn_wizard`, every frame): emerges when the
-  dragon has **bought ≥3 upgrades AND visited the tower more than 3
+  dragon has **bought ≥4 upgrades AND visited the tower more than 3
   times** (counters on GameManager: `tower_visits` increments on every
   door opening, `upgrade_purchases` on every successful purchase) OR
   has **20g or more hoarded in the stash** (repriced 2026-11-09: was
@@ -337,6 +337,11 @@ be silently wedged or circle-loop forever:
 - Emerged profile: 80 HP, speed 75, never flees; **lightning**: instant
   long-range bolt (500px reach) at **30 damage, 2s recharge** with a
   Line2D flash visual and a print; NO melee contact at all.
+- **No shield against his attacks** (2026-11-09): his lightning calls
+  `take_damage(30, bypass_shield = true)` — the wizard-shop shield pool
+  does NOT absorb it (every other damage source still goes through the
+  pool unchanged). Baiting the shop shield or stacking it buys nothing
+  against the caster.
 - **Relentless**: every attack gate is unlocked — once out, he hunts
   the dragon across the whole map and does not stop until the dragon
   is dead (swarm morale/rally are irrelevant to him).
@@ -512,7 +517,7 @@ strings and gates affordability through the SAME
 | King respawns (2026-11-09) | 3 (4 deaths total); 3s re-materialize at city each; last death = victory | WorldManager king_respawn_count |
 | Weapon swing (2026-11-09) | ~2.2Hz, -55°→+25° arc (pivot at the GRIP), glint at strike bottom, 0.09 rad lean | Soldier swing consts |
 | Archer (2026-11-09) | every 3rd fielded recruit; arrow 5 dmg / 2s in 350px reach; never misses a stationary dragon | Archer.gd / _next_recruit_type |
-| Wizard (2026-11-09, trigger repriced) | emerges (≥3 buys AND >3 tower visits) OR stash ≥20g; lightning 30 dmg / 2s / 500px; fire shield 5s; relentless whole-map hunt | Wizard.gd / WorldManager Wizard group |
+| Wizard (2026-11-09, trigger repriced) | emerges (≥4 buys AND >3 tower visits) OR stash ≥20g; lightning 30 dmg / 2s / 500px PIERCES the shop shield; fire shield 5s; relentless whole-map hunt | Wizard.gd / WorldManager Wizard group / Dragon.take_damage bypass flag |
 | Prices (2026-11-09 reprice) | flame_1 10g / flame_2 20g+1gem / shield 8g / speed 12g / range 15g+1gem / brute (claw) 8g | GameManager.WIZARD_PRICES |
 | Dragon claw swing (2026-11-09) | one-shot 0.26s on every E-strike attempt: −52°→+26° slash, warm glint at impact, 7px body lunge, plays on hit or miss | Dragon `_play_claw_swing` / ClawPivot |
 | Burn | 10/s for 3s then death | BaseNPC |
@@ -600,3 +605,4 @@ strings and gates affordability through the SAME
 - `2026-11-09-dragon-flight-visuals.md` — walking/flight split (Q, 3s/5s), wing flaps + lift + shadow, the Vis wrapper that keeps animation/code from fighting
 - `2026-11-09-miner-haul-lottery.md` — miner haul size 50/25/25 (×1/×2/×3 per trip), accumulation-until-delivery untouched
 - `2026-11-09-pricing-and-claws.md` — wizard shop re-price (brute 8g, all cheaper), wizard greedy trigger 30→20g, code-driven dragon claw swing
+- `2026-11-09-wizard-4-buys-shield-bypass.md` — wizard provocation now four upgrades, lightning pierces the shop shield

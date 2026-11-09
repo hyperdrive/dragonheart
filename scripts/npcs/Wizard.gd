@@ -59,7 +59,9 @@ func _tick_lightning(delta: float) -> void:
 	if global_position.distance_to(dragon.global_position) > LIGHTNING_RANGE:
 		return
 	_lightning_left = LIGHTNING_RECHARGE
-	dragon.take_damage(LIGHTNING_DAMAGE)
+	# bypass_shield: the backstabbing wizard pierces the shop shield
+	# (user 2026-11-09: no shield against his attacks).
+	dragon.take_damage(LIGHTNING_DAMAGE, true)
 	_spawn_bolt(dragon.global_position)
 	print("The wizard's lightning hits you for %d!" % LIGHTNING_DAMAGE)
 

@@ -437,7 +437,7 @@ func fire_breath() -> void:
 	if animation_player.has_animation("idle"):
 		animation_player.play("idle")
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int, bypass_shield: bool = false) -> void:
 	if _dying:
 		return
 	var damage_reduction := 0
@@ -445,7 +445,9 @@ func take_damage(amount: int) -> void:
 		damage_reduction = (game_manager.scales_level - 1) * 2
 	var incoming := maxi(1, amount - damage_reduction)
 	# Wizard shield pool absorbs first (and is lost with use, decision record).
-	if shield_points > 0:
+	# EXCEPTION (2026-11-09): the BACKSTABBING wizard's lightning pierces the
+	# shop shield — user: "there's no shield against his attacks".
+	if shield_points > 0 and not bypass_shield:
 		var absorbed := mini(shield_points, incoming)
 		shield_points -= absorbed
 		incoming -= absorbed
