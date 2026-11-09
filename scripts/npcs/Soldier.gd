@@ -210,7 +210,12 @@ func _animate_combat(delta: float) -> void:
 		_swing_phase += delta * TAU * SWORD_SWING_HZ
 		# 0 = fully raised overhead, 1 = strike into the dragon
 		var t := 0.5 + 0.5 * sin(_swing_phase - PI / 2.0)
-		_weapon.pivot_offset = Vector2(_weapon.size.x * 0.5, 2.0)
+		# The GRIP is the fixed end (user fix 2026-11-09: "the top is fixed
+		# and the bottom wriggles but a swing would look better the other
+		# way around") — pivot at the BOTTOM edge so the blade tips sweep
+		# overhead→strike instead of the handle flopping.
+		_weapon.pivot_offset = Vector2(_weapon.size.x * 0.5,
+			_weapon.size.y - 2.0)
 		_weapon.rotation_degrees = lerpf(WEAPON_RAISED_DEG, WEAPON_STRIKED_DEG, t)
 		# the weapon glints at the bottom of every strike
 		_weapon.modulate = Color(1.0, 0.9, 0.6) if t > 0.82 else Color.WHITE
