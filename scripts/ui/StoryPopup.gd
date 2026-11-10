@@ -266,6 +266,7 @@ func _rebuild_choices(choice_texts: Array) -> void:
 			if i < choice_texts.size():
 				button.text = "%d.  %s" % [i + 1, choice_texts[i]]
 				button.set_meta("choice_index", i)
+				button.pressed.disconnect(_on_choice_pressed.bind(i))
 				button.pressed.connect(_on_choice_pressed.bind(i))
 				button.visible = true
 			else:
