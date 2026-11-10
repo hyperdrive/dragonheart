@@ -6,8 +6,8 @@
 [node name="PigPen" type="Node2D" groups=["pig_pens"]]
 script = ExtResource("2_pen_script")
 animal_name = "pig"
-heal_amount = 5
-flame_recharge = 1
+heal_amount = 0
+flame_recharge = 2
 
 [node name="FenceBack" type="ColorRect" parent="."]
 offset_left = -70.0

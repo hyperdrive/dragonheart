@@ -1,0 +1,59 @@
+[gd_scene load_steps=4 format=3 uid="uid://g1o5b6i7n8c9"]
+
+[ext_resource type="Script" path="res://scripts/npcs/Goblin.gd" id="1_g2b3n"]
+
+[sub_resource type="RectangleShape2D" id="1_goblin_shape"]
+size = Vector2(14, 14)
+
+[sub_resource type="RectangleShape2D" id="1_encounter_shape"]
+size = Vector2(100, 100)
+
+[node name="Goblin" type="CharacterBody2D" groups=["goblins"]]
+collision_layer = 4
+collision_mask = 15
+script = ExtResource("1_g2b3n")
+
+[node name="Sprite" type="Node2D" parent="."]
+position = Vector2(0, -5)
+
+[node name="Body" type="ColorRect" parent="Sprite"]
+size = Vector2(12, 18)
+color = Color(0.0, 0.6, 0.0, 1.0)
+
+[node name="Head" type="ColorRect" parent="Sprite"]
+position = Vector2(0, -12)
+size = Vector2(10, 10)
+color = Color(0.0, 0.8, 0.0, 1.0)
+
+[node name="Spear" type="ColorRect" parent="Sprite"]
+position = Vector2(10, -5)
+size = Vector2(3, 15)
+color = Color(0.6, 0.4, 0.2, 1.0)
+
+[node name="MainCollision" type="CollisionShape2D" parent="."]
+shape = SubResource("1_goblin_shape")
+position = Vector2(0, 5)
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("1_goblin_shape")
+position = Vector2(0, 0)
+
+[node name="AttackArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="AttackCollision" type="CollisionShape2D" parent="AttackArea"]
+shape = SubResource("1_goblin_shape")
+position = Vector2(15, 0)
+
+[node name="EncounterArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="EncounterCollision" type="CollisionShape2D" parent="EncounterArea"]
+shape = SubResource("1_encounter_shape")
+position = Vector2(0, 0)

@@ -158,6 +158,12 @@ func _pick_home_target() -> Vector2:
 func _pick_idle_target() -> Vector2:
 	return home_position + Vector2(randf_range(-60, 60), randf_range(-60, 60))
 
+## 10% slowdown while returning with gold (user spec 2026-11-10).
+func _get_effective_speed() -> float:
+	if payload_amount > 0:
+		return speed * 0.9
+	return speed
+
 func _has_payload() -> bool:
 	return payload_amount > 0
 
@@ -186,6 +192,24 @@ func _handoff_stretch() -> bool:
 ## Mine emptied/damaged mid-work → abort without yield.
 func _mine_still_available() -> bool:
 	return mining_cooldown <= 0.0
+
+## 10% slowdown while returning with gold (user spec 2026-11-10).
+func _waypoint_update(delta: float) -> bool:
+	if global_position == _waypoint:
+		_waypoint = Vector2.INF
+		return true
+	var target := _waypoint
+	if _waypoint != Vector2.INF:
+		if global_position.distance_to(_waypoint) <= 16.0:
+			_waypoint = Vector2.INF
+		else:
+			target = _waypoint
+	# Miner override: 10% slowdown while returning with gold.
+	var effective_speed := _get_effective_speed()
+	velocity = (target - global_position).normalized() * effective_speed
+	update_facing()
+	move_and_slide()
+	return false
 
 ## ~70% gold, ~30% gems; tiered yield; payload grows until delivery.
 ## Haul-size lottery (user spec: "50% one time, 25% 2 and 25% 3"): every

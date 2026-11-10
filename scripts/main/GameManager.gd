@@ -112,12 +112,15 @@ func notify_peasant_burn() -> void:
 ## Open the shared popup for one kind and pause the world beneath it.
 func _open_story_now(kind: String) -> void:
 	story_open = true
+	print("GameManager: Opening story '%s'" % kind)
 	if story_popup == null:
+		print("GameManager: Creating new story_popup...")
 		story_popup = STORY_SCENE.instantiate()
 		story_popup.process_mode = Node.PROCESS_MODE_ALWAYS
 		story_popup.story_close_requested.connect(_on_story_closed)
 		story_popup.story_choice_made.connect(_on_story_choice)
 		add_child(story_popup)
+	print("GameManager: Calling story_popup.open()...")
 	story_popup.call("open", kind)
 	get_tree().paused = true
 
@@ -126,6 +129,9 @@ func _on_story_choice(kind: String, choice_index: int) -> void:
 	ttrpg_choices[kind] = choice_index
 	story_choice_made.emit(kind, choice_index)
 	print("TTRPG — '%s' answered: choice %d" % [kind, choice_index + 1])
+	# Goblin-encounter answers are handled by WorldManager (it connects
+	# story_choice_made). The answer is tribal once-per-run, so GameManager
+	# must NOT pick goblins — get_first_node_in_group would strand the rest.
 
 ## Story resolution: close, unpause, then serve anything queued behind it.
 ## A dragon-death chapter ENDS the run instead: the chapter has played,
@@ -209,6 +215,15 @@ func add_stolen(res_type: String, amount: int) -> void:
 		return
 	stash[res_type] += amount
 	stash_changed.emit(res_type, stash[res_type])
+
+## Pay OUT of the dragon's stolen hoard (goblin trade fees draw here —
+## mirror of spend_treasury; the two pools never mix, decision record).
+func spend_stash(res_type: String, amount: int) -> bool:
+	if not stash.has(res_type) or stash[res_type] < amount:
+		return false
+	stash[res_type] -= amount
+	stash_changed.emit(res_type, stash[res_type])
+	return true
 
 ## Farmers' deliveries fill the town food pool (support-chain input).
 func add_food(amount: int) -> void:

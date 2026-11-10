@@ -110,6 +110,11 @@ var game_manager: GameManager
 
 func _ready() -> void:
 	add_to_group("dragon")
+	
+	var goblin_count := 0
+	for goblin in get_tree().get_nodes_in_group("goblins"):
+		goblin_count += 1
+	
 	game_manager = get_tree().get_first_node_in_group("game_manager") as GameManager
 	if game_manager == null:
 		push_error("Dragon: GameManager not found — progression/pool reading disabled")
@@ -147,7 +152,14 @@ func _physics_process(delta: float) -> void:
 		_try_flight()
 	if _flying:
 		_flight_left -= delta
-		if _flight_left <= 0.0:
+		# TERRAIN: flight never expires when over a lake
+		var over_water := false
+		for water_node in get_tree().get_nodes_in_group("water"):
+			var lake := water_node as StaticBody2D
+			if lake != null and lake.global_position.distance_to(global_position) < 70.0:
+				over_water = true
+				break
+		if not over_water and _flight_left <= 0.0:
 			land_flight()
 	elif _flight_recharge_left > 0.0:
 		_flight_recharge_left -= delta
@@ -178,13 +190,21 @@ func _physics_process(delta: float) -> void:
 	# catch fire.
 	if is_firing:
 		_ignite_flammables()
-
+	
 	# Face travel direction: mirrors the body and the whole fire assembly.
 	if input_direction.x != 0.0:
 		var new_facing := 1 if input_direction.x > 0.0 else -1
 		if new_facing != facing:
 			facing = new_facing
 			_apply_facing()
+
+	# Check for goblin encounter using Dragon's EncounterArea
+	var encounter_area := $EncounterArea
+	if encounter_area != null:
+		var overlapping := encounter_area.get_overlapping_bodies() as Array[Node2D]
+		for body in overlapping:
+			if body != null and body.has_method("_on_dragon_encounter"):
+				body._on_dragon_encounter()
 
 	if Input.is_action_just_pressed("fire"):
 		fire_breath()
@@ -266,22 +286,29 @@ func _nearest_strike_target() -> BaseNPC:
 				best = npc
 	return best
 
-## Nearest ordinary soldier within strike reach — while the strike is
-## recharging soldiers are NOT valid targets (cooldown keeps E on other
-## candidates), and the King is excluded (his own battle rules).
+## Nearest ordinary soldier (or encountered goblin) within strike reach —
+## while the strike is recharging soldiers are NOT valid targets (cooldown
+## keeps E on other candidates), and the King is excluded (his own battle
+## rules). Goblins fight like soldiers (Goblin.gd design note) and join the
+## same chance-strike pool — but only AFTER their first-encounter popup:
+## story before combat, so an unreached goblin is not E-strikeable.
 func _soldier_in_strike_reach() -> BaseNPC:
 	if _strike_cooldown > 0.0:
 		return null
 	var best: BaseNPC = null
 	var best_dist := INF
-	for node: Node in get_tree().get_nodes_in_group("soldiers"):
-		var npc := node as BaseNPC
-		if npc == null or not npc.is_alive or npc.is_in_group("king"):
-			continue
-		var dist := global_position.distance_to(npc.global_position)
-		if dist <= strike_reach and dist < best_dist:
-			best_dist = dist
-			best = npc
+	for group: String in ["soldiers", "goblins"]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			var npc := node as BaseNPC
+			if npc == null or not npc.is_alive or npc.is_in_group("king"):
+				continue
+			if npc.npc_type == "goblin" \
+					and int(npc.service_state) == Goblin.ServiceState.UNINITIALIZED:
+				continue  # not encountered yet: popup must come first
+			var dist := global_position.distance_to(npc.global_position)
+			if dist <= strike_reach and dist < best_dist:
+				best_dist = dist
+				best = npc
 	return best
 
 ## Soldier strike: spends the recharge FIRST, then rolls the kill lottery.
@@ -292,10 +319,10 @@ func _strike_soldier(soldier: BaseNPC) -> void:
 	var odds := int(soldier_strike_chance * 100.0)
 	if randf() >= soldier_strike_chance:
 		strike_missed.emit()
-		print("Dragon's claw swipes past the soldier! (%d%% odds)" % odds)
+		print("Dragon's claw swipes past the %s! (%d%% odds)" % [soldier.npc_type, odds])
 		return
 	soldier.kill_by_dragon()
-	print("Dragon mauled a soldier! (%d%% odds paid off)" % odds)
+	print("Dragon mauled the %s! (%d%% odds paid off)" % [soldier.npc_type, odds])
 
 ## Deliberate kill: steal payload BEFORE death so an E-killed loaded miner
 ## banks the cart into the claws; +5 health after regardless.
@@ -312,12 +339,29 @@ func _strike_kill(npc: BaseNPC) -> void:
 	print("Dragon struck down the %s! (+%d health)" % [npc.npc_type, kill_health_gain])
 
 ## The pen-meal half of the context action (see
-## 2026-11-08-manual-eat-wizard-menu for the refusal rules).
+## 2026-11-08-manual-eat-wizard-menu for the refusal rules; meal payoffs
+## re-specced 2026-11-10: cow = FULL health + full flames, pig = 2 flames).
 func _eat_meal_from(pen: AnimalPen) -> void:
-	if health >= max_health:
+	var full_restore := pen.full_restore
+	var flame_only := pen.heal_amount <= 0 and not full_restore
+	# Refusals (a meal the dragon cannot benefit from is never spent —
+	# species-aware: cows waste only when BOTH are full, pigs only when
+	# flames are full since they heal nothing, generic when health is full).
+	var health_full := health >= max_health
+	var flames_full := flame_charges >= max_flame_charges
+	if full_restore and health_full and flames_full:
 		eat_refused.emit("health")
-		if flame_charges >= max_flame_charges:
-			eat_refused.emit("flames")  # both chips flash on a fully-full dragon
+		eat_refused.emit("flames")
+		print("Dragon: full — a whole cow would be wasted!")
+		return
+	if flame_only and flames_full:
+		eat_refused.emit("flames")
+		print("Dragon: flames already full — the pig would be wasted!")
+		return
+	if not full_restore and not flame_only and health_full:
+		eat_refused.emit("health")
+		if flames_full:
+			eat_refused.emit("flames")
 		print("Dragon: full — eating would be wasted!")
 		return
 	var meal := pen.take_animal_for_dragon(self)
@@ -328,16 +372,23 @@ func _eat_meal_from(pen: AnimalPen) -> void:
 	var meal_kind := "pig_eaten" if pen.animal_name == "pig" else "cow_eaten"
 	if game_manager != null:
 		game_manager.notify_story(meal_kind)
-	var healed := mini(int(meal["heal"]), max_health - health)
-	health += healed
-	health_changed.emit(health)
-	var had := flame_charges
-	flame_charges = minf(
-		flame_charges + float(int(meal["flame"])), float(max_flame_charges))
-	if flame_charges != had:
+	if full_restore:
+		# The prize meal: complete reset, both meters topped in one bite.
+		health = max_health
+		health_changed.emit(health)
+		flame_charges = float(max_flame_charges)
 		flame_charges_changed.emit(int(flame_charges), max_flame_charges)
-	if flame_charges >= max_flame_charges:
-		eat_refused.emit("flames")  # heal happened, but the recharge clamped
+	else:
+		var healed := mini(int(meal["heal"]), max_health - health)
+		health += healed
+		health_changed.emit(health)
+		var had := flame_charges
+		flame_charges = minf(
+			flame_charges + float(int(meal["flame"])), float(max_flame_charges))
+		if flame_charges != had:
+			flame_charges_changed.emit(int(flame_charges), max_flame_charges)
+		if flame_charges >= max_flame_charges:
+			eat_refused.emit("flames")  # heal happened, but the recharge clamped
 
 ## Mirror the visual body AND the fire assembly to the facing side. Done with
 ## explicit component mirroring — no negative scale on the physics Area2D.
@@ -348,12 +399,20 @@ func _apply_facing() -> void:
 	flame.scale.x = float(facing)                    # flame visual mirrors
 
 ## Everything flammable caught in the breath cone ignites: farmers, miners,
-## soldiers (+ the King), and crop fields (Field.burn → stubble → slow regrow).
+## soldiers, goblins (+ the King), and crop fields (Field.burn → stubble →
+## slow regrow). Goblins only AFTER their first encounter (popup honored —
+## story before combat, user spec).
 func _ignite_flammables() -> void:
 	var facing_vec := Vector2(float(facing), 0.0)
-	for group: String in ["farmers", "miners", "soldiers", "king", "fields"]:
+	for group: String in ["farmers", "miners", "soldiers", "goblins", "king", "fields"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
-			var target_pos: Vector2 = (node as Node2D).global_position
+			var base := node as BaseNPC
+			if base == null:
+				continue
+			if base.npc_type == "goblin" \
+					and int((node as Goblin).service_state) == Goblin.ServiceState.UNINITIALIZED:
+				continue  # never encountered: the dragon cannot ignite it yet
+			var target_pos: Vector2 = base.global_position
 			var to_target := target_pos - global_position
 			if to_target.length() > fire_reach:
 				continue
@@ -361,8 +420,8 @@ func _ignite_flammables() -> void:
 				continue
 			if node is Field:
 				(node as Field).burn()
-			elif node is BaseNPC:
-				(node as BaseNPC).catch_fire()
+			else:
+				base.catch_fire()
 
 func _process(delta: float) -> void:
 	# Auto-theft: the core loop. When a payload carrier is in range and
@@ -689,3 +748,5 @@ func collect_resources(resources: Dictionary) -> void:
 func eat_food(food_value: int) -> void:
 	health = mini(health + food_value, max_health)
 	health_changed.emit(health)
+
+

@@ -16,7 +16,9 @@ signal swarm_state_changed(new_state: SwarmState)
 enum SwarmState { CALM, RALLY, ATTACK }
 
 @export_group("World")
-@export var world_size: Vector2 = Vector2(1600, 1600)
+## Interior world area (user spec 2026-11-10: +20% after the goblins made
+## the map feel crowded — 1600² was tight for the extra tribe traffic).
+@export var world_size: Vector2 = Vector2(1920, 1920)
 @export var farmer_count: int = 5
 @export var mine_count: int = 8
 @export var field_count: int = 6
@@ -29,6 +31,9 @@ enum SwarmState { CALM, RALLY, ATTACK }
 @export var pig_pen_position: Vector2 = Vector2(-260, 760)
 @export var cow_pen_position: Vector2 = Vector2(260, 820)
 @export var lair_position: Vector2 = Vector2(-620, 60)   # dragon's home mountain
+## Goblin Mountain (user spec): the tribe's dedicated home rock, placed
+## close to the lair so the dragon discovers goblins on the way home.
+@export var goblin_mountain_position: Vector2 = Vector2(-680, 250)
 @export var tower_position: Vector2 = Vector2(520, -420)  # wizard tower
 
 @export_group("Terrain")
@@ -62,6 +67,7 @@ const ESCALATING := "soldier"   # entity spawned on the escalation curve
 var entity_scenes := {
 	"farmer": preload("res://scenes/npcs/Farmer.tscn"),
 	"miner": preload("res://scenes/npcs/Miner.tscn"),
+	"goblin": preload("res://scenes/npcs/Goblin.tscn"),
 	"mine": preload("res://scenes/objects/Mine.tscn"),
 	"soldier": preload("res://scenes/objects/Soldier.tscn"),
 	"archer": preload("res://scenes/objects/Archer.tscn"),
@@ -91,6 +97,27 @@ var field_positions: Array[Vector2] = []
 var _respawn_queue: Array[Dictionary] = []
 var _soldier_timer: Timer
 var _swarm_timer: Timer
+var _goblin_timer: Timer
+var _goblin_raid_timer: Timer
+var _raid_timer: Timer  # For ending goblin raids
+var _goblin_count: int = 0
+const MAX_GOBLINS: int = 6
+## The tribe's home rock ("Goblin Mountain", user spec): designated at world
+## generation as the mountain NEAREST the dragon's lair — the tribe nests
+## next door to the dragon's den, encounterable on the way home.
+var goblin_mountain: Node2D = null
+## Tribe-wide service standing (user spec): the goblin-encounter story answer
+## binds EVERY goblin — acceptance turns the whole tribe into the town's
+## gem-for-gold miners, refusal makes them hostile. New spawns are born into
+## it (Goblin._ready checks here); the popup ledger opens the story once per
+## run, so the answer cannot be per-goblin.
+var goblin_service_standing: Goblin.ServiceState = Goblin.ServiceState.UNINITIALIZED
+## One goblin per minute into the tribe (user spec), spawned on a ring just
+## outside the mountain body (Mountain collision r=54) so nobody spawns
+## inside the rock.
+const GOBLIN_SPAWN_INTERVAL := 60.0
+const GOBLIN_SPAWN_RING := 90.0
+const GOBLIN_SPAWN_JITTER := 15.0
 ## StuckMonitor (decision 2026-11-09): per-NPC supervision records trusted by
 ## the audit — see _audit_npc_stuck/_remediate_stuck.
 var _stuck_timer: Timer
@@ -142,6 +169,10 @@ func _ready() -> void:
 	add_to_group("world_manager")
 	if game_manager != null:
 		swarm_state_changed.connect(game_manager._on_swarm_state_changed)
+		# The goblin-encounter story answer selects the tribe's fate
+		# (user spec: accept → the whole tribe mines gem-for-gold).
+		if game_manager.has_signal("story_choice_made"):
+			game_manager.story_choice_made.connect(_on_goblin_story_choice)
 	# Pre-clamp landmark anchors BEFORE generation: they are design numbers
 	# exported before the margin rule existed.
 	city_position = _clamp_to_interior(city_position, FOOTPRINT_RADIUS["city"])
@@ -150,6 +181,8 @@ func _ready() -> void:
 	pig_pen_position = _clamp_to_interior(pig_pen_position, FOOTPRINT_RADIUS["pig_pen"])
 	cow_pen_position = _clamp_to_interior(cow_pen_position, FOOTPRINT_RADIUS["cow_pen"])
 	lair_position = _clamp_to_interior(lair_position, FOOTPRINT_RADIUS["lair"])
+	goblin_mountain_position = _clamp_to_interior(
+		goblin_mountain_position, FOOTPRINT_RADIUS["mountain"])
 	tower_position = _clamp_to_interior(tower_position, FOOTPRINT_RADIUS["tower"])
 	generate_world()
 
@@ -166,6 +199,20 @@ func _ready() -> void:
 	miner_timer.autostart = true
 	miner_timer.timeout.connect(try_spawn_miner)
 	add_child(miner_timer)
+
+	# Goblin tribe timer: 1 goblin per minute, max 6 (user spec)
+	_goblin_timer = Timer.new()
+	_goblin_timer.wait_time = GOBLIN_SPAWN_INTERVAL
+	_goblin_timer.autostart = true
+	_goblin_timer.timeout.connect(_on_goblin_spawn_tick)
+	add_child(_goblin_timer)
+	
+	# Goblin raid timer: occasional raiding parties (every 60s)
+	_goblin_raid_timer = Timer.new()
+	_goblin_raid_timer.wait_time = 60.0
+	_goblin_raid_timer.autostart = true
+	_goblin_raid_timer.timeout.connect(_on_goblin_raid_tick)
+	add_child(_goblin_raid_timer)
 
 	# Swarm coordination tick (see _on_swarm_tick).
 	_swarm_timer = Timer.new()
@@ -214,6 +261,8 @@ func _audit_npc_stuck() -> void:
 	for node: Node in get_tree().get_nodes_in_group("miners"):
 		seen[_audit_one_npc(node)] = true
 	for node: Node in get_tree().get_nodes_in_group("soldiers"):
+		seen[_audit_one_npc(node)] = true
+	for node: Node in get_tree().get_nodes_in_group("goblins"):
 		seen[_audit_one_npc(node)] = true
 	# Scrub records for freed NPCs.
 	for id: int in _stuck_records.keys():
@@ -340,16 +389,23 @@ func generate_world() -> void:
 	register_footprint(cow_pen_position, FOOTPRINT_RADIUS["cow_pen"])
 	spawn_entity("lair", 1, lair_position)     # solid like other mountains
 	register_footprint(lair_position, FOOTPRINT_RADIUS["lair"])
+	# Goblin Mountain first: early footprint registration keeps scenery,
+	# fields and mines from crowding the tribe's home rock.
+	spawn_goblin_mountain()
 	spawn_entity("tower", 1, tower_position)   # wizard upgrades landmark
 	register_footprint(tower_position, FOOTPRINT_RADIUS["tower"])
 	spawn_fields()
 	# Scenery avoids ALL registered footprints (landmarks + fields) with
 	# per-spot radius padding — no more visual overlaps with the farm belt.
 	spawn_scenery()
+	merge_adjacent_lakes()
 	spawn_entity("mine", mine_count, mine_center, 180.0)
 	spawn_farmers()
 	spawn_entity("soldier", initial_soldier_count, rally_point, 90.0)
 	soldiers_spawned = initial_soldier_count
+	# Founding goblin takes up residence right away (1/minute tops up to 6);
+	# the mountain itself was placed at generation start, before scenery.
+	spawn_goblin()
 	if farmer_count >= miner_spawn_requirement_farmers:
 		spawn_entity("miner", initial_miner_count, mine_center, 140.0)
 	create_boundaries()
@@ -414,6 +470,48 @@ func spawn_scenery() -> void:
 			add_child(obstacle)
 			register_footprint(position, radius)
 			entity_spawned.emit("terrain", position)
+
+
+## Merge adjacent lakes into larger lakes
+## Two lakes are merged if they're within 50px of each other
+func merge_adjacent_lakes() -> void:
+	var lakes: Array = get_tree().get_nodes_in_group("water") as Array
+	if lakes.size() < 2:
+		return  # nothing to merge
+	
+	var merged: Dictionary = {}  # Track which lakes have been merged
+	
+	# Find adjacent lakes and merge them
+	for i in lakes.size():
+		if lakes[i] is StaticBody2D and not merged.has(i):
+			var lake1_pos: Vector2 = lakes[i].global_position
+			var merged_group: Array = [i]
+			
+			for j in range(i + 1, lakes.size()):
+				if lakes[j] is StaticBody2D and not merged.has(j):
+					var lake2_pos: Vector2 = lakes[j].global_position
+					if lake1_pos.distance_to(lake2_pos) < 50.0:
+						merged[j] = true
+						merged_group.append(j)
+			
+			# If we found adjacent lakes, merge them
+			if merged_group.size() > 1:
+				# Create a new merged lake at the average position
+				var avg_pos: Vector2 = Vector2.ZERO
+				for idx in merged_group:
+					avg_pos += lakes[idx].global_position
+				avg_pos /= merged_group.size()
+				
+				# Remove old lakes
+				for idx in merged_group:
+					if lakes[idx] != null:
+						lakes[idx].queue_free()
+				
+				# Create new merged lake
+				var new_lake := preload("res://scenes/props/Lake.tscn").instantiate()
+				new_lake.global_position = avg_pos
+				add_child(new_lake)
+				register_footprint(avg_pos, 85.0)
 
 
 ## Jitter around an anchor until the spot is reasonably free (checks the
@@ -543,9 +641,21 @@ func setup_entity(entity_type: String, instance: Node) -> void:
 			if soldier != null:
 				soldier.home_position = soldier.global_position
 				soldier.npc_died.connect(_on_npc_died.bind(soldier))
+		"goblin":
+			# Goblin extends BaseNPC - anchors make the trade legs walkable:
+			# gold is fetched at the nearest mine, transacted at the lair.
+			var goblin_base := instance as BaseNPC
+			if goblin_base != null:
+				goblin_base.home_position = goblin_base.global_position
+				goblin_base.mine_position = _mine_spot()
+				goblin_base.npc_died.connect(_on_npc_died.bind(goblin_base))
 		"mine":
 			var mine := instance as Node2D
 			if mine != null:
+				# Live mine registry: goblin "go fetch at a NEARBY mine" needs
+				# mine NODES to pick from, and the minimap's "mines" dot pass
+				# scanned this group name long before it had members.
+				mine.add_to_group("mines")
 				register_footprint(mine.global_position, FOOTPRINT_RADIUS["mine"])
 
 
@@ -578,6 +688,113 @@ func create_boundaries() -> void:
 		wall_body.add_child(collision)
 		wall_body.position = wall["pos"]
 		add_child(wall_body)
+
+
+# --- goblin spawning ---------------------------------------------------------
+
+## Place the dedicated Goblin Mountain (user spec): the tribe's own rock,
+## close to the lair. Placed at generation start — well before scenery,
+## fields and mines — and its registered footprint keeps everything else
+## clear of the rock.
+func spawn_goblin_mountain() -> void:
+	var mountain := (scenery_scenes[2] as PackedScene).instantiate() as Node2D
+	if mountain == null:
+		push_warning("WorldManager: Goblin Mountain scene failed to load")
+		return
+	mountain.global_position = goblin_mountain_position
+	add_child(mountain)
+	register_footprint(goblin_mountain_position, FOOTPRINT_RADIUS["mountain"])
+	goblin_mountain = mountain
+	print("Goblin Mountain designated at %s (%dpx from the lair)" % [
+		goblin_mountain_position,
+		int(goblin_mountain_position.distance_to(lair_position))])
+
+
+## Resolve the tribe's home rock: the dedicated Goblin Mountain, with a
+## nearest-to-lair fallback if the world freed it later (run-length edge
+## cases in long play sessions).
+func _designate_goblin_mountain() -> void:
+	if goblin_mountain != null and is_instance_valid(goblin_mountain):
+		return
+	var best: Node2D = null
+	var best_dist := INF
+	for node: Node in get_tree().get_nodes_in_group("mountains"):
+		var mountain := node as Node2D
+		if mountain == null or not is_instance_valid(mountain):
+			continue
+		var dist := mountain.global_position.distance_to(lair_position)
+		if dist < best_dist:
+			best_dist = dist
+			best = mountain
+	goblin_mountain = best
+	if goblin_mountain == null:
+		push_warning("WorldManager: no mountain for the goblin tribe")
+
+
+## Spawn ONE goblin at the Goblin Mountain (user spec: 1/minute, max 6).
+## Each goblin spawns on a ring around the rock — outside the body, with a
+## little jitter so the tribe members don't stack in a tower.
+func spawn_goblin() -> void:
+	if _goblin_count >= MAX_GOBLINS:
+		return
+	if goblin_mountain == null or not is_instance_valid(goblin_mountain):
+		_designate_goblin_mountain()
+		if goblin_mountain == null:
+			push_warning("WorldManager: no mountain for the goblin tribe")
+			return
+	var angle := randf() * TAU
+	var position := goblin_mountain.global_position \
+		+ Vector2(cos(angle), sin(angle)) * GOBLIN_SPAWN_RING \
+		+ Vector2(randf_range(-GOBLIN_SPAWN_JITTER, GOBLIN_SPAWN_JITTER),
+			randf_range(-GOBLIN_SPAWN_JITTER, GOBLIN_SPAWN_JITTER))
+	position = clamp_into_playfield(position, 12.0)
+	var goblin := (entity_scenes["goblin"] as PackedScene).instantiate() as Node
+	if goblin == null:
+		return
+	goblin.global_position = position
+	add_child(goblin)
+	setup_entity("goblin", goblin)
+	_goblin_count += 1
+	print("Goblin spawned at %s (tribe size: %d/%d)" % [
+		goblin.global_position, _goblin_count, MAX_GOBLINS])
+
+
+## Get the city position for distance calculations
+func get_city_position() -> Vector2:
+	# Return the city_position export variable
+	return city_position
+
+
+## The tribe's answer to the encounter story (came via GameManager's
+## story_choice_made). Choice 0 = accept (BUYING), anything else = the
+## tribe goes hostile (plunder mode sells nothing—the trade is over).
+func _on_goblin_story_choice(kind: String, choice_index: int) -> void:
+	if not kind.begins_with("goblin_encounter_"):
+		return
+	set_goblin_service(choice_index == 0)
+
+
+func set_goblin_service(purchased: bool) -> void:
+	if goblin_service_standing != Goblin.ServiceState.UNINITIALIZED:
+		return
+	goblin_service_standing = Goblin.ServiceState.BUYING if purchased \
+		else Goblin.ServiceState.HOSTILE
+	for node: Node in get_tree().get_nodes_in_group("goblins"):
+		if node is Goblin:
+			(node as Goblin)._on_service_response(purchased)
+
+
+## Goblin death loot: drop gold on ground (20% chance if goblin had gold)
+func handle_goblin_death_loot(goblin_position: Vector2) -> void:
+	# Check if goblin had gold (20% chance)
+	if randf() < 0.2:
+		# Drop 5-10 gold on the ground
+		var gold_amount: int = randi_range(5, 10)
+		print("Goblin dropped %d gold at %s" % [gold_amount, str(goblin_position)])
+		# Gold drop logic would update the game manager's treasure
+		if game_manager != null:
+			game_manager.treasury["gold"] += gold_amount
+			print("Treasury updated: gold = %d" % game_manager.treasury["gold"])
 
 
 # --- swarm tactics: CALM → RALLY → ATTACK ------------------------------------
@@ -658,6 +875,45 @@ func _on_escalation_tick() -> void:
 	_escalation_soldier_spawned()
 
 
+func _on_goblin_spawn_tick() -> void:
+	# Spawn a goblin if under the tribe limit
+	if _goblin_count >= MAX_GOBLINS:
+		return
+	spawn_goblin()
+
+
+func _on_goblin_raid_tick() -> void:
+	# 20% chance to trigger a raiding party
+	if randf() < 0.2:
+		print("RAID! All goblins going on a plundering spree!")
+		_start_goblin_raid()
+
+
+func _start_goblin_raid() -> void:
+	# Set all goblins to hostile and attack farmers/miners
+	for goblin in get_tree().get_nodes_in_group("goblins"):
+		if goblin.has_method("set_service_state_hostile"):
+			goblin.set_service_state_hostile()
+			goblin.goblin_raid_active = true
+			print("Goblin raid mode activated!")
+	
+	# End raid after 30 seconds
+	_raid_timer = Timer.new()
+	_raid_timer.wait_time = 30.0
+	_raid_timer.one_shot = true
+	_raid_timer.timeout.connect(_end_goblin_raid)
+	_raid_timer.start()
+	add_child(_raid_timer)
+
+
+func _end_goblin_raid() -> void:
+	# End raid mode for all goblins
+	for goblin in get_tree().get_nodes_in_group("goblins"):
+		if goblin.has_method("set_raid_active"):
+			goblin.set_raid_active(false)
+			print("Goblin raid mode ended!")
+
+
 # --- treasury soldier purchases (2026-11-09) ----------------------------------
 
 ## One soldier per 2 gold OR 2 soldiers per 1 gem — user spec, gold spent
@@ -678,6 +934,9 @@ func _try_buy_soldiers() -> void:
 	# constantly refreshed army instead of a frozen 15.
 	if game_manager == null or game_manager.run_finished:
 		return
+	# NOTE: no gem reserve for the goblin trade anymore (2026-11-10): the
+	# exchange moved to the dragon's STASH — the town's gems keep converting
+	# to soldiers exactly as the 2026-11-09 user spec.
 	var bought := 0
 	var gold_spent := 0
 	var gems_spent := 0
@@ -881,6 +1140,11 @@ func _on_npc_died(npc_type: String, npc: BaseNPC) -> void:
 	# the town's recovery loop, gated on pen livestock.
 	if (npc_type == "farmer" or npc_type == "miner") and is_instance_valid(npc):
 		add_respawn_request(npc_type, npc.home_position)
+	
+	# Goblin tracking: decrement count on death
+	if npc_type == "goblin":
+		_goblin_count = max(0, _goblin_count - 1)
+	
 	print("NPC died: ", npc_type)
 
 # --- miner support chain ------------------------------------------------------

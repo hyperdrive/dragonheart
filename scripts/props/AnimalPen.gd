@@ -14,6 +14,10 @@ class_name AnimalPen
 @export var heal_amount: int = 15
 ## Flame charges restored to the dragon per animal eaten (max 4).
 @export var flame_recharge: int = 1
+## Full restore (user spec 2026-11-10): the dragon gets FULL health AND
+## full flames regardless of heal_amount/flame_recharge. Cows are prized
+## stock — the meal is a complete reset; pigs stay a flame snack.
+@export var full_restore: bool = false
 @export var pen_radius: float = 80.0
 @export var max_animals: int = 4
 ## Food the town pays to fill one empty slot (paid by WorldManager on farm

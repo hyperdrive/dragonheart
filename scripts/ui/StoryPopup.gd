@@ -204,6 +204,29 @@ const STORIES := {
 			"Sleep. Just… sleep. The hoard can keep its OWN books.",
 		],
 	},
+	# --- goblin encounter stories (2026-11-09) ---
+	"goblin_encounter_neutral": {
+		"title": "A Green Shadow",
+		"image": "",
+		"tint": Color(0.15, 0.25, 0.15),
+		"text": "A small, green-skinned figure emerges from the mountain shadows. It holds a crude spear and eyes you warily. \"I am goblin,\" it says in a raspy voice. \"I dig for those who pay. For one gem, my tribe fetches gold from the nearest mine and trades it to you at your lair. Refuse, and I steal what I can.\"",
+		"choices": [
+			"Pay in gems. Add goblin to tribe.",
+			"Refuse. Goblins will steal!",
+			"Roar and swat it away. No tricks.",
+		],
+	},
+	"goblin_encounter_hostile": {
+		"title": "War in the Mountains",
+		"image": "",
+		"tint": Color(0.25, 0.1, 0.1),
+		"text": "The goblins have turned hostile! They swarm from the mountain passes, spears glinting in the dim light. \"WAARGH!\" they shriek, charging with desperate fury. They attack farmers and miners to steal food and gold.",
+		"choices": [
+			"Scorch them where they stand!",
+			"Flee and let them raid.",
+			"Try to reason (futile).",
+		],
+	},
 }
 
 const HOTKEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4]

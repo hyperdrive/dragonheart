@@ -90,6 +90,14 @@ collision_layer = 2
 collision_mask = 19
 script = ExtResource("1_m3q8w")
 
+[node name="EncounterArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 4
+
+[node name="EncounterCollision" type="CollisionShape2D" parent="EncounterArea"]
+shape = SubResource("1_b5t6n")
+position = Vector2(0, 0)
+
 [node name="Shadow" type="ColorRect" parent="."]
 offset_left = -20.0
 offset_top = 20.0

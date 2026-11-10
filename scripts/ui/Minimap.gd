@@ -3,14 +3,16 @@ class_name MinimapPanel
 
 ## Lower-right corner dot minimap. Self-scans world groups on a timer and
 ## draws directly — no SubViewport, no texture churn. The dragon dot refreshes
-## every frame via set_dragon() from GameHUD.
+## every frame via set_dragon() from GameHUD. World bounds resolve from the
+## live WorldManager (no duplicated constant to drift when the world grows).
 
-@export var world_size: Vector2 = Vector2(1600, 1600)
+@export var world_size: Vector2 = Vector2(1920, 1920)  # fallback if no WorldManager
 
 const TOOLTIP_STYLE := ""  # reserved
 
 var _dragon_pos: Vector2 = Vector2.INF
 var _refresh_timer: Timer
+var _world_size_resolved := false
 
 
 func _ready() -> void:
@@ -20,6 +22,17 @@ func _ready() -> void:
 	_refresh_timer.autostart = true
 	_refresh_timer.timeout.connect(scan_and_redraw)
 	add_child(_refresh_timer)
+
+
+## Pull the true world size from the WorldManager once (first draw — after
+## every node is grouped), then trust it for the run.
+func _resolve_world_size() -> void:
+	if _world_size_resolved:
+		return
+	_world_size_resolved = true
+	var world := get_tree().get_first_node_in_group("world_manager") as WorldManager
+	if world != null and world.world_size != Vector2.ZERO:
+		world_size = world.world_size
 
 
 ## Group-scan redraw (NPCs, mines, fields, pens, city, king).
@@ -42,6 +55,7 @@ func _world_to_minimap(world_pos: Vector2) -> Vector2:
 	# Draw space is LOCAL (position zero); get_rect().position is parent-
 	# relative and offset everything off-panel — map world coords straight
 	# into the local panel size.
+	_resolve_world_size()
 	var scale_factor: Vector2 = get_size() / world_size
 	return Vector2(
 		(world_pos.x + world_size.x / 2.0) * scale_factor.x,
@@ -66,6 +80,7 @@ func _draw() -> void:
 	_draw_group("farmers", 3.0, Color(0.95, 0.9, 0.4))
 	_draw_group("miners", 3.0, Color(0.6, 0.45, 0.3))
 	_draw_group("soldiers", 3.0, Color(0.5, 0.7, 1.0))
+	_draw_group("goblins", 3.0, Color(0.0, 0.8, 0.3))
 	for king: Node in get_tree().get_nodes_in_group("king"):
 		var king_node := king as Node2D
 		if king_node != null and is_instance_valid(king_node):

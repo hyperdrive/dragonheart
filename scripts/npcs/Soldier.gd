@@ -241,23 +241,42 @@ func _physics_process(delta: float) -> void:
 
 # --- combat: contact DPS (ablaze lives in BaseNPC) ----------------------------
 
-## 10 DPS while the hitbox collides with the dragon (integer-chunked debt).
+## 10 DPS while the hitbox collides with the dragon or goblins
+## (integer-chunked debt).
 func _contact_damage(delta: float) -> void:
 	if _burning_left > 0.0 or not is_alive:
 		return
+	
+	# Attack dragon
 	var dragon := get_tree().get_first_node_in_group("dragon") as CharacterBody2D
-	if dragon == null or not is_instance_valid(dragon):
+	if dragon != null and is_instance_valid(dragon):
+		var dragon_dying: Variant = dragon.get("_dying")
+		if dragon_dying == null or bool(dragon_dying):
+			dragon = null
+	
+	if dragon != null and global_position.distance_to(dragon.global_position) <= attack_range:
+		_contact_debt += attack_damage * delta
+		var whole := int(_contact_debt)
+		if whole > 0:
+			_contact_debt -= float(whole)
+			dragon.take_damage(whole, false, "soldier")
+	
+	# Attack goblins
+	if _contact_debt <= 0.0:
 		return
-	var dragon_dying: Variant = dragon.get("_dying")
-	if dragon_dying == null or bool(dragon_dying):
-		return
-	if global_position.distance_to(dragon.global_position) > attack_range:
-		return
-	_contact_debt += attack_damage * delta
-	var whole := int(_contact_debt)
-	if whole > 0:
-		_contact_debt -= float(whole)
-		dragon.take_damage(whole, false, "soldier")
+	
+	var goblins: Array = get_tree().get_nodes_in_group("goblins")
+	for goblin_node in goblins:
+		var goblin := goblin_node as BaseNPC
+		if goblin == null or not goblin.is_alive:
+			continue
+		if global_position.distance_to(goblin.global_position) <= attack_range:
+			_contact_debt += attack_damage * delta
+			var whole := int(_contact_debt)
+			if whole > 0:
+				_contact_debt -= float(whole)
+				goblin.take_damage(whole)
+				break
 
 func take_damage(amount: int) -> void:
 	# Soldiers take fire/dragon damage; routed into the base class.

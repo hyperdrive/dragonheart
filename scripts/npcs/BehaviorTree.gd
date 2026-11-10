@@ -80,6 +80,7 @@ class Activity:
 var npc: BaseNPC
 var state: State = State.IDLE
 var current_activity: Activity = null
+var is_setup: bool = false  # Track if setup() has been called
 
 ## Escape reaction tuning (dragon proximity). Exports live on BaseNPC;
 ## the engine reads them from there.
@@ -87,6 +88,7 @@ var current_activity: Activity = null
 
 func setup(npc_node: BaseNPC) -> void:
 	npc = npc_node
+	is_setup = true
 
 ## Register a schedulable activity. Higher priority wins when several are ready.
 func register_activity(
@@ -104,6 +106,9 @@ func register_activity(
 		ready_check, work_check
 	)
 	activities.append(activity)
+
+func clear_activities() -> void:
+	activities.clear()
 
 var activities: Array[Activity] = []
 
