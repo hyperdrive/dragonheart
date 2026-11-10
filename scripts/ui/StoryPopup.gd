@@ -260,14 +260,16 @@ func open(kind: String) -> void:
 	visible = true
 
 func _rebuild_choices(choice_texts: Array) -> void:
-	for child: Node in choices_box.get_children():
-		child.queue_free()
-	for i in choice_texts.size():
-		var button := Button.new()
-		button.text = "%d.  %s" % [i + 1, choice_texts[i]]
-		button.set_meta("choice_index", i)
-		button.pressed.connect(_on_choice_pressed.bind(i))
-		choices_box.add_child(button)
+	for i in 4:
+		var button: Button = get_node_or_null("Center/Panel/VBox/Choices/Choice%d" % (i + 1)) as Button
+		if button != null:
+			if i < choice_texts.size():
+				button.text = "%d.  %s" % [i + 1, choice_texts[i]]
+				button.set_meta("choice_index", i)
+				button.pressed.connect(_on_choice_pressed.bind(i))
+				button.visible = true
+			else:
+				button.visible = false
 
 func _on_choice_pressed(choice_index: int) -> void:
 	story_choice_made.emit(current_kind, choice_index)
