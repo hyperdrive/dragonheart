@@ -230,23 +230,68 @@ const STORIES := {
 			"Try to reason (futile).",
 		],
 	},
-	# --- sacrifice stories (2026-11-11) ---
-	"sacrifice_approach": {
-		"title": "The Virgin at the Pole",
+	# --- sacrifice stories (2026-11-11, user: \"variations reflecting some
+	# character of the would be dragon rider\") ---
+	"sacrifice_approach_courageous": {
+		"title": "The Unbowed",
 		"image": "res://assets/sprites/sacrifice.svg",
-		"tint": Color(0.35, 0.3, 0.35),
-		"text": "A woman bound to a wooden pole kneels in the dust. Her eyes are downcast, her hair bound with simple ribbons. The dragon circles once, twice — the choice is clear: feast or future.",
+		"tint": Color(0.38, 0.28, 0.32),
+		"text": "She lifts her chin, chains clinking like a challenge. \"You can take my life, but not my spirit. Let me ride at your side — I've faced down wolves in the mountains and walked through fire to save my sister.\" The crowd holds its breath — this one might actually mean it.",
 		"choices": [
 			"Eat her. +2 flame charges.",
 			"Take to lair. Train as rider.",
 			"Leave her be.",
 		],
 	},
-	"sacrifice_male": {
-		"title": "The Trainable",
+	"sacrifice_approach_cunning": {
+		"title": "The Fox",
 		"image": "res://assets/sprites/sacrifice.svg",
-		"tint": Color(0.3, 0.35, 0.35),
-		"text": "A man tied to the pole looks up — not with fear, but defiance. \"I am no woman,\" he growls. \"But I can ride. I can fight. Let me serve, and I will make you proud.\" 20% of sacrifices are men, and some are trainable.",
+		"tint": Color(0.32, 0.35, 0.28),
+		"text": "Her smile is a blade in velvet. \"I know where the treasury keeps its weakest guard. I know the mountain paths the soldiers avoid. I know how to make a king's enemies disappear — for a price. Let me serve, and I'll bring you more gold than you've seen in your hoard.\" A deal with a devil, perhaps.",
+		"choices": [
+			"Eat her. +2 flame charges.",
+			"Take to lair. Train as rider.",
+			"Leave her be.",
+		],
+	},
+	"sacrifice_approach_devout": {
+		"title": "The Prophet",
+		"image": "res://assets/sprites/sacrifice.svg",
+		"tint": Color(0.28, 0.32, 0.38),
+		"text": "Tears streak the dust on her cheeks, but her voice is steady. \"The old gods whispered in my dreams. They said the dragon would come, and I must be ready. I am not afraid of your fire — I am the messenger. Let me ride, and I will sing songs of your glory when I am gone.\"",
+		"choices": [
+			"Eat her. +2 flame charges.",
+			"Take to lair. Train as rider.",
+			"Leave her be.",
+		],
+	},
+	"sacrifice_male_brute": {
+		"title": "The Mountain",
+		"image": "res://assets/sprites/sacrifice.svg",
+		"tint": Color(0.3, 0.32, 0.28),
+		"text": "He spits blood and grins through broken teeth. \"You want food? Take my arm. But if you want a rider, I've wrestled grizzlies and won. I can break a man's spine with my thighs and shoot an arrow through an eye socket. You'll want me alive.\" A bear in human skin.",
+		"choices": [
+			"Eat him. +2 flame charges.",
+			"Take to lair. Train as rider.",
+			"Leave him be.",
+		],
+	},
+	"sacrifice_male_thief": {
+		"title": "The Shadow",
+		"image": "res://assets/sprites/sacrifice.svg",
+		"tint": Color(0.28, 0.3, 0.32),
+		"text": "\"I steal what others cannot see — the king's secrets in his study, the merchant's gold in his vault, the guard's breath in the night. You burn, I slip through the cracks. Together, we own everything.\" A snake in a cage.",
+		"choices": [
+			"Eat him. +2 flame charges.",
+			"Take to lair. Train as rider.",
+			"Leave him be.",
+		],
+	},
+	"sacrifice_male_renegade": {
+		"title": "The Exile",
+		"image": "res://assets/sprites/sacrifice.svg",
+		"tint": Color(0.32, 0.28, 0.3),
+		"text": "\"They called me traitor and hounded me to the edge of the world. I know their tactics, their weaknesses, their lies. Give me wings, and I'll bring their heads back in sacks. Or burn me — either way, they die.\" A wolf seeking pack.",
 		"choices": [
 			"Eat him. +2 flame charges.",
 			"Take to lair. Train as rider.",
