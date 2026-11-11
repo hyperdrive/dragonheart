@@ -186,6 +186,63 @@ const STORIES := {
 			"Sleep three days on the treasury gate. Earned.",
 		],
 	},
+	# --- king defeat variants (2026-11-12, user: \"King defeat StoryPopup
+	# options\") ---
+	"king_defeat_fallen_crown": {
+		"title": "The Fallen Crown",
+		"image": "res://assets/king_crown.svg",
+		"tint": Color(0.25, 0.15, 0.18),
+		"text": "\"Impossible... I have brought empires to their knees... I have broken armies greater than the stars in heaven! And yet... a miserable, overgrown lizard dares to stand above me? Curse you, beast! May your gold turn to ashes, your wings to dust, and your name be forgotten by all but the worms!\"",
+		"choices": [
+			"Roar a curse back: \"Worms eat kings, not gold.\"",
+			"Crush the crown under one talon. Let the rust settle.",
+			"Snarl: \"Your empire was a lie. I am real.\"",
+		],
+	},
+	"king_defeat_prophecy": {
+		"title": "The King's Last Prophecy",
+		"image": "res://assets/king_crown.svg",
+		"tint": Color(0.22, 0.12, 0.2),
+		"text": "\"You may have broken my sword, dragon, but you have not broken my kingdom! A thousand sons shall rise to avenge me, and ten thousand more shall follow! They shall hunt you to the ends of the earth, and when they finally drag your carcass from its mountain, I shall be laughing from the halls of the dead!\"",
+		"choices": [
+			"Roar a curse back: \"Worms eat kings, not gold.\"",
+			"Crush the crown under one talon. Let the rust settle.",
+			"Snarl: \"Your empire was a lie. I am real.\"",
+		],
+	},
+	"king_defeat_curse": {
+		"title": "The Curse of the Dying King",
+		"image": "res://assets/king_crown.svg",
+		"tint": Color(0.28, 0.1, 0.22),
+		"text": "\"By my blood upon this soil, by my crown cast into the mud, I lay upon you the curse of kings! May every treasure you steal bring you sorrow, every maiden you carry bring you misery, and every victory leave you more wretched than the last! May you live a thousand years, dragon... and regret every single one!\"",
+		"choices": [
+			"Roar a curse back: \"Worms eat kings, not gold.\"",
+			"Crush the crown under one talon. Let the rust settle.",
+			"Snarl: \"Your empire was a lie. I am real.\"",
+		],
+	},
+	"king_defeat_defiance": {
+		"title": "The King's Final Defiance",
+		"image": "res://assets/king_crown.svg",
+		"tint": Color(0.3, 0.12, 0.15),
+		"text": "\"Do not mistake my fall for your triumph, serpent! A king does not die when his heart ceases beating, but when the last man forgets his name! And I swear upon the throne of my fathers... even if I must crawl from the grave with my bones for swords, I shall have my vengeance!\"",
+		"choices": [
+			"Roar a curse back: \"Worms eat kings, not gold.\"",
+			"Crush the crown under one talon. Let the rust settle.",
+			"Snarl: \"Your empire was a lie. I am real.\"",
+		],
+	},
+	"king_defeat_decree": {
+		"title": "The Last Royal Decree",
+		"image": "res://assets/king_crown.svg",
+		"tint": Color(0.2, 0.15, 0.25),
+		"text": "\"Then hear my final decree, you winged abomination! I condemn you to an eternity of hunger, an ocean of loneliness, and a mountain of gold you shall never have the wit to spend! And when the last star fades and the world grows cold, may you still be sitting upon your worthless treasure... YOU GLORIFIED CHICKEN!\"",
+		"choices": [
+			"Roar a curse back: \"Worms eat kings, not gold.\"",
+			"Crush the crown under one talon. Let the rust settle.",
+			"Snarl: \"Your empire was a lie. I am real.\"",
+		],
+	},
 	"wizard_emerge": {
 		"title": "The Tower Reveals Its Master",
 		"image": "res://assets/wizard_bolt.svg",
