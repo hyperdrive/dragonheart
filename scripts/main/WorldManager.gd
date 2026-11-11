@@ -79,6 +79,7 @@ var entity_scenes := {
 	"pig_pen": preload("res://scenes/props/PigPen.tscn"),
 	"cow_pen": preload("res://scenes/props/CowPen.tscn"),
 	"lair": preload("res://scenes/props/DragonLair.tscn"),
+	"sacrifice": preload("res://scenes/props/Sacrifice.tscn"),
 }
 
 var scenery_scenes := [
@@ -92,6 +93,8 @@ var soldiers_spawned: int = 0
 var king_spawned: bool = false
 var swarm_state: SwarmState = SwarmState.CALM
 var field_positions: Array[Vector2] = []
+## Sacrifice system: track fields burnt to spawn sacrifice every 3 fields
+var fields_burnt_count: int = 0
 ## Pending NPC respawns: {"type", "position", "timer_left"} — gated on the
 ## matching pen having a live animal (farmer↔pig, miner↔cow).
 var _respawn_queue: Array[Dictionary] = []
@@ -185,6 +188,11 @@ func _ready() -> void:
 		goblin_mountain_position, FOOTPRINT_RADIUS["mountain"])
 	tower_position = _clamp_to_interior(tower_position, FOOTPRINT_RADIUS["tower"])
 	generate_world()
+	# Connect to field_burnt signal AFTER generation (fields are created in generate_world)
+	for field_node in get_tree().get_nodes_in_group("fields"):
+		var field := field_node as Field
+		if field != null:
+			field.field_burnt.connect(_on_field_burnt)
 
 	# Escalation timer: one soldier per interval until the King threshold.
 	_soldier_timer = Timer.new()
@@ -657,6 +665,36 @@ func setup_entity(entity_type: String, instance: Node) -> void:
 				# scanned this group name long before it had members.
 				mine.add_to_group("mines")
 				register_footprint(mine.global_position, FOOTPRINT_RADIUS["mine"])
+		"sacrifice":
+			# Sacrifices are non-colliding markers for the story popup system
+			var sacrifice := instance as Sacrifice
+			if sacrifice != null:
+				# Add to a group for the dragon to find during encounter checks
+				sacrifice.add_to_group("sacrifice")
+
+
+## Spawn a sacrifice near the given position (when 3 fields are burnt)
+func _spawn_sacrifice(burnt_field_position: Vector2) -> void:
+	print("WorldManager: Spawning sacrifice after %d fields burnt" % fields_burnt_count)
+	# Spawn the sacrifice near the burnt field position
+	var scene: PackedScene = entity_scenes.get("sacrifice")
+	if scene == null:
+		push_error("WorldManager: sacrifice scene not found in entity_scenes")
+		return
+	var instance: Node = scene.instantiate()
+	var position: Vector2
+	# Spawn near the burnt field (with some jitter)
+	var jitter := Vector2(randf_range(-50.0, 50.0), randf_range(-50.0, 50.0))
+	position = burnt_field_position + jitter
+	# Clamp to interior and ensure terrain-free
+	position = _clamp_to_interior(position, 20.0)
+	position = _terrain_free_position(position, 20.0)
+	if position == Vector2.INF:
+		position = burnt_field_position  # fallback to original position
+	instance.global_position = position
+	add_child(instance)
+	setup_entity("sacrifice", instance)
+	print("WorldManager: Sacrifice spawned at %s" % str(position))
 
 
 ## Jittered position inside the mining district (spreads miners across it).
@@ -1084,6 +1122,19 @@ func _regrow_fields_on_gold() -> void:
 		if field != null and not field.is_workable():
 			field.regrow()
 			return
+
+
+## Field burning tracker for sacrifice system
+## Called by Field.field_burnt signal when a field is burnt by dragon fire.
+## Spawns a sacrifice every 3 fields burnt.
+## Signal signature: field_burnt(field: Field)
+func _on_field_burnt(field: Field) -> void:
+	fields_burnt_count += 1
+	print("WorldManager: Field burnt at %s (count: %d)" % [
+		str(field.global_position), fields_burnt_count])
+	# Spawn sacrifice every 3 fields burnt
+	if fields_burnt_count % 3 == 0:
+		_spawn_sacrifice(field.global_position)
 
 ## Farm cycle pays for livestock: after EVERY delivery, BOTH pens refill
 ## greedily — slots fill until the town's food runs dry (bug fix 2026-11-08:

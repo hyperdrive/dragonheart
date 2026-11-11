@@ -406,6 +406,16 @@ func _ignite_flammables() -> void:
 	var facing_vec := Vector2(float(facing), 0.0)
 	for group: String in ["farmers", "miners", "soldiers", "goblins", "king", "fields"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
+			# Fields are not BaseNPC subclasses, so handle them first
+			if node is Field:
+				var field := node as Field
+				var to_target := field.global_position - global_position
+				if to_target.length() <= fire_reach and \
+				   to_target.normalized().dot(facing_vec) >= fire_ignite_cone:
+					field.burn()
+				continue
+			
+			# Now handle BaseNPC subclasses (farmers, miners, soldiers, goblins, king)
 			var base := node as BaseNPC
 			if base == null:
 				continue
@@ -414,13 +424,8 @@ func _ignite_flammables() -> void:
 				continue  # never encountered: the dragon cannot ignite it yet
 			var target_pos: Vector2 = base.global_position
 			var to_target := target_pos - global_position
-			if to_target.length() > fire_reach:
-				continue
-			if to_target.normalized().dot(facing_vec) < fire_ignite_cone:
-				continue
-			if node is Field:
-				(node as Field).burn()
-			else:
+			if to_target.length() <= fire_reach and \
+			   to_target.normalized().dot(facing_vec) >= fire_ignite_cone:
 				base.catch_fire()
 
 func _process(delta: float) -> void:

@@ -11,6 +11,7 @@ class_name StoryPopup
 
 signal story_close_requested
 signal story_choice_made(kind: String, choice_index: int)
+signal sacrifice_choice_made(choice_index: int)
 
 ## Story library — per kind: panel title, one image (SVG), its backdrop
 ## tint, the fantasy-novel body text, and the dragon's possible answers.
@@ -227,6 +228,29 @@ const STORIES := {
 			"Try to reason (futile).",
 		],
 	},
+	# --- sacrifice stories (2026-11-11) ---
+	"sacrifice_approach": {
+		"title": "The Virgin at the Pole",
+		"image": "res://assets/sacrifice.svg",
+		"tint": Color(0.35, 0.3, 0.35),
+		"text": "A woman bound to a wooden pole kneels in the dust. Her eyes are downcast, her hair bound with simple ribbons. The dragon circles once, twice — the choice is clear: feast or future.",
+		"choices": [
+			"Eat her. +2 flame charges.",
+			"Take to lair. Train as rider.",
+			"Leave her be.",
+		],
+	},
+	"sacrifice_male": {
+		"title": "The Trainable",
+		"image": "res://assets/sacrifice.svg",
+		"tint": Color(0.3, 0.35, 0.35),
+		"text": "A man tied to the pole looks up — not with fear, but defiance. \"I am no woman,\" he growls. \"But I can ride. I can fight. Let me serve, and I will make you proud.\" 20% of sacrifices are men, and some are trainable.",
+		"choices": [
+			"Eat him. +2 flame charges.",
+			"Take to lair. Train as rider.",
+			"Leave him be.",
+		],
+	},
 }
 
 const HOTKEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4]
@@ -274,6 +298,9 @@ func _rebuild_choices(choice_texts: Array) -> void:
 
 func _on_choice_pressed(choice_index: int) -> void:
 	story_choice_made.emit(current_kind, choice_index)
+	# Emit sacrifice-specific signal if this is a sacrifice story
+	if current_kind == "sacrifice_approach" or current_kind == "sacrifice_male":
+		sacrifice_choice_made.emit(choice_index)
 	visible = false
 	current_kind = ""
 	story_close_requested.emit()
