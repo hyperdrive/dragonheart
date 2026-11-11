@@ -11,29 +11,150 @@ script = ExtResource("1_n7m8k")
 [node name="Sprite" type="Node2D" parent="."]
 position = Vector2(0, -5)
 
-[node name="Body" type="ColorRect" parent="Sprite"]
-size = Vector2(25, 35)
-color = Color(0.8, 0.0, 0.0, 1.0)
-
 [node name="Cape" type="ColorRect" parent="Sprite"]
-position = Vector2(-10, -5)
-size = Vector2(35, 30)
-color = Color(0.4, 0.0, 0.4, 1.0)
+position = Vector2(-16, -14)
+size = Vector2(32, 40)
+color = Color(0.36, 0.07, 0.4, 1)
+
+[node name="CapeTrim" type="ColorRect" parent="Sprite"]
+position = Vector2(-16, -14)
+size = Vector2(32, 4)
+color = Color(0.24, 0.04, 0.28, 1)
+
+[node name="Greaves" type="ColorRect" parent="Sprite"]
+position = Vector2(-9, 22)
+size = Vector2(18, 10)
+color = Color(0.35, 0.37, 0.42, 1)
+
+[node name="BootL" type="ColorRect" parent="Sprite"]
+position = Vector2(-10, 32)
+size = Vector2(9, 7)
+color = Color(0.14, 0.11, 0.09, 1)
+
+[node name="BootR" type="ColorRect" parent="Sprite"]
+position = Vector2(2, 32)
+size = Vector2(9, 7)
+color = Color(0.14, 0.11, 0.09, 1)
+
+[node name="Body" type="ColorRect" parent="Sprite"]
+position = Vector2(-11, -2)
+size = Vector2(22, 26)
+color = Color(0.42, 0.45, 0.52, 1)
+
+[node name="BodyTrim" type="ColorRect" parent="Sprite"]
+position = Vector2(-11, -2)
+size = Vector2(22, 3)
+color = Color(0.78, 0.62, 0.22, 1)
+
+[node name="Emblem" type="ColorRect" parent="Sprite"]
+position = Vector2(-4, 4)
+size = Vector2(8, 12)
+color = Color(0.78, 0.62, 0.22, 1)
+
+[node name="EmblemCore" type="ColorRect" parent="Sprite"]
+position = Vector2(-2, 6)
+size = Vector2(4, 8)
+color = Color(0.62, 0.1, 0.12, 1)
+
+[node name="Belt" type="ColorRect" parent="Sprite"]
+position = Vector2(-11, 19)
+size = Vector2(22, 4)
+color = Color(0.22, 0.16, 0.11, 1)
+
+[node name="BeltBuckle" type="ColorRect" parent="Sprite"]
+position = Vector2(-3, 19)
+size = Vector2(6, 4)
+color = Color(0.78, 0.62, 0.22, 1)
+
+[node name="PauldronBack" type="ColorRect" parent="Sprite"]
+position = Vector2(-19, -6)
+size = Vector2(10, 13)
+color = Color(0.5, 0.53, 0.6, 1)
+
+[node name="PauldronBackTrim" type="ColorRect" parent="Sprite"]
+position = Vector2(-19, -6)
+size = Vector2(10, 3)
+color = Color(0.78, 0.62, 0.22, 1)
+
+[node name="PauldronFront" type="ColorRect" parent="Sprite"]
+position = Vector2(9, -6)
+size = Vector2(10, 13)
+color = Color(0.5, 0.53, 0.6, 1)
+
+[node name="PauldronFrontTrim" type="ColorRect" parent="Sprite"]
+position = Vector2(9, -6)
+size = Vector2(10, 3)
+color = Color(0.78, 0.62, 0.22, 1)
+
+[node name="Head" type="ColorRect" parent="Sprite"]
+position = Vector2(-6, -14)
+size = Vector2(12, 12)
+color = Color(0.92, 0.78, 0.62, 1)
+
+[node name="Eyes" type="ColorRect" parent="Sprite"]
+position = Vector2(-3, -10)
+size = Vector2(7, 2)
+color = Color(0.15, 0.12, 0.1, 1)
+
+[node name="Beard" type="ColorRect" parent="Sprite"]
+position = Vector2(-5, -6)
+size = Vector2(10, 7)
+color = Color(0.72, 0.72, 0.7, 1)
 
 [node name="Crown" type="ColorRect" parent="Sprite"]
-position = Vector2(-8, -20)
-size = Vector2(20, 15)
-color = Color(1.0, 0.8, 0.0, 1.0)
+position = Vector2(-7, -20)
+size = Vector2(14, 7)
+color = Color(0.85, 0.68, 0.25, 1)
+
+[node name="CrownPointL" type="ColorRect" parent="Sprite"]
+position = Vector2(-7, -25)
+size = Vector2(3, 5)
+color = Color(0.85, 0.68, 0.25, 1)
+
+[node name="CrownPointC" type="ColorRect" parent="Sprite"]
+position = Vector2(-2, -26)
+size = Vector2(3, 6)
+color = Color(0.85, 0.68, 0.25, 1)
+
+[node name="CrownPointR" type="ColorRect" parent="Sprite"]
+position = Vector2(4, -25)
+size = Vector2(3, 5)
+color = Color(0.85, 0.68, 0.25, 1)
+
+[node name="CrownJewel" type="ColorRect" parent="Sprite"]
+position = Vector2(-1, -18)
+size = Vector2(3, 3)
+color = Color(0.75, 0.12, 0.12, 1)
 
 [node name="Sword" type="ColorRect" parent="Sprite"]
-position = Vector2(20, -10)
-size = Vector2(6, 25)
-color = Color(0.8, 0.8, 0.8, 1.0)
+position = Vector2(16, -26)
+size = Vector2(8, 52)
+color = Color(1, 1, 1, 0)
 
-[node name="Shield" type="ColorRect" parent="Sprite"]
-position = Vector2(-20, -5)
-size = Vector2(12, 25)
-color = Color(0.9, 0.9, 0.1, 1.0)
+[node name="SwordBlade" type="ColorRect" parent="Sprite/Sword"]
+position = Vector2(2, 10)
+size = Vector2(4, 40)
+color = Color(0.72, 0.8, 0.92, 1)
+
+[node name="SwordRune" type="ColorRect" parent="Sprite/Sword"]
+position = Vector2(3.5, -2)
+size = Vector2(1, 22)
+color = Color(0.85, 0.92, 1, 1)
+
+[node name="SwordGuard" type="ColorRect" parent="Sprite/Sword"]
+position = Vector2(-2, 6)
+size = Vector2(12, 4)
+color = Color(0.8, 0.64, 0.2, 1)
+
+[node name="SwordGrip" type="ColorRect" parent="Sprite/Sword"]
+position = Vector2(2.5, -4)
+size = Vector2(3, 10)
+color = Color(0.25, 0.18, 0.12, 1)
+
+[node name="SwordPommel" type="ColorRect" parent="Sprite/Sword"]
+position = Vector2(1.5, -8)
+size = Vector2(5, 4)
+color = Color(0.8, 0.64, 0.2, 1)
 
 [node name="MainCollision" type="CollisionShape2D" parent="."]
 shape = ExtResource("2_p9q4l")
