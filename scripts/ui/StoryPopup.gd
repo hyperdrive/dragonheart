@@ -107,6 +107,74 @@ const STORIES := {
 			"Land. Bow. DRAMATICALLY. Then breathe a coal-cracker.",
 		],
 	},
+	# --- king story variants (2026-11-12, user: \"King StoryPopup
+	# variations\") ---
+	"king_defiant": {
+		"title": "The Defiant King",
+		"image": "res://assets/king_crown.svg",
+		"tint": Color(0.32, 0.2, 0.2),
+		"text": "You have heard the songs — the old songs, the ones about the dragon I slew in my youth, the one they carved into the chapel doors. It was true. I was that man. I killed that beast while my hands were young and my heart was stupid enough to believe the stories would end there. But the stories do not end. They just find a new beast to be about. So here I am, old, slow, tired, wearing a crown that feels like a gravestone — and I am going to pick up my sword again. Not because I want to. Because a king who stops being a hero is just a man with good furniture, and I refuse to die that way.",
+		"choices": [
+			"Roar and burn his banner.",
+			"Land. Bow. DRAMATICALLY. Then breathe a coal-cracker.",
+			"Snarl: \"You talk too much for a king.\"",
+		],
+	},
+	"king_courageous": {
+		"title": "The Fearless",
+		"image": "res://assets/king_crown.svg",
+		"tint": Color(0.3, 0.18, 0.22),
+		"text": "I am still the king. I am still the man who killed the last dragon, and I killed it while I was so afraid I could barely hold my sword — and that fear is the only reason I am alive. The dragon does not feel fear. It has never needed to. It has never met a man who had nothing left to lose, a man who would rather die on his feet than live on his knees. Today, you are that man. Today, we are all that man. And I promise you: when the beast looks into our eyes and sees no running, no begging, no white flags — it will know fear for the first time in its long, stupid life.",
+		"choices": [
+			"Roar and burn his banner.",
+			"Land. Bow. DRAMATICALLY. Then breathe a coal-cracker.",
+			"Snarl: \"You talk too much for a king.\"",
+		],
+	},
+	"king_challenger": {
+		"title": "The Challenger",
+		"image": "res://assets/king_crown.svg",
+		"tint": Color(0.25, 0.15, 0.25),
+		"text": "Come forth, you wretched beast of fire and ruin! I have brought you the finest steel of twelve kingdoms, ten thousand men who fear neither death nor darkness, and a crown forged in the blood of conquerors. Today, dragon, you shall learn why even gods once trembled before kings!",
+		"choices": [
+			"Roar and burn his banner.",
+			"Land. Bow. DRAMATICALLY. Then breathe a coal-cracker.",
+			"Snarl: \"You talk too much for a king.\"",
+		],
+	},
+	"king_unbowed": {
+		"title": "The Unbowed",
+		"image": "res://assets/king_crown.svg",
+		"tint": Color(0.28, 0.12, 0.22),
+		"text": "Look upon me, wyrm, and behold the one creature in this world that does not fear you! I have broken empires, buried tyrants, and walked through rivers of blood to claim this crown. Your fire is but a candle before the furnace of my wrath!",
+		"choices": [
+			"Roar and burn his banner.",
+			"Land. Bow. DRAMATICALLY. Then breathe a coal-cracker.",
+			"Snarl: \"You talk too much for a king.\"",
+		],
+	},
+	"king_champion": {
+		"title": "The Champion",
+		"image": "res://assets/king_crown.svg",
+		"tint": Color(0.3, 0.2, 0.25),
+		"text": "By the heavens that witness us, by the earth that bears our feet, and by the ancient kings whose bones lie beneath these hills, I challenge thee! Let the mountains shatter and the skies turn black with ash, for I shall not yield one step. Come, serpent, and discover whether your flames burn hotter than the fury of a king!",
+		"choices": [
+			"Roar and burn his banner.",
+			"Land. Bow. DRAMATICALLY. Then breathe a coal-cracker.",
+			"Snarl: \"You talk too much for a king.\"",
+		],
+	},
+	"king_renegade": {
+		"title": "The Renegade King",
+		"image": "res://assets/king_crown.svg",
+		"tint": Color(0.25, 0.18, 0.15),
+		"text": "Hear me, beast! The age of dragons ends beneath my banner, and from your ashes shall rise an age of men! Let your roar shake the heavens one final time, for when this day is done, the only thing left of your legend shall be the songs they sing of me!",
+		"choices": [
+			"Roar and burn his banner.",
+			"Land. Bow. DRAMATICALLY. Then breathe a coal-cracker.",
+			"Snarl: \"You talk too much for a king.\"",
+		],
+	},
 	"king_defeat": {
 		"title": "The Crown Tumbles",
 		"image": "res://assets/king_crown.svg",
