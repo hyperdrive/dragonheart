@@ -1072,7 +1072,10 @@ func on_king_defeated() -> bool:
 var wizard_spawned: bool = false
 
 func _try_spawn_wizard() -> void:
-	if wizard_spawned or game_manager == null or game_manager.run_finished:
+	# Bug fix (2026-11-11, user: "the wizard never appears" after the King's
+	# defeat): no run_finished gate — the backstabber emerges whenever his
+	# provocation lines are crossed, victory or not.
+	if wizard_spawned or game_manager == null:
 		return
 	var bought_enough: bool = game_manager.upgrade_purchases >= wizard_upgrade_threshold \
 		and game_manager.tower_visits > wizard_visit_threshold

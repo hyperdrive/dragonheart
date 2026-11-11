@@ -39,6 +39,7 @@ const WIZARD_PRICES := {
 	"speed": {"gold": 12, "gems": 0},
 	"range": {"gold": 15, "gems": 1},
 	"brute": {"gold": 8, "gems": 0},
+	"rider_train": {"gold": 10, "gems": 0},
 }
 
 # --- TTRPG story popups (2026-11-09) -------------------------------------------
@@ -54,6 +55,7 @@ var story_shown: Dictionary = {}        # kind → true (once per run)
 var story_queue: Array[String] = []     # told-while-paused stories wait here
 var ttrpg_choices: Dictionary = {}      # kind → chosen answer index
 signal story_choice_made(kind: String, choice_index: int)
+signal sacrifice_choice_made(choice_index: int)
 
 ## Death chapters (2026-11-09): the dragon's slayer names the tale —
 ## each take_damage caller passes a killer key; unknowns get the
@@ -124,14 +126,65 @@ func _open_story_now(kind: String) -> void:
 	story_popup.call("open", kind)
 	get_tree().paused = true
 
+## Public entry for the sacrifice encounter (Sacrifice.gd): opens the popup
+## through the ONE canonical creation path so every signal is connected
+## (bug fix 2026-11-11 — Sacrifice.gd used to duplicate popup creation and
+## skip the sacrifice_choice_made wiring when the popup already existed).
+## Deliberately bypasses story_shown: the popup is once per SACRIFICE
+## (Sacrifice._story_triggered), not once per run.
+func open_sacrifice_story(kind: String) -> void:
+	_open_story_now(kind)
+
 ## The chosen answer joins the run's progression policy.
 func _on_story_choice(kind: String, choice_index: int) -> void:
 	ttrpg_choices[kind] = choice_index
 	story_choice_made.emit(kind, choice_index)
 	print("TTRPG — '%s' answered: choice %d" % [kind, choice_index + 1])
+	# Sacrifice answers route through HERE (bug fix 2026-11-11): the old
+	# Sacrifice.gd connected sacrifice_choice_made only when IT created the
+	# popup — but the popup already exists (field_burn created it), so the
+	# signal fired into the void and the rider option never unlocked.
+	if kind.begins_with("sacrifice_"):
+		_on_sacrifice_choice_from_popup(choice_index)
 	# Goblin-encounter answers are handled by WorldManager (it connects
 	# story_choice_made). The answer is tribal once-per-run, so GameManager
 	# must NOT pick goblins — get_first_node_in_group would strand the rest.
+
+## Handle sacrifice story choices
+func _on_sacrifice_choice_from_popup(choice_index: int) -> void:
+	print("GameManager: Sacrifice choice made, index: %d" % choice_index)
+	# Choice 0: Eat (+2 flame charges) — Choice 1: train as rider — 2: leave
+	match choice_index:
+		1:
+			print("GameManager: Dragon chose to train the sacrifice as a rider")
+			train_sacrifice_as_rider()
+		0:
+			print("GameManager: Dragon chose to eat the sacrifice")
+			eat_sacrifice()
+		_:
+			print("GameManager: Dragon chose to leave the sacrifice")
+	# The pole is done either way: eaten, claimed, or spared — the victim
+	# leaves the field (the rider "goes to the lair" between the scenes).
+	for node: Node in get_tree().get_nodes_in_group("sacrifice"):
+		var sacrifice := node as Sacrifice
+		if sacrifice != null and sacrifice._story_triggered:
+			sacrifice.remove_sacrifice()
+
+## Train the sacrifice as a dragon rider (unlocks the 10g wizard option)
+func train_sacrifice_as_rider() -> void:
+	_trainable_sacrifice = true
+	print("GameManager: Sacrifice marked as trainable for rider")
+
+## Eat the sacrifice for flame charges
+func eat_sacrifice() -> void:
+	if dragon != null and is_instance_valid(dragon):
+		dragon.call("increase_flame_capacity", 2)
+		print("GameManager: Dragon gained 2 flame charges from eating sacrifice")
+
+## Show epic story when rider is upgraded
+func _on_rider_upgraded() -> void:
+	print("GameManager: Rider upgraded, showing epic story")
+	notify_story("rider_upgraded")
 
 ## Story resolution: close, unpause, then serve anything queued behind it.
 ## A dragon-death chapter ENDS the run instead: the chapter has played,
@@ -145,6 +198,10 @@ func _on_story_closed() -> void:
 		return
 	_drain_story_queue()
 
+## Check if there's a trainable sacrifice (from story choice)
+func has_trainable_sacrifice() -> bool:
+	return _trainable_sacrifice
+
 func _drain_story_queue() -> void:
 	if story_queue.is_empty() or story_open:
 		return
@@ -154,6 +211,8 @@ var wizard_menu: CanvasLayer
 
 signal wizard_menu_opened
 signal wizard_menu_closed
+
+var _trainable_sacrifice: bool = false
 
 var treasury: Dictionary = {"gold": 0, "gems": 0}
 var stash: Dictionary = {"gold": 0, "gems": 0}      # dragon's stolen loot
@@ -189,6 +248,12 @@ func _ready() -> void:
 	# Loot-haul loop messaging: pickups tell the player where to bank them.
 	if dragon != null and dragon.has_signal("loot_carried"):
 		dragon.loot_carried.connect(_on_dragon_loot_carried)
+	# Rider chapters (bug fix 2026-11-11): connected HERE, once, instead of
+	# at sacrifice-choice time — the upgrade must tell its story even if the
+	# choice handler is ever bypassed.
+	if dragon != null and dragon.has_signal("rider_upgraded") \
+			and not dragon.rider_upgraded.is_connected(_on_rider_upgraded):
+		dragon.rider_upgraded.connect(_on_rider_upgraded)
 	emit_signal("gold_changed", treasury["gold"])
 	emit_signal("food_changed", food)
 
@@ -283,8 +348,10 @@ func can_afford_wizard(kind: String) -> bool:
 
 ## Pay a wizard cost {"gold", "gems"} — same rule as can_afford_wizard.
 ## A refused purchase never half-pays (gold-first, gems flatten the rest).
+## Bug fix (2026-11-11): no run_finished gate — purchases keep working
+## after the King's final fall (post-victory shop, user report).
 func _pay_wizard_cost(kind: String) -> bool:
-	if run_finished or not can_afford_wizard(kind):
+	if not can_afford_wizard(kind):
 		return false
 	var cost: Dictionary = WIZARD_PRICES[kind]
 	var gem_need := int(cost["gems"])
@@ -311,6 +378,9 @@ func purchase_upgrade(kind: String) -> bool:
 	# Brute Force is capped — refuse BEFORE taking payment (decision record).
 	if kind == "brute" and not bool(dragon_ref.call("can_add_strike")):
 		return false
+	# Rider training requires a trainable sacrifice
+	if kind == "rider_train" and not _trainable_sacrifice:
+		return false
 	if not _pay_wizard_cost(kind):
 		return false
 	match kind:
@@ -327,15 +397,23 @@ func purchase_upgrade(kind: String) -> bool:
 			dragon_ref.call("increase_flame_range", 20.0)
 		"brute":
 			dragon_ref.call("add_strike_chance", 0.05)
+		"rider_train":
+			if dragon_ref.has_method("upgrade_rider"):
+				dragon_ref.call("upgrade_rider")
+				_trainable_sacrifice = false  # consumed
+			else:
+				print("Dragon: upgrade_rider method not found")
+				return false
 	upgrade_purchased.emit(kind, int(WIZARD_PRICES[kind]["gold"]))
 	upgrade_purchases += 1  # the wizard keeps count (emergence trigger)
 	return true
 
 ## Open the wizard overlay (pause the live world beneath it). Lazily built so
 ## GameManager's scene tree stays lean; the instance survives for reopen.
+## Bug fix (2026-11-11, user: "if the king is defeated, the wizard tower
+## stops to work"): NO run_finished gate — the shop stays open in
+## post-victory play; the wizard never lost his love of gold.
 func open_wizard_menu() -> void:
-	if run_finished:
-		return
 	if wizard_menu == null:
 		wizard_menu = WIZARD_MENU_SCENE.instantiate()
 		wizard_menu.process_mode = Node.PROCESS_MODE_ALWAYS

@@ -231,7 +231,7 @@ const STORIES := {
 	# --- sacrifice stories (2026-11-11) ---
 	"sacrifice_approach": {
 		"title": "The Virgin at the Pole",
-		"image": "res://assets/sacrifice.svg",
+		"image": "res://assets/sprites/sacrifice.svg",
 		"tint": Color(0.35, 0.3, 0.35),
 		"text": "A woman bound to a wooden pole kneels in the dust. Her eyes are downcast, her hair bound with simple ribbons. The dragon circles once, twice — the choice is clear: feast or future.",
 		"choices": [
@@ -242,13 +242,25 @@ const STORIES := {
 	},
 	"sacrifice_male": {
 		"title": "The Trainable",
-		"image": "res://assets/sacrifice.svg",
+		"image": "res://assets/sprites/sacrifice.svg",
 		"tint": Color(0.3, 0.35, 0.35),
 		"text": "A man tied to the pole looks up — not with fear, but defiance. \"I am no woman,\" he growls. \"But I can ride. I can fight. Let me serve, and I will make you proud.\" 20% of sacrifices are men, and some are trainable.",
 		"choices": [
 			"Eat him. +2 flame charges.",
 			"Take to lair. Train as rider.",
 			"Leave him be.",
+		],
+	},
+	# --- rider upgrade story (2026-11-11) ---
+	"rider_upgraded": {
+		"title": "The Archer's Oath",
+		"image": "res://assets/sprites/dragon+rider.svg",
+		"tint": Color(0.25, 0.28, 0.35),
+		"text": "The rider draws the bowstring, the arrowhead gleaming with purpose. \"I swear on this bow,\" they say, \"no soldier, no goblin, no traitor to the throne shall pass this dragon without bleeding.\" The dragon rumbles, a sound like distant thunder — approval.",
+		"choices": [
+			"Nod. The rider has earned their place.",
+			"Breathe fire into the bowstring. A blessing.",
+			"Growl: \"Shoot true. Or don't come back.\"",
 		],
 	},
 }
@@ -290,7 +302,9 @@ func _rebuild_choices(choice_texts: Array) -> void:
 			if i < choice_texts.size():
 				button.text = "%d.  %s" % [i + 1, choice_texts[i]]
 				button.set_meta("choice_index", i)
-				button.pressed.disconnect(_on_choice_pressed.bind(i))
+				# Only disconnect if already connected to avoid errors
+				if button.pressed.is_connected(_on_choice_pressed.bind(i)):
+					button.pressed.disconnect(_on_choice_pressed.bind(i))
 				button.pressed.connect(_on_choice_pressed.bind(i))
 				button.visible = true
 			else:

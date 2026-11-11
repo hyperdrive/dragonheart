@@ -14,6 +14,7 @@ signal flame_charges_changed(charges: int, max_charges: int)
 ## (recharge clamps). HUD flashes the matching chip.
 signal eat_refused(what: String)
 signal shield_changed(points: int)
+signal rider_upgraded
 
 @export_group("Controls")
 @export var walk_speed: float = 150.0
@@ -46,6 +47,13 @@ var _flap_phase: float = 0.0
 var _lift_current: float = 0.0
 var _chip_flying: Variant = null
 var _chip_seconds: Variant = null
+
+## Rider system (2026-11-11): when a sacrifice is trained and upgraded,
+## the dragon gets a composite sprite and rider combat ability.
+var has_rider: bool = false
+## Rider arrow reach (archer-like, deliberately NOT fire_reach).
+@export var rider_range: float = 260.0
+
 signal flight_state_changed(flying: bool, seconds_left: float, charging: bool)
 
 ## Slayer attribution for the death chapter (take_damage's killer arg;
@@ -123,6 +131,10 @@ func _ready() -> void:
 	sync_from_game_manager()
 	interception_system.setup(game_manager)
 	flame_charges_changed.emit(int(flame_charges), max_flame_charges)
+
+	# Check if we have a rider and mount them accordingly
+	if has_rider:
+		_attach_rider()
 
 	# Fire breath window wiring handled in fire_breath(); the idle starts on play.
 	fire_area.monitoring = false  # breath window only, set in fire_breath()
@@ -392,6 +404,8 @@ func _eat_meal_from(pen: AnimalPen) -> void:
 
 ## Mirror the visual body AND the fire assembly to the facing side. Done with
 ## explicit component mirroring — no negative scale on the physics Area2D.
+## The rider needs no special case: it lives INSIDE Vis/Sprite, so the
+## sprite.scale.x flip mirrors it along with the body.
 func _apply_facing() -> void:
 	sprite.scale.x = float(facing)
 	fire_area.position.x = 20.0 * float(facing)      # breath origin offset
@@ -440,6 +454,10 @@ func _process(delta: float) -> void:
 		interception_system.attempt_interception(self, opportunities[0])
 	_scoop_loose_loot()
 	_deliver_carried_loot()
+	
+	# Rider combat: shoot at soldiers and goblins if rider is active
+	if has_rider and not _dying:
+		_rider_shoot_at_enemies(delta)
 
 # --- loot hauling: scoop → claws → lair ---------------------------------------
 
@@ -754,4 +772,120 @@ func eat_food(food_value: int) -> void:
 	health = mini(health + food_value, max_health)
 	health_changed.emit(health)
 
+## Upgrade the rider (called by GameManager.purchase_upgrade("rider_train")).
+## The trainable gate lives in GameManager; reaching here means it's paid.
+func upgrade_rider() -> void:
+	if has_rider:
+		return  # one rider per dragon — a re-purchase is a no-op
+	has_rider = true
+	print("Dragon: Upgrading rider with combat capabilities")
+	_attach_rider()
+	print("Dragon: Rider upgraded — combat enabled")
+	rider_upgraded.emit()
 
+## Rider combat: shoot arrows at soldiers and goblins (never farmers/miners,
+## never the King — decision record 2026-11-10-sacrifice-system). Ranges
+## like an archer, NOT like the breath cone (fire_reach is for fire only).
+var _rider_shoot_cooldown: float = 0.0
+const RIDER_SHOOT_INTERVAL := 1.5  # seconds between shots
+const RIDER_ARROW_SCENE := preload("res://scenes/objects/Arrow.tscn")
+
+func _rider_shoot_at_enemies(delta: float) -> void:
+	if _rider_shoot_cooldown > 0.0:
+		_rider_shoot_cooldown -= delta
+		return
+	# Nearest live soldier/goblin within rider range. is_alive is a PROPERTY
+	# on BaseNPC (bug fix 2026-11-11: has_method("is_alive") never matched,
+	# so the old scan found zero targets and never fired).
+	var nearest_enemy: Node2D = null
+	var nearest_dist: float = INF
+	for group: String in ["soldiers", "goblins"]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			var npc := node as BaseNPC
+			if npc == null or not npc.is_alive or npc.is_in_group("king"):
+				continue
+			var dist := global_position.distance_to(npc.global_position)
+			if dist <= rider_range and dist < nearest_dist:
+				nearest_dist = dist
+				nearest_enemy = npc
+	if nearest_enemy != null:
+		_rider_shoot_at(nearest_enemy)
+		_rider_shoot_cooldown = RIDER_SHOOT_INTERVAL
+
+## Loose one rider arrow. Arrow.launch aims it; rider_arrow=true makes the
+## arrow hunt soldiers/goblins instead of the DRAGON (bug fix 2026-11-11:
+## the old set_direction() call didn't exist, and stock arrows home on the
+## dragon — the rider would have shot her own mount).
+func _rider_shoot_at(target: Node2D) -> void:
+	var arrow := RIDER_ARROW_SCENE.instantiate() as Arrow
+	if arrow == null:
+		push_warning("DragonRider: Arrow scene failed to instantiate")
+		return
+	arrow.global_position = global_position + Vector2(0.0, -14.0)  # from the saddle
+	arrow.rider_arrow = true
+	get_tree().root.add_child(arrow)
+	arrow.launch(target.global_position, 500.0)
+	print("DragonRider: Arrow loosed at the %s" % target.name)
+
+## Mount the rider ON the original vector dragon (2026-11-11, user: "the
+## dragon rider version of the dragon sprite should look like a derivative
+## of the original dragon sprite"). Revisits the decision record's
+## "replace sprite entirely" row toward its composite alternative: the
+## ColorRect dragon stays EXACTLY as-is, and the rider is built from
+## ColorRects in the same flat side-view style on its back. Parented under
+## Vis/Sprite, so the body bob animation, the facing mirror (scale.x flip)
+## and the claw-strike lunge all carry the rider along for free.
+const RIDER_LEATHER := Color(0.45, 0.3, 0.18)   # armor — echoes the belly tan
+const RIDER_DARK := Color(0.25, 0.17, 0.12)     # pants — echoes the dark reds
+const RIDER_STEEL := Color(0.55, 0.56, 0.6)     # helm — horn-bone family
+const RIDER_SKIN := Color(0.92, 0.78, 0.62)
+const RIDER_CAPE := Color(0.55, 0.12, 0.1)      # same red family as the body
+const RIDER_WOOD := Color(0.4, 0.26, 0.12)      # bow
+
+func _attach_rider() -> void:
+	if sprite == null or not is_instance_valid(sprite):
+		push_warning("Dragon: Sprite node is null or invalid")
+		return
+	if sprite.get_node_or_null("RiderPivot") != null:
+		return  # already mounted
+	var pivot := Node2D.new()
+	pivot.name = "RiderPivot"
+	# Seated on the back, just ahead of the wing roots, behind the neck.
+	pivot.position = Vector2(11.0, -2.0)
+	sprite.add_child(pivot)
+	# Cape first (drawn behind), flowing back — ties the rider into the
+	# dragon's red palette.
+	_rider_rect(pivot, -7.0, -9.0, -2.0, 3.0, RIDER_CAPE, 0.18)
+	# Quiver on the back, two arrow shafts peeking over the shoulder.
+	_rider_rect(pivot, -5.0, -6.0, -2.0, 3.0, RIDER_DARK)
+	_rider_rect(pivot, -4.7, -10.0, -4.1, -5.5, Color(0.75, 0.65, 0.45))
+	_rider_rect(pivot, -3.4, -9.0, -2.8, -4.5, Color(0.75, 0.65, 0.45))
+	# Leg gripping the body flank + boot (side view: one leg reads cleanest).
+	_rider_rect(pivot, -1.0, 2.0, 4.0, 12.0, RIDER_DARK)
+	_rider_rect(pivot, -1.0, 10.0, 4.0, 13.5, Color(0.12, 0.08, 0.06))
+	# Torso in leather armor, matching the flat-shaded body style.
+	_rider_rect(pivot, -2.0, -8.0, 6.0, 4.0, RIDER_LEATHER)
+	# Forward arm reaching to the bow (toward the dragon's neck).
+	_rider_rect(pivot, 5.0, -6.0, 12.0, -3.0, RIDER_LEATHER)
+	# Head + steel helm (color family of the horns).
+	_rider_rect(pivot, 0.0, -15.0, 6.0, -9.0, RIDER_SKIN)
+	_rider_rect(pivot, -1.0, -17.0, 7.0, -13.0, RIDER_STEEL)
+	# Bow held vertical in front, near the neck, with a drawn string.
+	_rider_rect(pivot, 11.0, -15.0, 12.5, -2.0, RIDER_WOOD, -0.12)
+	_rider_rect(pivot, 11.6, -14.0, 11.9, -3.0, Color(0.92, 0.9, 0.82, 0.85))
+	print("Dragon: Rider mounted on the dragon's back")
+
+## One flat ColorRect in the dragon-art style, added to the rider pivot.
+func _rider_rect(parent: Node, l: float, t: float, r: float, b: float,
+		col: Color, rot_deg: float = 0.0) -> ColorRect:
+	var rect := ColorRect.new()
+	rect.offset_left = l
+	rect.offset_top = t
+	rect.offset_right = r
+	rect.offset_bottom = b
+	rect.color = col
+	if rot_deg != 0.0:
+		rect.rotation_degrees = rot_deg
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(rect)
+	return rect

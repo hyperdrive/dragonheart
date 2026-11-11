@@ -39,52 +39,28 @@ func _check_dragon_encounter() -> void:
 
 func _trigger_story() -> void:
 	print("Sacrifice: Dragon approached, triggering story popup")
-	
+
 	# Get the game manager to show the story
 	var game_manager := get_tree().get_first_node_in_group("game_manager")
 	if game_manager == null:
 		print("Sacrifice: GameManager not found!")
 		return
-	
+
 	# Determine which story to show
 	var story_kind := "sacrifice_approach"
 	if is_male:
 		story_kind = "sacrifice_male"
-	
+
 	print("Sacrifice: Showing story '%s'" % story_kind)
-	
-	# Store the current sacrifice in popup meta
-	game_manager.story_open = true
-	game_manager.get_tree().paused = true
-	
-	# Create popup if needed
-	if game_manager.story_popup == null:
-		print("GameManager: Creating new story_popup...")
-		game_manager.story_popup = preload("res://scenes/ui/StoryPopup.tscn").instantiate()
-		game_manager.story_popup.process_mode = Node.PROCESS_MODE_ALWAYS
-		game_manager.story_popup.story_close_requested.connect(game_manager._on_story_closed)
-		game_manager.story_popup.story_choice_made.connect(game_manager._on_story_choice)
-		game_manager.story_popup.sacrifice_choice_made.connect(game_manager._on_sacrifice_choice_from_popup)
-		game_manager.add_child(game_manager.story_popup)
-	
-	# Store the sacrifice in popup meta BEFORE calling open
-	print("Sacrifice: Storing meta on popup before open()")
-	print("Sacrifice: self = %s" % str(self))
-	print("Sacrifice: popup = %s" % str(game_manager.story_popup))
-	
-	# Set meta on the popup node directly
-	game_manager.story_popup.set_meta("current_sacrifice", self)
-	game_manager.story_popup.set_meta("sacrifice_is_male", get_meta("is_male", false))
-	
-	# Verify the meta was set
-	if game_manager.story_popup.has_meta("current_sacrifice"):
-		print("Sacrifice: popup has current_sacrifice meta")
-	else:
-		print("Sacrifice: WARNING - popup does NOT have current_sacrifice meta!")
-	
-	# Show the popup
-	print("GameManager: Calling story_popup.open()...")
-	game_manager.story_popup.open(story_kind)
+
+	# Bug fix (2026-11-11): open through GameManager's canonical path. The
+	# old code duplicated popup creation here and connected
+	# sacrifice_choice_made ONLY when IT created the popup — but the popup
+	# already existed (the first field burn created it), so the "train as
+	# rider" answer fired into the void and the wizard option never unlocked.
+	# Choice routing now flows through story_choice_made →
+	# GameManager._on_story_choice → _on_sacrifice_choice_from_popup.
+	game_manager.call("open_sacrifice_story", story_kind)
 
 func remove_sacrifice() -> void:
 	# Called when the story answer is processed
