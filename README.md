@@ -109,8 +109,10 @@ Your hoard grows. Your legend grows. The world fights back.
 - **WASD** — Move
 - **Q** — Flight toggle
 - **E** — Attack (fire breath)
-- **R** — Shield toggle
+- **R** — (reserved for future use)
 - **1–8** — Wizard menu selection
+
+The dragon's shield is **passive** — it absorbs incoming damage automatically until points are depleted. No key toggle needed.
 
 ---
 
