@@ -9,6 +9,9 @@ class_name WorldManager
 ## Soldier tactics: when the dragon nears the city soldiers RALLY at the city
 ## gate; when enough have massed (or the dragon is at the walls) they ATTACK.
 ## docs/plans/2026-11-08-behavior-system-rebuild.md
+##
+## King story variants (2026-11-12): when the King emerges, pick a story
+## variant at random — the same popup scene handles all story kinds.
 
 signal entity_spawned(entity_type: String, position: Vector2)
 signal swarm_state_changed(new_state: SwarmState)
@@ -1026,8 +1029,18 @@ func _materialize_king() -> void:
 	var king_npc := king as BaseNPC
 	if king_npc != null:
 		king_npc.home_position = king.global_position
+	# Pick a King story variant at random (user: 6 epic one-liners).
+	var king_variants := [
+		"king_defiant",
+		"king_courageous",
+		"king_challenger",
+		"king_unbowed",
+		"king_champion",
+		"king_renegade",
+	]
+	var story_kind := king_variants[randi() % king_variants.size()]
 	if game_manager != null:
-		game_manager.notify_story("king_emerge")
+		game_manager.notify_story(story_kind)
 		game_manager.start_boss_battle(king)
 	entity_spawned.emit("king", king.global_position)
 	_set_swarm_state(SwarmState.ATTACK)
