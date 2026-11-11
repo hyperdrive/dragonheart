@@ -212,10 +212,11 @@ func _trigger_story() -> void:
 		print("Sacrifice: GameManager not found!")
 		return
 
-	# Determine which story to show
-	var story_kind := "sacrifice_approach"
+	# Determine which story to show (user: character-driven variants — pick
+	# one randomly; all map to same 3 choices).
+	var story_kind := "sacrifice_approach_defiant"
 	if is_male:
-		story_kind = "sacrifice_male"
+		story_kind = "sacrifice_male_renegade"
 
 	print("Sacrifice: Showing story '%s'" % story_kind)
 
