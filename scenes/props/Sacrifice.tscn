@@ -1,0 +1,42 @@
+[gd_scene load_steps=2 format=3 uid="uid://s1cr1f1c3"]
+
+[ext_resource type="Script" path="res://scripts/props/Sacrifice.gd" id="1_sacrifice_script"]
+
+[sub_resource type="CircleShape2D" id="1_sacrifice_detection"]
+radius = 50.0
+
+[sub_resource type="RectangleShape2D" id="1_sacrifice_collision"]
+size = Vector2(32, 64)
+
+[node name="Sacrifice" type="StaticBody2D"]
+groups=["sacrifice"]
+script = ExtResource("1_sacrifice_script")
+
+[node name="Visual" type="Node2D" parent="." z_index = 10]
+
+[node name="Pole" type="ColorRect" parent="Visual"]
+offset_left = -4.0
+offset_top = 0.0
+offset_right = 4.0
+offset_bottom = 64.0
+color = Color(0.5, 0.3, 0.1, 1)
+
+[node name="Person" type="ColorRect" parent="Visual"]
+offset_left = -12.0
+offset_top = -20.0
+offset_right = 12.0
+offset_bottom = 16.0
+color = Color(0.8, 0.8, 0.9, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 32)
+shape = SubResource("1_sacrifice_collision")
+
+[node name="DetectionArea" type="Area2D" parent="."]
+monitoring = true
+monitorable = true
+collision_layer = 4
+collision_mask = 1
+
+[node name="DetectionShape" type="CollisionShape2D" parent="DetectionArea"]
+shape = SubResource("1_sacrifice_detection")
