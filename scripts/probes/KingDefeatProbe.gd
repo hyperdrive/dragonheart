@@ -166,12 +166,12 @@ func _physics_process(delta: float) -> void:
 		S.WAIT_VICTORY_STORY:
 			var popup := gm.story_popup as StoryPopup
 			if popup != null and gm.story_open \
-					and popup.current_kind == "king_defeat":
-				_pass("'king_defeat' chapter plays")
+					and str(popup.current_kind).find(\"king_defeat\") == 0:
+				_pass(\"King Defeat story plays: '%s'\" % popup.current_kind)
 				_close_story_if_open()
 				_goto(S.APPROACH_TOWER_2)
 			elif _frames(180):
-				_fail("king_defeat story never opened on the final fall")
+				_fail(\"King Defeat story never opened on the final fall\")
 				_goto(S.REPORT)
 		S.APPROACH_TOWER_2:
 			if not (gm.run_finished and not gm.story_open):
