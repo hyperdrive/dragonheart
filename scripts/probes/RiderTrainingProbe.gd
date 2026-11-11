@@ -39,6 +39,8 @@ var _sacrifice: Sacrifice = null
 var _soldier: BaseNPC = null
 var _rider_arrow_seen: bool = false
 var _rider_arrow_frame: int = 0
+var _arrow_present_now: bool = false
+var _arrow_misses: int = 0
 
 @onready var gm: GameManager = $Main as GameManager
 
@@ -67,8 +69,10 @@ func _physics_process(delta: float) -> void:
 	frames_in_state += 1
 	elapsed += delta
 	# Watch for a rider arrow in flight (any state — it may loom mid-test).
-	if not _rider_arrow_seen:
-		_find_rider_arrow(get_tree().root)
+	_arrow_present_now = _find_rider_arrow(get_tree().root)
+	if _arrow_present_now and not _rider_arrow_seen:
+		_rider_arrow_seen = true
+		_rider_arrow_frame = frames_in_state
 	if elapsed > TIMEOUT:
 		_fail("global timeout in state %d" % state)
 		_goto(S.REPORT)
@@ -114,6 +118,29 @@ func _physics_process(delta: float) -> void:
 				if _sacrifice != null:
 					_pass("sacrifice spawned after 3 fields burnt at %s"
 						% _sacrifice.global_position)
+					# Rugged-visual assertions (2026-11-11 rebuild): the
+					# procedural composition must exist and include the
+					# gender-specific person pivot.
+					var vis := _sacrifice.get_node_or_null("Visual") as Node2D
+					var pivot := _sacrifice.get_node_or_null("Visual/PersonPivot") \
+						as Node2D
+					if vis == null:
+						_fail("sacrifice Visual container missing")
+					elif vis.get_child_count() < 3:
+						_fail("sacrifice visuals too sparse (%d children — "
+							% vis.get_child_count()
+							+ "ground+pole+person expected)")
+					elif pivot == null:
+						_fail("sacrifice PersonPivot missing — no captive built")
+					elif pivot.get_child_count() < 6:
+						_fail("captive composition too sparse (%d parts)"
+							% pivot.get_child_count())
+					else:
+						_pass("rugged sacrifice built: %d visual parts, "
+							% vis.get_child_count()
+							+ "captive of %d parts (is_male=%s)"
+							% [pivot.get_child_count(),
+								str(_sacrifice.is_male)])
 					_goto(S.APPROACH)
 				else:
 					_fail("sacrifice node in group but not a Sacrifice")
@@ -240,25 +267,42 @@ func _physics_process(delta: float) -> void:
 						% [_soldier.global_position, str(_soldier.get("health")),
 							int(best_dist)])
 				return
-			# Wait for the rider's 1.5s cooldown + arrow flight (~0.3s),
-			# then check the effects.
-			if _rider_arrow_seen:
-				if _soldier != null and not _soldier.is_alive:
-					_pass("rider loosed an arrow (rider_arrow mode confirmed)")
-					_pass("LETHAL SHOT: rider arrow KILLED the soldier on hit")
+			# Wait for the rider's 1.5s cooldown + arrow flight, then check
+			# the effects. The rider uses STRAIGHT-flight ballistics (same
+			# as the archer): a moving target can step off the line, so a
+			# shot may legitimately MISS. A miss is not a lethality bug —
+			# retry (up to 3 shots) and only fail if no shot ever lands.
+			if _rider_arrow_seen and _soldier != null and not _soldier.is_alive:
+				_pass("rider loosed an arrow (rider_arrow mode confirmed)")
+				_pass("LETHAL SHOT: rider arrow KILLED the soldier on hit")
+				_goto(S.REPORT)
+			elif _rider_arrow_seen and not _arrow_present_now \
+					and frames_in_state > _rider_arrow_frame + 30:
+				# Arrow left the tree without killing — it missed (expired
+				# or flew past). Retry unless the shot budget is spent.
+				if _soldier == null:
+					_fail("arrow vanished but no soldier was tracked")
 					_goto(S.REPORT)
-				elif frames_in_state > _rider_arrow_frame + 60:
+				elif _arrow_misses >= 2:
 					_pass("rider loosed an arrow (rider_arrow mode confirmed)")
-					_fail("LETHALITY BUG: arrow flew but the soldier SURVIVED "
-						+ "(health: %s — rider arrows must kill on hit)"
-						% str(_soldier.get("health")))
+					_fail("LETHALITY BUG: 3 arrows, none killed the soldier "
+						+ "(health: %s — hits must kill, misses are allowed "
+						+ "but 3 straight-line shots at %dpx should land)"
+						% [str(_soldier.get("health")),
+							int(gm.dragon.global_position.distance_to(
+								_soldier.global_position))])
 					_goto(S.REPORT)
-				# else: arrow still in flight — keep waiting
+				else:
+					_arrow_misses += 1
+					print("PROBE: arrow #%d missed (straight-flight "
+						% _arrow_misses
+						+ "ballistics — target moved off the line), retrying")
+					_rider_arrow_seen = false
 			elif _soldier != null and not _soldier.is_alive:
 				_fail("soldier died but no rider arrow was seen in flight")
 				_goto(S.REPORT)
-			elif _frames(360):
-				_fail("rider never fired at the soldier within 6s")
+			elif _frames(600):
+				_fail("rider never fired at the soldier within 10s")
 				_goto(S.REPORT)
 		S.REPORT:
 			set_physics_process(false)
@@ -288,12 +332,13 @@ func _burn_next_field() -> void:
 			if burnt > fields_burned:
 				break
 
-## Depth-first scan for a live Arrow in rider mode; stamps the frame it
-## first appeared so the probe can budget its ~0.3s flight time.
-func _find_rider_arrow(node: Node) -> void:
+## Depth-first scan for a live Arrow in rider mode. Returns true while at
+## least one is in the tree — the disappearance marks the arrow's end of
+## flight (hit freed it, or it expired/flew past = a miss).
+func _find_rider_arrow(node: Node) -> bool:
 	if node is Arrow and (node as Arrow).rider_arrow:
-		_rider_arrow_seen = true
-		_rider_arrow_frame = frames_in_state
-		return
+		return true
 	for child in node.get_children():
-		_find_rider_arrow(child)
+		if _find_rider_arrow(child):
+			return true
+	return false
