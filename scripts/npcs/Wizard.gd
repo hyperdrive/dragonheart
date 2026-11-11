@@ -6,9 +6,10 @@ class_name Wizard
 ## he stays out of the war until the dragon provokes him: three upgrades
 ## bought AND more than three tower visits, or 30+ gold hoarded in the
 ## stash. Then he emerges from his tower and hunts the dragon ACROSS THE
-## WHOLE MAP, throwing lightning (30 damage, long range, 2s recharge) and
-## he does not stop until the dragon is dead. Carries a fire shield like
-## the King's cloak (5s immunity from every ignition).
+## WHOLE MAP, throwing lightning (30 damage, long range, 2s recharge).
+##
+## The wizard is vulnerable to fire (no fire immunity or shield absorption).
+## Dragon's shield absorbs wizard lightning damage before the shield is consumed.
 
 const LIGHTNING_RANGE := 500.0   # "long range" — outclasses the breath cone
 const LIGHTNING_DAMAGE := 30
@@ -26,17 +27,17 @@ func _ready() -> void:
 	attack_range = 0.0           # NO melee contact — lightning carries all
 	aggro_range = 10000.0        # whole-map hunt
 	reward_gold = 100
-	fire_immunity_seconds = 5.0  # "a shield like the king"
+	# NO fire immunity — fire CAN hit the wizard (shield absorbs the first hit)
+	# fire_immunity_seconds = 5.0  # removed: wizard is vulnerable to fire
 
 	super._ready()
 	add_to_group("wizard")
 
+# --- ablaze status -----------------------------------------------------------
+
+## Wizard is vulnerable to fire (no immunity or shield absorption).
 func catch_fire() -> void:
-	var cloak_was_down: bool = _fire_immune_left <= 0.0
 	super.catch_fire()
-	if cloak_was_down and _burning_left > 0.0:
-		print("The wizard's shield shimmers to life — fire-proof for %ds!"
-			% int(fire_immunity_seconds))
 
 func _physics_process(delta: float) -> void:
 	if _lightning_left > 0.0:
@@ -59,11 +60,9 @@ func _tick_lightning(delta: float) -> void:
 	if global_position.distance_to(dragon.global_position) > LIGHTNING_RANGE:
 		return
 	_lightning_left = LIGHTNING_RECHARGE
-	# bypass_shield: the backstabbing wizard pierces the shop shield
-	# (user 2026-11-09: no shield against his attacks).
-	dragon.take_damage(LIGHTNING_DAMAGE, true, "wizard")
+	# Dragon's shield absorbs some lightning damage before the shield is consumed.
+	dragon.take_damage(LIGHTNING_DAMAGE, false, "wizard")
 	_spawn_bolt(dragon.global_position)
-	print("The wizard's lightning hits you for %d!" % LIGHTNING_DAMAGE)
 
 ## Electric bolt visual (2026-11-11, user: "his attack is just a straight
 ## line. Lets divide it multiple segments and offset them to the normal of
