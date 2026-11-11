@@ -15,6 +15,8 @@ signal sacrifice_choice_made(choice_index: int)
 
 ## Story library — per kind: panel title, one image (SVG), its backdrop
 ## tint, the fantasy-novel body text, and the dragon's possible answers.
+## NEW story art belongs in res://assets/story/ (see its README) — the
+## older images still load from assets/ and assets/sprites/.
 const STORIES := {
 	# --- peasant-burn horror stories (2026-11-09): five random variants ---
 	"peasant_burn_1": {

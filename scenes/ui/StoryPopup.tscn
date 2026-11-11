@@ -1,12 +1,89 @@
-[gd_scene load_steps=2 format=3 uid="uid://st9rypopup04"]
+[gd_scene load_steps=9 format=3 uid="uid://st9rypopup04"]
 
 [ext_resource type="Script" path="res://scripts/ui/StoryPopup.gd" id="1_story_script"]
 [ext_resource type="Font" path="res://assets/fonts/Metamorphous-Regular.ttf" id="2_story_font"]
+
+[sub_resource type="StyleBoxFlat" id="panel_style"]
+content_margin_left = 36.0
+content_margin_top = 26.0
+content_margin_right = 36.0
+content_margin_bottom = 30.0
+bg_color = Color(0.13, 0.1, 0.08, 0.97)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.47, 0.35, 0.19, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0, 0, 0.4)
+shadow_size = 14
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="image_frame"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.08, 0.06, 0.05, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="btn_normal"]
+content_margin_left = 18.0
+content_margin_top = 10.0
+content_margin_right = 18.0
+content_margin_bottom = 10.0
+bg_color = Color(0.22, 0.17, 0.13, 1)
+border_width_bottom = 2
+border_color = Color(0.35, 0.27, 0.2, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="btn_hover"]
+content_margin_left = 18.0
+content_margin_top = 10.0
+content_margin_right = 18.0
+content_margin_bottom = 10.0
+bg_color = Color(0.31, 0.24, 0.17, 1)
+border_width_bottom = 2
+border_color = Color(0.6, 0.45, 0.25, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="btn_pressed"]
+content_margin_left = 18.0
+content_margin_top = 10.0
+content_margin_right = 18.0
+content_margin_bottom = 10.0
+bg_color = Color(0.38, 0.29, 0.2, 1)
+border_width_bottom = 2
+border_color = Color(0.6, 0.45, 0.25, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxEmpty" id="btn_focus"]
 
 [node name="StoryPopup" type="CanvasLayer"]
 layer = 12
 process_mode = 3
 script = ExtResource("1_story_script")
+
+[node name="Dim" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.5)
 
 [node name="Center" type="CenterContainer" parent="."]
 anchors_preset = 15
@@ -14,25 +91,23 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 
 [node name="Panel" type="PanelContainer" parent="Center"]
-custom_minimum_size = Vector2(700, 520)
-margin_left = 20.0
-margin_right = 20.0
-margin_top = 20.0
-margin_bottom = 20.0
+custom_minimum_size = Vector2(720, 560)
+theme_override_styles/panel = SubResource("panel_style")
 
 [node name="VBox" type="VBoxContainer" parent="Center/Panel"]
-theme_override_constants/separation = 16
+theme_override_constants/separation = 18
 
 [node name="Title" type="Label" parent="Center/Panel/VBox"]
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 30
 theme_override_fonts/font = ExtResource("2_story_font")
 theme_override_colors/font_color = Color(0.98, 0.94, 0.88, 1)
 theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.8)
 theme_override_font_sizes/outline_size = 5
 autowrap_mode = 1
 
-[node name="ImageBox" type="Control" parent="Center/Panel/VBox"]
-custom_minimum_size = Vector2(0, 140)
+[node name="ImageBox" type="PanelContainer" parent="Center/Panel/VBox"]
+custom_minimum_size = Vector2(0, 150)
+theme_override_styles/panel = SubResource("image_frame")
 
 [node name="ImageBg" type="ColorRect" parent="Center/Panel/VBox/ImageBox"]
 anchors_preset = 15
@@ -48,57 +123,86 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="StoryText" type="Label" parent="Center/Panel/VBox"]
-custom_minimum_size = Vector2(0, 180)
+custom_minimum_size = Vector2(0, 170)
 autowrap_mode = 3
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 23
 theme_override_fonts/font = ExtResource("2_story_font")
 theme_override_colors/font_color = Color(0.95, 0.91, 0.85, 1)
 theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.7)
 theme_override_font_sizes/outline_size = 4
 
 [node name="Choices" type="VBoxContainer" parent="Center/Panel/VBox"]
-theme_override_constants/separation = 10
+theme_override_constants/separation = 12
 
 [node name="Choice1" type="Button" parent="Center/Panel/VBox/Choices"]
-text = "1.  Answer"
-custom_minimum_size = Vector2(0, 40)
-theme_override_font_sizes/font_size = 22
+custom_minimum_size = Vector2(0, 44)
+focus_mode = 0
+theme_override_font_sizes/font_size = 21
 theme_override_fonts/font = ExtResource("2_story_font")
 theme_override_colors/font_color = Color(0.95, 0.91, 0.85, 1)
+theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.97, 0.9, 1)
 theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.6)
 theme_override_font_sizes/outline_size = 3
+theme_override_styles/normal = SubResource("btn_normal")
+theme_override_styles/hover = SubResource("btn_hover")
+theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/focus = SubResource("btn_focus")
+text = "1.  Answer"
 
 [node name="Choice2" type="Button" parent="Center/Panel/VBox/Choices"]
-text = "2.  Answer"
-custom_minimum_size = Vector2(0, 40)
-theme_override_font_sizes/font_size = 22
+custom_minimum_size = Vector2(0, 44)
+focus_mode = 0
+theme_override_font_sizes/font_size = 21
 theme_override_fonts/font = ExtResource("2_story_font")
 theme_override_colors/font_color = Color(0.95, 0.91, 0.85, 1)
+theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.97, 0.9, 1)
 theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.6)
 theme_override_font_sizes/outline_size = 3
+theme_override_styles/normal = SubResource("btn_normal")
+theme_override_styles/hover = SubResource("btn_hover")
+theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/focus = SubResource("btn_focus")
+text = "2.  Answer"
 
 [node name="Choice3" type="Button" parent="Center/Panel/VBox/Choices"]
-text = "3.  Answer"
-custom_minimum_size = Vector2(0, 40)
-theme_override_font_sizes/font_size = 22
+custom_minimum_size = Vector2(0, 44)
+focus_mode = 0
+theme_override_font_sizes/font_size = 21
 theme_override_fonts/font = ExtResource("2_story_font")
 theme_override_colors/font_color = Color(0.95, 0.91, 0.85, 1)
+theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.97, 0.9, 1)
 theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.6)
 theme_override_font_sizes/outline_size = 3
+theme_override_styles/normal = SubResource("btn_normal")
+theme_override_styles/hover = SubResource("btn_hover")
+theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/focus = SubResource("btn_focus")
+text = "3.  Answer"
 
 [node name="Choice4" type="Button" parent="Center/Panel/VBox/Choices"]
-text = "4.  Answer"
-custom_minimum_size = Vector2(0, 40)
-theme_override_font_sizes/font_size = 22
+custom_minimum_size = Vector2(0, 44)
+focus_mode = 0
+theme_override_font_sizes/font_size = 21
 theme_override_fonts/font = ExtResource("2_story_font")
 theme_override_colors/font_color = Color(0.95, 0.91, 0.85, 1)
+theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.97, 0.9, 1)
 theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.6)
 theme_override_font_sizes/outline_size = 3
+theme_override_styles/normal = SubResource("btn_normal")
+theme_override_styles/hover = SubResource("btn_hover")
+theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/focus = SubResource("btn_focus")
+text = "4.  Answer"
 
 [node name="Hint" type="Label" parent="Center/Panel/VBox"]
 text = "Pick an answer (1-4 • ESC for the last line)"
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 18
 theme_override_fonts/font = ExtResource("2_story_font")
-theme_override_colors/font_color = Color(0.88, 0.84, 0.78, 1)
+theme_override_colors/font_color = Color(0.72, 0.68, 0.62, 1)
 theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.5)
 theme_override_font_sizes/outline_size = 3
+horizontal_alignment = 1
