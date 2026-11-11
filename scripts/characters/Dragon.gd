@@ -54,6 +54,13 @@ var has_rider: bool = false
 ## Rider arrow reach (archer-like, deliberately NOT fire_reach).
 @export var rider_range: float = 260.0
 
+## Permanent flight extension (2026-11-11 wizard item, user: "add a new
+## item for longer flight time +3 seconds"): each purchase adds seconds to
+## every future Q burst. Repeatable like the flame/range upgrades.
+func extend_flight(seconds: float) -> void:
+	fly_duration += seconds
+	print("Dragon: flight bursts now last %.1fs!" % fly_duration)
+
 signal flight_state_changed(flying: bool, seconds_left: float, charging: bool)
 
 ## Slayer attribution for the death chapter (take_damage's killer arg;

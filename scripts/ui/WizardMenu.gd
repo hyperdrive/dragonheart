@@ -4,7 +4,7 @@ class_name WizardMenu
 
 ## The wizard tower upgrade overlay (decision record
 ## 2026-11-08-manual-eat-wizard-menu): a full-screen pick scene while the
-## live world is PAUSED beneath it. Mouse + number keys 1–5; ESC/Leave closes.
+## live world is PAUSED beneath it. Mouse + number keys 1–8; ESC/Leave closes.
 ## No state lives here — GameManager owns stash, prices and applying effects.
 
 signal menu_close_requested
@@ -12,14 +12,15 @@ signal menu_close_requested
 const OPTIONS: Array = [
 	{"kind": "flame_1", "label": "+1 Flame (%s)", "desc": "More flames carried: capacity +1, arrives loaded."},
 	{"kind": "flame_2", "label": "+2 Flames (%s)", "desc": "Even bigger flame pool: capacity +2, arrives loaded."},
-	{"kind": "shield", "label": "Shield 10 (%s)", "desc": "Absorbs 10 damage, then gone. Cannot restack while one is active."},
+	{"kind": "shield", "label": "Shield 40 (%s)", "desc": "Absorbs 40 damage, then gone. Cannot restack while one is active."},
 	{"kind": "speed", "label": "Speed Boost (%s)", "desc": "Fast wings for 6s (x1.6). Also unlocks the 0.2s strike recharge."},
 	{"kind": "range", "label": "Longer Flame (%s)", "desc": "Breath reaches +20px further. Permanent."},
+	{"kind": "flight", "label": "Longer Flight (%s)", "desc": "Q flight bursts last +3s longer. Permanent."},
 	{"kind": "brute", "label": "Brute Force +5%% (%s)", "desc": "Soldier E-strike kill odds +5%. Repeatable, capped at 35%."},
 	{"kind": "rider_train", "label": "Train Dragon Rider (%s)", "desc": "Train the sacrifice as a dragon rider. Costs 10g. Enables rider combat."},
 ]
 
-const HOTKEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7]
+const HOTKEYS: Array = [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8]
 
 var game_manager: GameManager
 var option_buttons: Array[Button] = []
@@ -86,7 +87,9 @@ func _refresh() -> void:
 		var button := option_buttons[i]
 		var affordable: bool = game_manager.can_afford_wizard(kind)
 		if option["kind"] == "shield" and shield_active:
-			button.text = "Shield 10 — already active (15g)"
+			# Was hardcoded "Shield 10 — already active (15g)" while the
+			# real price lived in WIZARD_PRICES — now dynamic.
+			button.text = "Shield 40 — already active (%s)" % price_text
 			button.disabled = true
 		elif option["kind"] == "brute" and dragon_ref != null:
 			var chance: float = float(dragon_ref.get("soldier_strike_chance"))
@@ -98,7 +101,7 @@ func _refresh() -> void:
 		else:
 			button.text = option["label"] % price_text
 			button.disabled = not affordable
-	hint_label.text = "1–7 buy • ESC leave  •  shield ready: %s" % (
+	hint_label.text = "1–8 buy • ESC leave  •  shield ready: %s" % (
 		"no" if shield_active else "yes")
 
 func _on_option_pressed(kind: String) -> void:

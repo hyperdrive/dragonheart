@@ -65,18 +65,61 @@ func _tick_lightning(delta: float) -> void:
 	_spawn_bolt(dragon.global_position)
 	print("The wizard's lightning hits you for %d!" % LIGHTNING_DAMAGE)
 
-## Brief electric bolt visual — a Line2D flash between wizard and dragon,
-## freed by a SceneTreeTimer (synchronous: no coroutine in the NPC code).
+## Electric bolt visual (2026-11-11, user: "his attack is just a straight
+## line. Lets divide it multiple segments and offset them to the normal of
+## the line at random so it looks more like a lightning. Also add a small
+## curve to it (sine)"): the bolt is now a jagged arc — N segments along
+## the wizard→dragon line, every INTERIOR vertex shoved off the line's
+## normal by a random-signed sine bow (the gentle curve) plus per-point
+## random jitter (the crackle); endpoints stay pinned so the strike still
+## visibly connects caster to victim. A wide translucent glow line runs
+## underneath the bright core.
+const BOLT_SEGMENTS := 10
+const BOLT_CURVE_AMP := 26.0    # the gentle sine bow off the straight line
+const BOLT_JITTER := 12.0       # per-vertex random normal noise
+const BOLT_CORE_WIDTH := 3.0
+const BOLT_GLOW_WIDTH := 9.0
+const BOLT_FLASH_S := 0.18
+
 func _spawn_bolt(target: Vector2) -> void:
-	var bolt := Line2D.new()
-	bolt.width = 3.0
-	bolt.default_color = Color(0.6, 0.8, 1.0)
-	get_parent().add_child(bolt)
-	# The world layer sits at the origin, so rect-local points ARE world
-	# coordinates — draw the bolt directly between the two fighters.
-	bolt.points = PackedVector2Array([global_position, target])
-	var timer := get_tree().create_timer(0.18)
-	timer.timeout.connect(bolt.queue_free)
+	var start := global_position
+	var to_target := target - start
+	var length := to_target.length()
+	if length < 1.0:
+		return
+	# The normal of the line: perpendicular unit vector.
+	var normal := to_target.normalized().orthogonal()
+	# The sine bow flips direction with every strike — no two bolts curve
+	# the same way.
+	var curve_sign := 1.0 if randf() < 0.5 else -1.0
+	var points := PackedVector2Array()
+	for i in BOLT_SEGMENTS + 1:
+		var t := float(i) / float(BOLT_SEGMENTS)
+		var p := start + to_target * t
+		if i > 0 and i < BOLT_SEGMENTS:
+			# Interior vertices only: a smooth sine arc plus crackle
+			# jitter, both along the line's normal.
+			var offset := curve_sign * sin(t * PI) * BOLT_CURVE_AMP \
+				+ randf_range(-BOLT_JITTER, BOLT_JITTER)
+			p += normal * offset
+		points.append(p)
+	# One assembly so the glow + core free together.
+	var flash := Node2D.new()
+	flash.name = "LightningBolt"
+	flash.add_to_group("wizard_bolts")
+	get_parent().add_child(flash)
+	var glow := Line2D.new()
+	glow.width = BOLT_GLOW_WIDTH
+	glow.default_color = Color(0.55, 0.75, 1.0, 0.35)
+	glow.points = points
+	flash.add_child(glow)
+	var core := Line2D.new()
+	core.width = BOLT_CORE_WIDTH
+	core.default_color = Color(0.85, 0.95, 1.0)
+	core.points = points
+	flash.add_child(core)
+	var timer := get_tree().create_timer(BOLT_FLASH_S)
+	timer.timeout.connect(flash.queue_free)
 
 ## No melee at all.
 func _contact_damage(delta: float) -> void:

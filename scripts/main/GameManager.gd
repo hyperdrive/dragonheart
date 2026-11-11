@@ -40,6 +40,8 @@ const WIZARD_PRICES := {
 	"range": {"gold": 15, "gems": 1},
 	"brute": {"gold": 8, "gems": 0},
 	"rider_train": {"gold": 10, "gems": 0},
+	# New (2026-11-11, user: "add a new item for longer flight time +3s").
+	"flight": {"gold": 12, "gems": 0},
 }
 
 # --- TTRPG story popups (2026-11-09) -------------------------------------------
@@ -389,7 +391,9 @@ func purchase_upgrade(kind: String) -> bool:
 		"flame_2":
 			dragon_ref.call("increase_flame_capacity", 2)
 		"shield":
-			dragon_ref.call("add_shield", 10)
+			# Improved offer (2026-11-11, user: "40 points of consumable
+			# absorption") — was 10.
+			dragon_ref.call("add_shield", 40)
 		"speed":
 			dragon_ref.call("activate_speed_boost")
 			dragon_ref.call("unlock_fast_strike")
@@ -397,6 +401,8 @@ func purchase_upgrade(kind: String) -> bool:
 			dragon_ref.call("increase_flame_range", 20.0)
 		"brute":
 			dragon_ref.call("add_strike_chance", 0.05)
+		"flight":
+			dragon_ref.call("extend_flight", 3.0)
 		"rider_train":
 			if dragon_ref.has_method("upgrade_rider"):
 				dragon_ref.call("upgrade_rider")

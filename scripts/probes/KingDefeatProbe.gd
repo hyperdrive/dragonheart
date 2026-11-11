@@ -24,8 +24,8 @@ extends Node2D
 enum S {
 	BOOT, SPAWN_KING, WAIT_EMERGE, KILL_NONFINAL, WAIT_RESPAWN,
 	APPROACH_TOWER_1, MENU_CHECK_1, CLOSE_MENU_1, KILL_FINAL,
-	WAIT_VICTORY_STORY, APPROACH_TOWER_2, MENU_CHECK_2, BUY,
-	WIZARD_WAIT, REPORT,
+	WAIT_VICTORY_STORY, APPROACH_TOWER_2, MENU_CHECK_2, BUY, BUY_SHIELD,
+	BUY_FLIGHT, WIZARD_WAIT, REPORT,
 }
 
 const TIMEOUT := 60.0
@@ -88,8 +88,10 @@ func _physics_process(delta: float) -> void:
 					_fail("BOOT: GameManager/Dragon/WorldManager missing")
 					_goto(S.REPORT)
 				return
-			gm.add_stolen("gold", 15)  # funds one purchase later (and stays
-			# under the wizard's 20g greedy trigger until we force it)
+			gm.add_stolen("gold", 15)  # stays under the wizard's 20g
+			# greedy trigger during the King phase — funding more HERE
+			# spawns the wizard early and its lightning (with a
+			# storm-chewed dragon) kills the test subject mid-flow.
 			_pass("BOOT: game running, stash funded with 15g")
 			_goto(S.SPAWN_KING)
 		S.SPAWN_KING:
@@ -179,10 +181,24 @@ func _physics_process(delta: float) -> void:
 					_goto(S.REPORT)
 				return
 			var dragon := gm.dragon as Dragon
+			# Top the test subject up (the King's respawn storm chewed it
+			# down to ~25) AND fund the shopping trip now — crossing the
+			# wizard's 20g greedy trigger here is intended: the wizard
+			# emerges for the WIZARD_WAIT check, and the menu PAUSES the
+			# world so his bolts can't interrupt the purchases.
+			dragon.set("health", int(dragon.get("max_health")))
+			gm.add_stolen("gold", 20)
 			dragon.global_position = _world().tower_position + Vector2(0, 30)
 			print("PROBE: dragon entering the tower AFTER the King's final fall")
 			_goto(S.MENU_CHECK_2)
 		S.MENU_CHECK_2:
+			# The greedy gold fund may pop the wizard_emerge story BEFORE
+			# the dragon's teleport registers: the paused story freezes
+			# physics, so the tower Area can't fire body_entered until the
+			# story closes. Close any open story first, then judge.
+			if gm.story_open:
+				_close_story_if_open()
+				return
 			# THE user bug: the tower used to go silent post-victory.
 			if gm.wizard_menu != null and gm.wizard_menu.visible:
 				_pass("USER BUG FIXED: wizard tower still works after "
@@ -199,6 +215,38 @@ func _physics_process(delta: float) -> void:
 				return
 			_pass("USER BUG FIXED: purchases work post-victory "
 				+ "(stash now %dg)" % int(gm.stash["gold"]))
+			_goto(S.BUY_SHIELD)
+		S.BUY_SHIELD:
+			# Shield offer improved (2026-11-11, user: "40 points of
+			# consumable absorption") — was 10.
+			if not gm.purchase_upgrade("shield"):
+				_fail("shield purchase refused (stash: %dg)"
+					% int(gm.stash["gold"]))
+				_goto(S.REPORT)
+				return
+			var points := int(gm.dragon.get("shield_points"))
+			if points != 40:
+				_fail("shield grant is %d points — expected 40" % points)
+			else:
+				_pass("IMPROVED SHIELD: wizard grants a 40-point "
+					+ "consumable absorption")
+			_goto(S.BUY_FLIGHT)
+		S.BUY_FLIGHT:
+			# New item (2026-11-11, user: "add a new item for longer
+			# flight time +3 seconds") — permanent fly_duration extension.
+			var before := float(gm.dragon.get("fly_duration"))
+			if not gm.purchase_upgrade("flight"):
+				_fail("flight purchase refused (stash: %dg)"
+					% int(gm.stash["gold"]))
+				_goto(S.REPORT)
+				return
+			var after := float(gm.dragon.get("fly_duration"))
+			if absf(after - (before + 3.0)) > 0.01:
+				_fail("fly_duration %.1f → %.1f — expected +3s"
+					% [before, after])
+			else:
+				_pass("NEW ITEM 'Longer Flight': Q bursts now last "
+					+ "%.1fs (+3s, permanent)" % after)
 			(gm.wizard_menu as WizardMenu).close()
 			_goto(S.WIZARD_WAIT)
 		S.WIZARD_WAIT:
