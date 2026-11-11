@@ -232,6 +232,17 @@ const STORIES := {
 	},
 	# --- sacrifice stories (2026-11-11, user: \"variations reflecting some
 	# character of the would be dragon rider\") ---
+	"sacrifice_approach_defiant": {
+		"title": "The Defiant",
+		"image": "res://assets/sprites/sacrifice.svg",
+		"tint": Color(0.38, 0.28, 0.28),
+		"text": "They thought they'd break her with chains and fear. \"Do you know what we all taste of, old wyrm? Fear. Tears. The same porridge of terror, served in a different bowl. I am not that. I am inconvenient — I asked questions they could not answer. Eat me and you eat their garbage, and a dragon that eats garbage forgets the taste of kings.\" The village will be quiet tonight.",
+		"choices": [
+			"Eat her. +2 flame charges.",
+			"Take to lair. Train as rider.",
+			"Leave her be.",
+		],
+	},
 	"sacrifice_approach_courageous": {
 		"title": "The Unbowed",
 		"image": "res://assets/sprites/sacrifice.svg",
