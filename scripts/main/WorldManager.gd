@@ -1030,7 +1030,7 @@ func _materialize_king() -> void:
 	if king_npc != null:
 		king_npc.home_position = king.global_position
 	# Pick a King story variant at random (user: 6 epic one-liners).
-	var king_variants := [
+	var king_variants: Array[String] = [
 		"king_defiant",
 		"king_courageous",
 		"king_challenger",
@@ -1039,7 +1039,7 @@ func _materialize_king() -> void:
 		"king_renegade",
 	]
 	var variant_idx := int(randi() % king_variants.size())
-	var story_kind := king_variants[variant_idx]
+	var story_kind: String = king_variants[variant_idx]
 	if game_manager != null:
 		game_manager.notify_story(story_kind)
 		game_manager.start_boss_battle(king)
