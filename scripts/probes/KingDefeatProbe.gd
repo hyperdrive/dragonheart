@@ -98,15 +98,15 @@ func _physics_process(delta: float) -> void:
 			_world().spawn_king()
 			_goto(S.WAIT_EMERGE)
 		S.WAIT_EMERGE:
-			# spawn_king → _materialize_king → notify_story("king_emerge").
+			# spawn_king → _materialize_king → notify_story(story_kind)
+			# where story_kind is randomized among King variants.
 			var popup := gm.story_popup as StoryPopup
-			if popup != null and gm.story_open \
-					and popup.current_kind == "king_emerge":
-				_pass("King arrived, 'king_emerge' chapter plays")
+			if popup != null and gm.story_open:
+				_pass(\"King arrived, story '%s' plays\" % popup.current_kind)
 				_close_story_if_open()
 				_goto(S.KILL_NONFINAL)
 			elif _frames(180):
-				_fail("king_emerge story never opened after spawn_king")
+				_fail(\"King story never opened after spawn_king\")
 				_goto(S.REPORT)
 		S.KILL_NONFINAL:
 			_king = _find_king()
