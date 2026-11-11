@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="96" viewBox="0 0 128 96">
+  <!-- Dragon body (green) -->
+  <path d="M20,48 Q30,30 50,30 T80,40 T110,48" fill="#32CD32" stroke="#228B22" stroke-width="2"/>
+  <path d="M20,48 Q30,66 50,66 T80,56 T110,48" fill="#228B22" stroke="#1E6B1E" stroke-width="2"/>
+  
+  <!-- Dragon head -->
+  <circle cx="110" cy="48" r="12" fill="#32CD32" stroke="#228B22" stroke-width="2"/>
+  <circle cx="114" cy="44" r="2" fill="white"/>
+  <circle cx="114" cy="52" r="2" fill="white"/>
+  <path d="M120,48 L124,44 L124,52 Z" fill="#FF4500"/>
+  
+  <!-- Rider on back -->
+  <circle cx="70" cy="40" r="8" fill="#FFD700"/>
+  <rect x="66" y="48" width="8" height="16" fill="#87CEEB"/>
+  <rect x="64" y="64" width="3" height="12" fill="#87CEEB"/>
+  <rect x="71" y="64" width="3" height="12" fill="#87CEEB"/>
+  
+  <!-- Quiver on back -->
+  <rect x="55" y="50" width="4" height="10" fill="#8B4513"/>
