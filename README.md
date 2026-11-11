@@ -126,6 +126,33 @@ This is a personal project, but bug reports and suggestions are welcome. Open an
 
 ---
 
+## Long-Term Vision
+
+### The Dragon's Journey
+
+The protagonist awakens in a shattered ritual chamber deep inside a mountain. Once a sacred place, it now lies in ruins. Weak from hunger and tormented by fractured inner voices, the young dragon-monster struggles to remember who—or what—it is. Then the memories return: invaders came to its homeland, slaughtered its people, and burned its village.
+
+**Rage becomes purpose.**
+
+The creature discovers a nearby settlement populated by people who resemble the old invaders. After subduing a few villages—who begin to work for the dragon—word spreads. Soldiers march out to eliminate the growing threat.
+
+**Chapter Two** begins as the dragon learns magic and discovers a new ability: taking human form. In this guise, the protagonist infiltrates the capital and rescues a captured wizard. Grateful—or at least intrigued—the wizard helps craft advanced dragon armor and potent spells. Power, however, demands gold. Gold comes from tribute, stolen ore, or hunting other monsters roaming the land. The more you take, the more soldiers and monster-hunters pursue you.
+
+Just as the player feels ready to strike at the capital, **Chapter Three** disrupts everything: a neighbouring empire launches a massive invasion, burning villages in its wake. Now the dragon must choose—help the king of the very people who once invaded its homeland… or let the land fall to ruin. Choosing to help leads to Chapter Four; refusing triggers an endless, escalating war that eventually consumes all life.
+
+In **Chapter Four**, the young prince or princess meets the monster. Against all expectation, a romance forms. Together they break the invading army and save the realm.
+
+But victory is short-lived.
+
+**Chapter Five** reveals the wizard’s betrayal. Having learned everything about monsters, he seeks to kill you and claim your hoard. Only those you’ve helped—or spared—throughout the game will stand with you now.
+
+After the final battle in **Chapter Six**, the wizard falls. With its purpose fulfilled, the dragon’s inner fire fades. Its enormous body crumbles to dust, leaving only a single dragon heart behind.
+
+A tragic end? Not quite.
+The land prospers, peace endures, and for a hundred years no new monsters are born.
+
+---
+
 *Dragonheart — Where the hero is the monster.*</parameter>
 </function>
 </tool_call>
