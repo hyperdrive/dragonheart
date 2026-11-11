@@ -16,23 +16,93 @@ position = Vector2(0, -5)
 
 [node name="Body" type="ColorRect" parent="Sprite"]
 position = Vector2(-9, -12)
-size = Vector2(18, 26)
+size = Vector2(18, 21)
 color = Color(0.36, 0.62, 0.25, 1.0)
 
+[node name="StrapL" type="ColorRect" parent="Sprite"]
+position = Vector2(-7, -12)
+size = Vector2(3, 12)
+color = Color(0.28, 0.34, 0.5, 1.0)
+
+[node name="StrapR" type="ColorRect" parent="Sprite"]
+position = Vector2(4, -12)
+size = Vector2(3, 12)
+color = Color(0.28, 0.34, 0.5, 1.0)
+
+[node name="Bib" type="ColorRect" parent="Sprite"]
+position = Vector2(-5, -5)
+size = Vector2(10, 9)
+color = Color(0.28, 0.34, 0.5, 1.0)
+
+[node name="BibPocket" type="ColorRect" parent="Sprite"]
+position = Vector2(-3, -3)
+size = Vector2(6, 4)
+color = Color(0.24, 0.29, 0.44, 1.0)
+
+[node name="Waist" type="ColorRect" parent="Sprite"]
+position = Vector2(-9, 6)
+size = Vector2(18, 3)
+color = Color(0.24, 0.29, 0.44, 1.0)
+
+[node name="Legs" type="ColorRect" parent="Sprite"]
+position = Vector2(-8, 9)
+size = Vector2(6, 8)
+color = Color(0.28, 0.24, 0.2, 1.0)
+
+[node name="LegsFront" type="ColorRect" parent="Sprite"]
+position = Vector2(2, 9)
+size = Vector2(6, 8)
+color = Color(0.28, 0.24, 0.2, 1.0)
+
+[node name="Boots" type="ColorRect" parent="Sprite"]
+position = Vector2(-9, 17)
+size = Vector2(8, 6)
+color = Color(0.35, 0.24, 0.14, 1.0)
+
+[node name="BootsFront" type="ColorRect" parent="Sprite"]
+position = Vector2(1, 17)
+size = Vector2(8, 6)
+color = Color(0.35, 0.24, 0.14, 1.0)
+
+[node name="ArmSleeve" type="ColorRect" parent="Sprite"]
+position = Vector2(-13, -8)
+size = Vector2(5, 10)
+color = Color(0.36, 0.62, 0.25, 1.0)
+
+[node name="Hand" type="ColorRect" parent="Sprite"]
+position = Vector2(-13, 2)
+size = Vector2(5, 4)
+color = Color(0.94, 0.82, 0.65, 1.0)
+
 [node name="Head" type="ColorRect" parent="Sprite"]
-position = Vector2(-6, -25)
+position = Vector2(-6, -24)
 size = Vector2(12, 12)
 color = Color(0.94, 0.82, 0.65, 1.0)
 
-[node name="Hat" type="ColorRect" parent="Sprite"]
-position = Vector2(-9, -29)
-size = Vector2(18, 5)
+[node name="Eyes" type="ColorRect" parent="Sprite"]
+position = Vector2(-3, -19)
+size = Vector2(6, 2)
+color = Color(0.15, 0.12, 0.1, 1.0)
+
+[node name="Hair" type="ColorRect" parent="Sprite"]
+position = Vector2(-6, -27)
+size = Vector2(12, 4)
+color = Color(0.3, 0.2, 0.12, 1.0)
+
+[node name="HatCrown" type="ColorRect" parent="Sprite"]
+position = Vector2(-5, -32)
+size = Vector2(10, 6)
 color = Color(0.92, 0.79, 0.25, 1.0)
 
-[node name="Boots" type="ColorRect" parent="Sprite"]
-position = Vector2(-9, 12)
-size = Vector2(18, 6)
-color = Color(0.35, 0.24, 0.14, 1.0)
+[node name="HatBand" type="ColorRect" parent="Sprite"]
+position = Vector2(-5, -28)
+size = Vector2(10, 2)
+color = Color(0.6, 0.3, 0.15, 1.0)
+
+[node name="Hat" type="ColorRect" parent="Sprite"]
+position = Vector2(-10, -27)
+size = Vector2(20, 3)
+color = Color(0.85, 0.72, 0.2, 1.0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("1")

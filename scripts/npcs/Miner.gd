@@ -61,7 +61,8 @@ func _animate_mining(delta: float) -> void:
 		_pick_swing_phase += delta * TAU * PICK_SWING_HZ
 		# 0 = fully raised (overswing), 1 = slammed into the seam.
 		var t := 0.5 + 0.5 * sin(_pick_swing_phase - PI / 2.0)
-		_pick.pivot_offset = Vector2(2.0, 1.0)
+		# pivot lives at the pick's BOTTOM edge (set in _ready): grip
+		# fixed, upper half + steel head sweep the arc.
 		_pick.rotation_degrees = lerpf(PICK_RAISED_DEG, PICK_SLAMMED_DEG, t)
 		# the little body dip into every hit keeps the whole figure alive
 		sprite.position = _sprite_home + Vector2(
@@ -99,6 +100,11 @@ func _ready() -> void:
 
 	super._ready()
 	_pick = get_node_or_null("Sprite/Pick") as ColorRect
+	# The swing pivots at the pick's BOTTOM edge (grip fixed, head sweeps —
+	# mirrors the soldier's weapon swing). Set once here: static geometry,
+	# not something _animate_mining needs to re-derive every frame.
+	if _pick != null:
+		_pick.pivot_offset = Vector2(_pick.size.x * 0.5, _pick.size.y - 2.0)
 
 	# Cart visibility tracks the payload slot (shown while gold/gems aboard).
 	cart.visible = payload_amount > 0
@@ -280,11 +286,16 @@ func _drop_payload(_dragon_position: Vector2) -> void:
 	print("Miner dropped %d %s at %s!" % [drop.amount, drop.res_type,
 		drop.global_position])
 
-## The cart rides in front of the miner (they push it toward town).
+## The cart rides in front of the miner (they push it toward town). The
+## handle side must always face the miner, so the CONTENTS mirror with the
+## facing too (2026-11-11 cart rebuild) — position alone moved the cart
+## without flipping it, which would have pointed the new push handle away
+## from the miner on the left-facing side.
 func _push_cart() -> void:
 	if cart == null:
 		return
 	cart.position = Vector2(26.0 * float(facing), 8.0)
+	cart.scale.x = float(facing)
 
 ## carrying_changed: show the cart only while a payload is actually aboard —
 ## filling it at the mine, hiding it after delivery or a dragon steal.
