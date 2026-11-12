@@ -479,7 +479,9 @@ Prices in one `WIZARD_PRICES` const on `GameManager` as
 | 6 brute | Brute Force (claw) | 8g | soldier E-kill odds +5%, repeatable to 35% cap |
 
 Payment rule: **the gems part is a hard requirement**; the gold part may be
-topped up with spare gems at 10:1 (matching the legacy `_pay_stash` rule).
+topped up with spare gems at **1 gem = 2gp** (retuned 2026-11-12, decision
+record `2026-11-12-gem-rate-and-goblin-employment`; was 10:1). Gems cannot be
+BOUGHT with gold — the only gem inflow is goblin protection fees.
 A refused purchase never half-pays. The menu shows `40g + 2 gems` price
 strings and gates affordability through the SAME
 `can_afford_wizard()`/`_pay_wizard_cost()` pair the purchase uses.

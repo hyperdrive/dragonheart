@@ -28,10 +28,16 @@ signal victory_achieved(tally: Dictionary)
 
 ## Wizard-shop price table (decision 2026-11-08-dragon-strikes-respawn-prices):
 ## {kind: {"gold": int, "gems": int}} — retuned ("too steep") with a HARD gem
-## requirement on the flagship items. Gold part may be gem-topped 10:1.
+## requirement on the flagship items. Gold part may be gem-topped at
+## GEM_GOLD_VALUE (2026-11-12, user: "1 gem = 2gp but you can't get gems for
+## gold" — the only gem flow is goblin protection fees; the top-up exists so
+## spare gems are not dead weight).
 ## Wizard-shop prices (re-priced 2026-11-09, user: "lower prices for all
 ## upgrades"; the claw-strike upgrade 'brute' explicitly at 8g so the claw
 ## attack improves early and often).
+## 1 gem buys GEM_GOLD_VALUE gold when topping up a gold cost (never
+## the reverse — gold cannot buy gems).
+const GEM_GOLD_VALUE := 2
 const WIZARD_PRICES := {
 	"flame_1": {"gold": 10, "gems": 0},
 	"flame_2": {"gold": 20, "gems": 1},
@@ -312,18 +318,19 @@ func consume_food(amount: int = 1) -> bool:
 
 # --- wizard shop (the tower site; replaces the old U-key panel) ---------------
 
-## Pay a cost from the stash (gold first, gems worth 10x gold as top-up).
+## Pay a cost from the stash (gold first, gems worth GEM_GOLD_VALUE gold
+## each as top-up). One-way: gems buy gold, never gold buys gems.
 func _pay_stash(cost: int) -> bool:
 	if run_finished or cost <= 0:
 		return false
-	if stash["gold"] + stash["gems"] * 10 < cost:
+	if stash["gold"] + stash["gems"] * GEM_GOLD_VALUE < cost:
 		return false
 	var need := cost
 	var from_gold := mini(need, stash["gold"])
 	need -= from_gold
 	stash["gold"] -= from_gold
 	if need > 0:
-		stash["gems"] -= ceili(float(need) / 10.0)
+		stash["gems"] -= ceili(float(need) / float(GEM_GOLD_VALUE))
 	stash_changed.emit("gold", stash["gold"])
 	stash_changed.emit("gems", stash["gems"])
 	return true
@@ -332,21 +339,24 @@ func _pay_stash(cost: int) -> bool:
 
 const WIZARD_MENU_SCENE := preload("res://scenes/ui/WizardMenu.tscn")
 
-## Stash-value readout (gold-equivalent; gems worth 10x — display only).
+## Stash-value readout (gold-equivalent; gems worth GEM_GOLD_VALUE gold
+## each — display only).
 func stash_value() -> int:
-	return stash["gold"] + stash["gems"] * 10
+	return stash["gold"] + stash["gems"] * GEM_GOLD_VALUE
 
 ## Shared affordability rule (decision 2026-11-08-dragon-strikes-respawn-
 ## prices): the gem part is a HARD requirement (the currencies have distinct
-## duties); the gold part may be topped up with SPARE gems at 10:1 — the
-## same rule the stash economy already applies.
+## duties); the gold part may be topped up with SPARE gems at 1 gem =
+## GEM_GOLD_VALUE gold — the same rule the stash economy already applies.
+## Gems are never sold for gold (user 2026-11-12: "you can't get gems for
+## gold" — the only gem inflow is goblin protection fees).
 func can_afford_wizard(kind: String) -> bool:
 	var cost: Dictionary = WIZARD_PRICES[kind]
 	var gem_need := int(cost["gems"])
 	if int(stash["gems"]) < gem_need:
 		return false
 	var spare_gems := int(stash["gems"]) - gem_need
-	return int(stash["gold"]) + spare_gems * 10 >= int(cost["gold"])
+	return int(stash["gold"]) + spare_gems * GEM_GOLD_VALUE >= int(cost["gold"])
 
 ## Pay a wizard cost {"gold", "gems"} — same rule as can_afford_wizard.
 ## A refused purchase never half-pays (gold-first, gems flatten the rest).
@@ -363,7 +373,7 @@ func _pay_wizard_cost(kind: String) -> bool:
 	stash["gold"] -= from_gold
 	var leftover := gold_need - from_gold
 	if leftover > 0:
-		stash["gems"] -= ceili(float(leftover) / 10.0)
+		stash["gems"] -= ceili(float(leftover) / float(GEM_GOLD_VALUE))
 	stash_changed.emit("gold", stash["gold"])
 	stash_changed.emit("gems", stash["gems"])
 	return true

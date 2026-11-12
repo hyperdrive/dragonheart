@@ -18,6 +18,10 @@ var goblin_raid_active: bool = false
 @export var mining_service_cost: int = 1  # gems per trade trip
 ## Gold fetched per trade trip (user spec: 1g per trip from a nearby mine).
 @export_range(1, 10) var haul_size: int = 1
+## Gold a HOSTILE goblin rips out of the dragon's stash per theft visit
+## (2026-11-12: refusing the deal must actually cost gold — the tribe
+## raids the lair instead of hauling for fees).
+@export_range(1, 20) var steal_haul_size: int = 5
 @export var goblin_health: int = 30
 @export var goblin_speed: float = 120.0
 @export var flee_distance: float = 200.0  # Distance to run from soldiers
@@ -33,6 +37,8 @@ var _target_mountain: Node2D = null
 var _encounter_done: bool = false  # Track if popup has been triggered
 ## The tribe's paid gem fees, banked at the mountain (cosmetic hoard tally).
 var _gem_hoard: int = 0
+## Gold the tribe stole from the dragon's stash, banked at the mountain.
+var _gold_hoard: int = 0
 
 func _ready() -> void:
 	# Configure goblin stats before super._ready()
@@ -69,11 +75,15 @@ func _ready() -> void:
 # --- behavior tree setup ------------------------------------------------------
 
 ## Activities (decision record 2026-11-08: the shared Activity engine, no
-## side plans). The paid trade loop (user spec 2026-11-10 — gem-for-gold
-## AT THE LAIR): fetch gold at the NEAREST mine → haul it to the dragon's
+## side plans). Two mutually exclusive loops, split by service_state:
+## BUYING — the paid trade loop (user spec 2026-11-10 — gem-for-gold AT
+## THE LAIR): fetch gold at the NEAREST mine → haul it to the dragon's
 ## lair → transact 1 gold for 1 gem from the dragon's STASH → carry the
 ## gem fee home to the tribe hoard. As long as the dragon's hoard holds
-## gems, the tribe keeps the cycle running; "idle" stays the fallback.
+## gems, the tribe keeps the cycle running.
+## HOSTILE — the theft loop (2026-11-12, user: refusing the deal must cost
+## the dragon his gold): raid the lair → rip steal_haul_size gold out of
+## the stash → carry it home to the tribe hoard. "idle" stays the fallback.
 func _behavior_tree_setup() -> void:
 	behavior_tree = BehaviorTree.new()
 	add_child(behavior_tree)
@@ -99,8 +109,24 @@ func _behavior_tree_setup() -> void:
 		0.0, _complete_hoard_gem,
 		_carrying_fee_gem
 	)
-	# Fallback when no trade leg is placeable (no gems in the hoard,
-	# mid-trip interruptions).
+	# 4) Steal fetch: a hostile goblin raids the LAIR and claws gold out
+	# of the dragon's stash (the mirror image of trade_transact — no fee,
+	# no permission).
+	behavior_tree.register_activity(
+		"steal_fetch", 30,
+		_pick_lair_target, 1.0,
+		1.0, _complete_steal_gold,
+		_can_steal_gold
+	)
+	# 5) Steal haul: carry the stolen gold home to the tribe hoard.
+	behavior_tree.register_activity(
+		"steal_haul", 25,
+		_pick_home_target, 0.5,
+		0.0, _complete_hoard_gold,
+		_carrying_stolen_gold
+	)
+	# Fallback when no trade/steal leg is placeable (no gems in the hoard,
+	# no gold left to steal, mid-trip interruptions).
 	behavior_tree.register_activity(
 		"idle", 1,
 		_pick_idle_target, 1.5,
@@ -233,7 +259,9 @@ func _can_fetch_gold() -> bool:
 	return manager.stash.get("gems", 0) >= mining_service_cost
 
 func _carrying_gold_haul() -> bool:
-	return payload_res_type == "gold"
+	# BUYING-only: a hostile goblin carrying gold is a THIEF, not a trader —
+	# his haul must never run trade_transact (paying a fee to steal).
+	return service_state == ServiceState.BUYING and payload_res_type == "gold"
 
 func _carrying_fee_gem() -> bool:
 	return payload_res_type == "gems"
@@ -265,6 +293,48 @@ func _complete_hoard_gem() -> void:
 	_gem_hoard += payload_amount
 	set_payload("", 0)
 	print("Goblin stashed the gem fee in the tribe hoard (%d gems banked)" % _gem_hoard)
+
+
+# --- theft activities (HOSTILE tribe: the dragon's gold is the target) --------
+
+## Ready when the tribe is hostile, claws are empty, and the dragon's stash
+## still holds gold to rip out. (The paid fee flow never touches this —
+## service_state splits the two loops.)
+func _can_steal_gold() -> bool:
+	if not _plunder_mode or payload_amount > 0:
+		return false
+	var manager := get_tree().get_first_node_in_group("game_manager") as GameManager
+	if manager == null:
+		return false
+	return int(manager.stash.get("gold", 0)) > 0
+
+## A hostile goblin carrying gold is stealing, always (steal_haul's gate).
+func _carrying_stolen_gold() -> bool:
+	return _plunder_mode and payload_res_type == "gold"
+
+## The raid: drain up to steal_haul_size gold from the dragon's stash at the
+## lair and mount it as payload (payload slot = the GoldInterceptionSystem's
+## grip — the dragon can steal it back on a flyover).
+func _complete_steal_gold() -> void:
+	var manager := get_tree().get_first_node_in_group("game_manager") as GameManager
+	if manager == null:
+		return
+	var haul := mini(steal_haul_size, int(manager.stash.get("gold", 0)))
+	if haul <= 0 or not manager.spend_stash("gold", haul):
+		return  # hoard drained mid-raid — nothing to carry
+	set_payload("gold", haul)
+	print("Goblin stole %d gold from the dragon's stash!" % haul)
+
+## The stolen gold lands in the tribe's mountain hoard (the dragon pays for
+## refusing the deal, user 2026-11-12).
+func _complete_hoard_gold() -> void:
+	if payload_res_type != "gold" or payload_amount <= 0:
+		return
+	var haul := payload_amount
+	_gold_hoard += haul
+	set_payload("", 0)
+	print("Goblin banked %d stolen gold in the tribe hoard (%d total)"
+		% [haul, _gold_hoard])
 
 
 # --- goblin-specific encounter detection -------------------------------------

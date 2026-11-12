@@ -30,13 +30,14 @@ func _process(delta: float) -> void:
 	if interception_cooldown > 0.0:
 		interception_cooldown = maxf(interception_cooldown - delta, 0.0)
 
-## Payload carriers (any BaseNPC) within interception range: miners AND
-## adventurers (2026-11-12) — the hero's lair loot is stealable back, the
-## same payload-slot rule every carrier follows.
+## Payload carriers (any BaseNPC) within interception range: miners,
+## goblins (2026-11-12 — the thief's stolen haul is stealable back) AND
+## adventurers — the same payload-slot rule every carrier follows.
 func check_interception_opportunities(dragon_position: Vector2) -> Array[BaseNPC]:
 	var available: Array[BaseNPC] = []
 	var carriers: Array[Node] = []
 	carriers.append_array(get_tree().get_nodes_in_group("miners"))
+	carriers.append_array(get_tree().get_nodes_in_group("goblins"))
 	carriers.append_array(get_tree().get_nodes_in_group("adventurers"))
 	for carrier: Node in carriers:
 		var npc := carrier as BaseNPC
