@@ -11,29 +11,125 @@ script = ExtResource("1_wiz")
 [node name="Sprite" type="Node2D" parent="."]
 position = Vector2(0, -5)
 
-[node name="Body" type="ColorRect" parent="Sprite"]
-size = Vector2(18, 25)
-color = Color(0.55, 0.3, 0.8, 1)
+[node name="StaffGlow" type="ColorRect" parent="Sprite"]
+position = Vector2(11, -29)
+size = Vector2(12, 12)
+color = Color(0.5, 0.85, 1, 0.22)
 
-[node name="Hat" type="ColorRect" parent="Sprite"]
-position = Vector2(-5, -28)
-size = Vector2(10, 18)
-color = Color(0.3, 0.15, 0.55, 1)
+[node name="StaffShaft" type="ColorRect" parent="Sprite"]
+position = Vector2(15, -18)
+size = Vector2(4, 44)
+color = Color(0.42, 0.28, 0.16, 1)
 
-[node name="Beard" type="ColorRect" parent="Sprite"]
-position = Vector2(-4, 8)
-size = Vector2(8, 8)
-color = Color(0.9, 0.9, 0.95, 1)
-
-[node name="Staff" type="ColorRect" parent="Sprite"]
-position = Vector2(16, -14)
-size = Vector2(4, 26)
-color = Color(0.75, 0.68, 0.3, 1)
+[node name="StaffTop" type="ColorRect" parent="Sprite"]
+position = Vector2(13, -21)
+size = Vector2(8, 5)
+color = Color(0.34, 0.22, 0.12, 1)
 
 [node name="Orb" type="ColorRect" parent="Sprite"]
-position = Vector2(15, -20)
+position = Vector2(14, -27)
 size = Vector2(6, 6)
 color = Color(0.5, 0.85, 1, 1)
+
+[node name="Body" type="ColorRect" parent="Sprite"]
+position = Vector2(-11, -2)
+size = Vector2(22, 26)
+color = Color(0.55, 0.3, 0.8, 1)
+
+[node name="RobeTrim" type="ColorRect" parent="Sprite"]
+position = Vector2(-11, 21)
+size = Vector2(22, 3)
+color = Color(0.42, 0.2, 0.62, 1)
+
+[node name="Belt" type="ColorRect" parent="Sprite"]
+position = Vector2(-11, 16)
+size = Vector2(22, 4)
+color = Color(0.24, 0.13, 0.38, 1)
+
+[node name="BeltBuckle" type="ColorRect" parent="Sprite"]
+position = Vector2(-2, 16)
+size = Vector2(6, 4)
+color = Color(0.78, 0.62, 0.22, 1)
+
+[node name="SleeveBack" type="ColorRect" parent="Sprite"]
+position = Vector2(-16, 1)
+size = Vector2(6, 12)
+color = Color(0.46, 0.24, 0.68, 1)
+
+[node name="SleeveFront" type="ColorRect" parent="Sprite"]
+position = Vector2(10, 1)
+size = Vector2(6, 12)
+color = Color(0.5, 0.27, 0.72, 1)
+
+[node name="Hand" type="ColorRect" parent="Sprite"]
+position = Vector2(13, 10)
+size = Vector2(6, 5)
+color = Color(0.92, 0.78, 0.62, 1)
+
+[node name="BootL" type="ColorRect" parent="Sprite"]
+position = Vector2(-10, 24)
+size = Vector2(8, 6)
+color = Color(0.2, 0.14, 0.1, 1)
+
+[node name="BootR" type="ColorRect" parent="Sprite"]
+position = Vector2(2, 24)
+size = Vector2(8, 6)
+color = Color(0.2, 0.14, 0.1, 1)
+
+[node name="Head" type="ColorRect" parent="Sprite"]
+position = Vector2(-6, -14)
+size = Vector2(12, 12)
+color = Color(0.92, 0.78, 0.62, 1)
+
+[node name="Eyes" type="ColorRect" parent="Sprite"]
+position = Vector2(-3, -10)
+size = Vector2(7, 2)
+color = Color(0.15, 0.12, 0.1, 1)
+
+[node name="Beard" type="ColorRect" parent="Sprite"]
+position = Vector2(-4, -3)
+size = Vector2(8, 14)
+color = Color(0.92, 0.92, 0.95, 1)
+
+[node name="BeardTip" type="ColorRect" parent="Sprite"]
+position = Vector2(-2.5, 11)
+size = Vector2(5, 6)
+color = Color(0.85, 0.85, 0.9, 1)
+
+[node name="HatBrim" type="ColorRect" parent="Sprite"]
+position = Vector2(-10, -18)
+size = Vector2(20, 4)
+color = Color(0.3, 0.15, 0.55, 1)
+
+[node name="HatBand" type="ColorRect" parent="Sprite"]
+position = Vector2(-10, -18)
+size = Vector2(20, 2)
+color = Color(0.78, 0.62, 0.22, 1)
+
+[node name="HatCone1" type="ColorRect" parent="Sprite"]
+position = Vector2(-7, -22)
+size = Vector2(14, 4)
+color = Color(0.34, 0.18, 0.6, 1)
+
+[node name="HatCone2" type="ColorRect" parent="Sprite"]
+position = Vector2(-5, -26)
+size = Vector2(10, 4)
+color = Color(0.3, 0.15, 0.55, 1)
+
+[node name="HatCone3" type="ColorRect" parent="Sprite"]
+position = Vector2(-3, -30)
+size = Vector2(6, 4)
+color = Color(0.34, 0.18, 0.6, 1)
+
+[node name="HatTip" type="ColorRect" parent="Sprite"]
+position = Vector2(-1.5, -34)
+size = Vector2(3, 4)
+color = Color(0.3, 0.15, 0.55, 1)
+
+[node name="HatStar" type="ColorRect" parent="Sprite"]
+position = Vector2(-2, -25)
+size = Vector2(2, 2)
+color = Color(0.9, 0.8, 0.35, 1)
 
 [node name="MainCollision" type="CollisionShape2D" parent="."]
 shape = ExtResource("2_wiz")
