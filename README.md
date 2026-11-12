@@ -97,6 +97,7 @@ Your hoard grows. Your legend grows. The world fights back.
 
 - Dragon movement, flight, and fire breath
 - NPC AI (farmers, miners, soldiers, goblins)
+- Wandering adventurer — every 5 minutes a hero marches from the city, clears goblins, and tries to carry off your entire gold hoard (burn him to stop him)
 - Wizard shop with upgrades
 - King boss with multiple lives
 - Shield absorption system

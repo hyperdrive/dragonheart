@@ -1,0 +1,144 @@
+[gd_scene load_steps=3 format=3 uid="uid://c4dv3ntur3r01"]
+
+[ext_resource type="Script" path="res://scripts/npcs/Adventurer.gd" id="1_adv01"]
+[ext_resource type="RectangleShape2D" path="res://assets/shapes/adventurer_shape.tres" id="2_adv02"]
+
+[node name="Adventurer" type="CharacterBody2D" groups=["adventurers"]]
+collision_layer = 4
+collision_mask = 17
+script = ExtResource("1_adv01")
+
+[node name="Sprite" type="Node2D" parent="."]
+position = Vector2(0, -5)
+
+[node name="Backpack" type="ColorRect" parent="Sprite"]
+position = Vector2(-16, -4)
+size = Vector2(13, 18)
+color = Color(0.45, 0.31, 0.18, 1)
+
+[node name="BackpackFlap" type="ColorRect" parent="Sprite"]
+position = Vector2(-16, -4)
+size = Vector2(13, 5)
+color = Color(0.35, 0.23, 0.13, 1)
+
+[node name="BackpackStrap" type="ColorRect" parent="Sprite"]
+position = Vector2(-11, -4)
+size = Vector2(3, 22)
+color = Color(0.3, 0.2, 0.12, 1)
+
+[node name="Bedroll" type="ColorRect" parent="Sprite"]
+position = Vector2(-19, -9)
+size = Vector2(18, 5)
+color = Color(0.52, 0.5, 0.34, 1)
+
+[node name="BedrollStrap" type="ColorRect" parent="Sprite"]
+position = Vector2(-12, -9)
+size = Vector2(3, 5)
+color = Color(0.3, 0.2, 0.12, 1)
+
+[node name="Cloak" type="ColorRect" parent="Sprite"]
+position = Vector2(-13, -8)
+size = Vector2(26, 32)
+color = Color(0.23, 0.38, 0.25, 1)
+
+[node name="CloakTrim" type="ColorRect" parent="Sprite"]
+position = Vector2(-13, 22)
+size = Vector2(26, 3)
+color = Color(0.17, 0.29, 0.19, 1)
+
+[node name="Greaves" type="ColorRect" parent="Sprite"]
+position = Vector2(-8, 22)
+size = Vector2(16, 9)
+color = Color(0.4, 0.33, 0.24, 1)
+
+[node name="BootL" type="ColorRect" parent="Sprite"]
+position = Vector2(-9, 31)
+size = Vector2(8, 7)
+color = Color(0.25, 0.17, 0.11, 1)
+
+[node name="BootR" type="ColorRect" parent="Sprite"]
+position = Vector2(2, 31)
+size = Vector2(8, 7)
+color = Color(0.25, 0.17, 0.11, 1)
+
+[node name="Body" type="ColorRect" parent="Sprite"]
+position = Vector2(-10, -2)
+size = Vector2(20, 26)
+color = Color(0.55, 0.42, 0.27, 1)
+
+[node name="BodyTrim" type="ColorRect" parent="Sprite"]
+position = Vector2(-10, -2)
+size = Vector2(20, 3)
+color = Color(0.44, 0.32, 0.2, 1)
+
+[node name="Belt" type="ColorRect" parent="Sprite"]
+position = Vector2(-10, 17)
+size = Vector2(20, 4)
+color = Color(0.3, 0.2, 0.12, 1)
+
+[node name="BeltBuckle" type="ColorRect" parent="Sprite"]
+position = Vector2(-2, 17)
+size = Vector2(5, 4)
+color = Color(0.75, 0.62, 0.3, 1)
+
+[node name="Head" type="ColorRect" parent="Sprite"]
+position = Vector2(-6, -14)
+size = Vector2(12, 12)
+color = Color(0.92, 0.78, 0.62, 1)
+
+[node name="Eyes" type="ColorRect" parent="Sprite"]
+position = Vector2(-3, -10)
+size = Vector2(7, 2)
+color = Color(0.15, 0.12, 0.1, 1)
+
+[node name="Hair" type="ColorRect" parent="Sprite"]
+position = Vector2(-8, -16)
+size = Vector2(16, 5)
+color = Color(0.42, 0.27, 0.15, 1)
+
+[node name="Headband" type="ColorRect" parent="Sprite"]
+position = Vector2(-7, -12)
+size = Vector2(14, 2)
+color = Color(0.66, 0.16, 0.16, 1)
+
+[node name="Sword" type="ColorRect" parent="Sprite"]
+position = Vector2(13, -24)
+size = Vector2(8, 46)
+color = Color(1, 1, 1, 0)
+
+[node name="SwordBlade" type="ColorRect" parent="Sprite/Sword"]
+position = Vector2(2, 2)
+size = Vector2(4, 34)
+color = Color(0.75, 0.8, 0.88, 1)
+
+[node name="SwordEdge" type="ColorRect" parent="Sprite/Sword"]
+position = Vector2(5, 2)
+size = Vector2(1, 34)
+color = Color(0.9, 0.94, 1, 1)
+
+[node name="SwordGuard" type="ColorRect" parent="Sprite/Sword"]
+position = Vector2(-2, 36)
+size = Vector2(12, 4)
+color = Color(0.55, 0.44, 0.22, 1)
+
+[node name="SwordGrip" type="ColorRect" parent="Sprite/Sword"]
+position = Vector2(2.5, 40)
+size = Vector2(3, 10)
+color = Color(0.3, 0.21, 0.13, 1)
+
+[node name="SwordPommel" type="ColorRect" parent="Sprite/Sword"]
+position = Vector2(1.5, 50)
+size = Vector2(5, 4)
+color = Color(0.55, 0.44, 0.22, 1)
+
+[node name="MainCollision" type="CollisionShape2D" parent="."]
+shape = ExtResource("2_adv02")
+position = Vector2(0, 5)
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="HurtboxCollision" type="CollisionShape2D" parent="Hurtbox"]
+shape = ExtResource("2_adv02")
+position = Vector2(0, 0)

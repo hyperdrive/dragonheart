@@ -60,6 +60,18 @@ enum SwarmState { CALM, RALLY, ATTACK }
 @export var soldier_spawn_interval: float = 8.0
 @export var king_threshold: int = 15
 
+@export_group("Adventurer")
+## Wandering hero (user spec 2026-11-12): one spawns at the city every 5
+## minutes, walks to the lair, kills goblins, steals the whole gold hoard,
+## and hauls it back to the town treasury. Counter-play: dragon fire.
+@export var adventurer_spawn_interval: float = 300.0
+## Concurrent hero cap: one adventurer at a time — the hoard raid drains
+## ALL the lair gold, so overlapping heroes would just double-walk to an
+## empty rock. Raise this for proper hero parties.
+@export var adventurer_max_alive: int = 1
+
+var _adventurer_timer: Timer
+
 @export_group("Swarm tactics")
 @export var rally_range: float = 340.0          # dragon distance to city → RALLY
 @export var swarm_size: int = 3                 # gathered soldiers → ATTACK
@@ -78,6 +90,7 @@ var entity_scenes := {
 	"field": preload("res://scenes/systems/Field.tscn"),
 	"tower": preload("res://scenes/objects/WizardTower.tscn"),
 	"king": preload("res://scenes/objects/King.tscn"),
+	"adventurer": preload("res://scenes/objects/Adventurer.tscn"),
 	"city": preload("res://scenes/props/City.tscn"),
 	"pig_pen": preload("res://scenes/props/PigPen.tscn"),
 	"cow_pen": preload("res://scenes/props/CowPen.tscn"),
@@ -232,6 +245,13 @@ func _ready() -> void:
 	_swarm_timer.timeout.connect(_on_swarm_tick)
 	add_child(_swarm_timer)
 
+	# Adventurer spawn timer (user spec 2026-11-12): a hero every 5 minutes.
+	_adventurer_timer = Timer.new()
+	_adventurer_timer.wait_time = adventurer_spawn_interval
+	_adventurer_timer.autostart = true
+	_adventurer_timer.timeout.connect(_on_adventurer_spawn_tick)
+	add_child(_adventurer_timer)
+
 	# StuckMonitor watch (decision 2026-11-09): NPC supervision heartbeat.
 	_stuck_timer = Timer.new()
 	_stuck_timer.wait_time = stuck_audit_interval
@@ -274,6 +294,8 @@ func _audit_npc_stuck() -> void:
 	for node: Node in get_tree().get_nodes_in_group("soldiers"):
 		seen[_audit_one_npc(node)] = true
 	for node: Node in get_tree().get_nodes_in_group("goblins"):
+		seen[_audit_one_npc(node)] = true
+	for node: Node in get_tree().get_nodes_in_group("adventurers"):
 		seen[_audit_one_npc(node)] = true
 	# Scrub records for freed NPCs.
 	for id: int in _stuck_records.keys():
@@ -660,6 +682,12 @@ func setup_entity(entity_type: String, instance: Node) -> void:
 				goblin_base.home_position = goblin_base.global_position
 				goblin_base.mine_position = _mine_spot()
 				goblin_base.npc_died.connect(_on_npc_died.bind(goblin_base))
+		"adventurer":
+			# The hero anchors at his spawn spot; the haul leg targets the
+			# city gate via WorldManager.city_position (see _pick_home_target).
+			var hero := instance as Adventurer
+			if hero != null:
+				hero.home_position = hero.global_position
 		"mine":
 			var mine := instance as Node2D
 			if mine != null:
@@ -921,6 +949,40 @@ func _on_goblin_spawn_tick() -> void:
 	if _goblin_count >= MAX_GOBLINS:
 		return
 	spawn_goblin()
+
+
+# --- adventurer spawning (2026-11-12, user spec) ------------------------------
+
+## A hero every 5 minutes (user spec: "Hero spawns with every 5 minutes"),
+## capped at adventurer_max_alive concurrent heroes. Counting by GROUP
+## size, not a death counter: the successful hero leaves via queue_free
+## after the treasury deposit (no die() → no npc_died), so a death-tracked
+## counter would leak the slot and silently stop all future spawns.
+func _on_adventurer_spawn_tick() -> void:
+	if get_tree().get_nodes_in_group("adventurers").size() \
+			>= adventurer_max_alive:
+		return
+	spawn_adventurer()
+
+
+## Spawn the wandering adventurer at the CITY (north-gate side, same door
+## the King materializes at). His home anchor is the spawn spot; the haul
+## leg targets the city gate itself.
+func spawn_adventurer() -> void:
+	var scene := entity_scenes.get("adventurer") as PackedScene
+	if scene == null:
+		push_warning("WorldManager: adventurer scene not found in entity_scenes")
+		return
+	var hero := scene.instantiate() as Adventurer
+	if hero == null:
+		return
+	var position := city_position + Vector2(0, -140) \
+		+ Vector2(randf_range(-30, 30), randf_range(-10, 10))
+	hero.global_position = clamp_into_playfield(position, 12.0)
+	add_child(hero)
+	setup_entity("adventurer", hero)
+	print("An adventurer strides out of the city gates — sword on his hip, backpack full of hope!")
+	entity_spawned.emit("adventurer", hero.global_position)
 
 
 func _on_goblin_raid_tick() -> void:
