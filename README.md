@@ -106,6 +106,59 @@ Your hoard grows. Your legend grows. The world fights back.
 
 ---
 
+## Using the World Editor
+
+### Creating a new world
+
+1. **Launch the editor** from Godot:
+   ```bash
+   Godot --path . res://scenes/editor/WorldEditor.tscn
+   ```
+
+2. **Place key elements** (city, dragon lair, goblin mountain, wizard tower, etc.) by clicking on the canvas with the left mouse button.
+
+3. **Paint masks** to control where randomized elements appear:
+   - Select a mask brush (fields, mines, forest dense, forest sparse, lakes)
+   - Drag to paint bright areas (brightness = placement weight)
+   - Use the Eraser to clear mistakes
+
+4. **Adjust settings**:
+   - Brush size slider controls mask brush radius
+   - World name field sets the output directory
+   - Seed value determines random placements (same seed = identical world)
+
+5. **Save** your layout:
+   - Click "Save" to write the world to `res://worlds/<name>/`
+   - The editor generates mask PNGs + `layout.tres` resource
+
+### Starting a world
+
+**Option A: Via WorldSession (editor)**
+
+1. After saving, click the **▶ Play** button in the editor
+2. The game boots on your saved world
+
+**Option B: Via command-line**
+
+```bash
+Godot --path . -- --world=<name>
+# Example:
+Godot --path . -- --world=sample_world
+```
+
+**Option C: Via script (probes, test runners)**
+
+```gdscript
+WorldSession.pending_world = "sample_world"
+# Then boot Main.tscn
+```
+
+### Fallback (original safe)
+
+If no world is selected (no `--world=`, no `WorldSession.pending_world`), the game falls back to the original **full-procedural generation**. Your saved worlds are completely separate and won't affect the default experience.
+
+---
+
 ## Controls (PC)
 
 - **WASD** — Move
