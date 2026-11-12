@@ -102,6 +102,7 @@ Your hoard grows. Your legend grows. The world fights back.
 - King boss with multiple lives
 - Shield absorption system
 - Fire burn mechanics
+- World editor — hand-place key elements (city, dragon lair, goblin mountain, wizard tower), paint masks to constrain randomized placement of fields/mines/forest/lakes; seeded layout generation (reproducible)
 
 ---
 

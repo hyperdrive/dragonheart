@@ -43,6 +43,11 @@ enum SwarmState { CALM, RALLY, ATTACK }
 @export var tree_count: int = 14
 @export var lake_count: int = 3
 @export var mountain_count: int = 5
+## Two tree densities (user spec 2026-11-12): a layout world splits the trees
+## across a DENSE and a SPARSE forest mask; these counts only apply when a
+## WorldLayout is active (no layout → legacy tree_count random scatter).
+@export var tree_dense_count: int = 7
+@export var tree_sparse_count: int = 7
 
 @export_group("Miner support chain")
 @export var initial_miner_count: int = 2
@@ -173,6 +178,25 @@ const FOOTPRINT_RADIUS := {
 ## south wall, wedging farmers and starving miner→cow respawns.
 const WORLD_MARGIN := 80.0
 
+# --- layout mode (decision record 2026-11-12-world-editor) --------------------
+
+## The selected WorldLayout, or null → full-procedural fallback. Selected via
+## WorldSession (editor Play button / probe) or the --world= command-line arg.
+var active_layout: WorldLayout = null
+## Seeded placement RNG: a layout carries a seed, so the same layout always
+## generates the identical world (probe-verifiable). Unseeded (procedural
+## fallback) it is randomized per boot.
+var _rng := RandomNumberGenerator.new()
+## Per-category decoded mask images (cached once at layout application —
+## sampling runs hundreds of times per generation).
+var _mask_images: Dictionary = {}
+## Categories whose mask has NO bright pixel at all — placement skips the
+## pointless 120-sample scan and falls back to random (also cached).
+var _mask_empty: Dictionary = {}
+## World positions of mask-placed mines — miner work spots snap to REAL
+## mines when the mines mask scattered them away from mine_center.
+var _mine_spots: Array[Vector2] = []
+
 func _clamp_to_interior(pos: Vector2, radius := 0.0) -> Vector2:
 	var pad := WORLD_MARGIN + radius
 	var half := world_size * 0.5 - Vector2(pad, pad)
@@ -183,9 +207,101 @@ func register_footprint(position: Vector2, radius: float) -> void:
 	_terrain_clearances.append({"pos": position, "radius": radius})
 
 
+## Push the saved world's anchors, counts and seed into the exports BEFORE the
+## interior clamp runs — every later placement rule keeps working unchanged.
+func _apply_layout(layout: WorldLayout) -> void:
+	active_layout = layout
+	if layout.world_size.x > 0:
+		world_size = layout.world_size
+	city_position = layout.city_position
+	lair_position = layout.lair_position
+	goblin_mountain_position = layout.goblin_mountain_position
+	tower_position = layout.tower_position
+	pig_pen_position = layout.pig_pen_position
+	cow_pen_position = layout.cow_pen_position
+	mine_center = layout.mine_center
+	# The soldiers' rally point rides the city's north gate (default offset).
+	rally_point = layout.city_position + Vector2(0, -120)
+	# Counts: non-zero layout values override the exports.
+	if layout.tree_dense_count > 0:
+		tree_dense_count = layout.tree_dense_count
+	if layout.tree_sparse_count > 0:
+		tree_sparse_count = layout.tree_sparse_count
+	if layout.lake_count > 0:
+		lake_count = layout.lake_count
+	if layout.mountain_count > 0:
+		mountain_count = layout.mountain_count
+	if layout.field_count > 0:
+		field_count = layout.field_count
+	if layout.mine_count > 0:
+		mine_count = layout.mine_count
+	_rng.seed = layout.seed_value
+	for category: String in WorldLayout.MASK_CATEGORIES:
+		var img := layout.get_mask_image(category)
+		_mask_images[category] = img
+		_mask_empty[category] = not _mask_has_bright(img)
+		var msg := "WorldManager: layout applied (seed %d) — city %s, lair %s, goblin mountain %s, tower %s" % [
+			layout.seed_value,
+			str(layout.city_position), str(layout.lair_position),
+			str(layout.goblin_mountain_position), str(layout.tower_position)]
+		print(msg)
+
+
+func _mask_has_bright(img: Image) -> bool:
+	for y in img.get_height():
+		for x in img.get_width():
+			if img.get_pixel(x, y).r >= WorldLayout.BRIGHT_THRESHOLD:
+				return true
+	return false
+
+
+## A mask-guided placement anchor: rejection-sample bright pixels (brightness
+## = keep-going weight), locally jitter, then run the STANDARD clearance
+## checks (_terrain_free_position) — a candidate that drifted off its mask or
+## into a footprint is rejected. Empty/missing mask → fully random anchor.
+func _mask_anchor(category: String, self_radius: float,
+	protected := [] as Array, protected_margin := 90.0) -> Vector2:
+	if active_layout == null or _mask_empty.get(category, true):
+		# No painted region: keep the standard random + clearance behavior.
+		return _terrain_free_position(
+			get_random_position(), self_radius, protected, protected_margin)
+	var img: Image = _mask_images[category]
+	var size := Vector2i((world_size * WorldLayout.MASK_SCALE).round())
+	for attempt in 120:
+		var px := Vector2i(
+			_rng.randi_range(0, size.x - 1), _rng.randi_range(0, size.y - 1))
+		if img.get_pixelv(px).r < WorldLayout.BRIGHT_THRESHOLD:
+			continue
+		var candidate := active_layout.mask_to_world(px) \
+			+ Vector2(_rng.randf_range(-20, 20), _rng.randf_range(-20, 20))
+		candidate = _clamp_to_interior(candidate, self_radius)
+		var spot := _terrain_free_position(
+			candidate, self_radius, protected, protected_margin)
+		if spot == Vector2.INF:
+			continue
+		# The clearance jitter may have drifted — re-check the mask at the
+		# FINAL spot so nothing spawns off its painted region.
+		if active_layout.sample_mask(category, spot) < WorldLayout.BRIGHT_THRESHOLD:
+			continue
+		return spot
+	push_warning("WorldManager: mask '%s' never produced a clear spot "
+		+ "— random fallback" % category)
+	return _terrain_free_position(
+		get_random_position(), self_radius, protected, protected_margin)
+
+
 func _ready() -> void:
 	game_manager = get_tree().get_first_node_in_group("game_manager") as GameManager
 	add_to_group("world_manager")
+	# Mode selection (decision 2026-11-12-world-editor): a saved world layout
+	# overrides the exported landmark anchors and seeds placement; with no
+	# layout selected the generation below is fully procedural as before.
+	active_layout = WorldLayout.load_from_world(WorldSession.active_world()) \
+		if WorldSession.active_world() != "" else null
+	if active_layout != null:
+		_apply_layout(active_layout)
+	else:
+		_rng.randomize()
 	if game_manager != null:
 		swarm_state_changed.connect(game_manager._on_swarm_state_changed)
 		# The goblin-encounter story answer selects the tribe's fate
@@ -432,7 +548,17 @@ func generate_world() -> void:
 	# per-spot radius padding — no more visual overlaps with the farm belt.
 	spawn_scenery()
 	merge_adjacent_lakes()
-	spawn_entity("mine", mine_count, mine_center, 180.0)
+	if active_layout != null and not _mask_empty.get("mines", true):
+		# Mask-scattered mines: one placement per mine, each anchored on a
+		# bright mines-mask pixel (miner work spots snap to them below).
+		for i in mine_count:
+			var mine_position := _mask_anchor("mines", FOOTPRINT_RADIUS["mine"])
+			if mine_position == Vector2.INF:
+				continue
+			spawn_entity("mine", 1, mine_position)
+			_mine_spots.append(mine_position)
+	else:
+		spawn_entity("mine", mine_count, mine_center, 180.0)
 	spawn_farmers()
 	spawn_entity("soldier", initial_soldier_count, rally_point, 90.0)
 	soldiers_spawned = initial_soldier_count
@@ -451,12 +577,20 @@ func generate_world() -> void:
 func spawn_fields() -> void:
 	var field_radius: float = FOOTPRINT_RADIUS["field"]
 	for i in field_count:
-		var angle := TAU * float(i) / float(field_count) + 0.4
-		var anchor := _clamp_to_interior(
-			city_position + Vector2.RIGHT.rotated(angle) * 420.0, field_radius)
-		var position := _terrain_free_position(anchor, field_radius)
-		if position == Vector2.INF:
-			position = anchor  # map too crowded at this spot; never lose a field
+		var position: Vector2
+		if active_layout != null and not _mask_empty.get("fields", true):
+			# Layout mode: fields land wherever the fields mask is painted.
+			position = _mask_anchor("fields", field_radius)
+			if position == Vector2.INF:
+				position = _clamp_to_interior(city_position, field_radius)
+		else:
+			# Procedural fallback: the farm belt ring around the city.
+			var angle := TAU * float(i) / float(field_count) + 0.4
+			var anchor := _clamp_to_interior(
+				city_position + Vector2.RIGHT.rotated(angle) * 420.0, field_radius)
+			position = _terrain_free_position(anchor, field_radius)
+			if position == Vector2.INF:
+				position = anchor  # map too crowded at this spot; never lose a field
 		spawn_entity("field", 1, position)
 		register_footprint(position, field_radius)
 		field_positions.append(position)
@@ -485,10 +619,19 @@ func spawn_farmers() -> void:
 ## Blocking scenery: trees, lakes, mountains — placed clear of EVERYTHING in
 ## the footprint registry (landmarks, fields) with proper radius padding.
 ## Only the dragon's spawn clearing stays a special protected spot.
+## Layout mode (2026-11-12-world-editor): the two tree densities come from
+## their own masks (user spec), lakes from the lakes mask, mountains stay
+## random (no mask was specced); no layout → the legacy random scatter.
 func spawn_scenery() -> void:
 	var protected: Array = [
 		{"pos": Vector2.ZERO, "pad": 90.0},  # dragon start
 	]
+	if active_layout != null:
+		_spawn_scenery_batch("forest_dense", tree_dense_count, 0, protected)
+		_spawn_scenery_batch("forest_sparse", tree_sparse_count, 0, protected)
+		_spawn_scenery_batch("lakes", lake_count, 1, protected)
+		_spawn_scenery_batch("", mountain_count, 2, protected)  # no mask
+		return
 	var counts := [tree_count, lake_count, mountain_count]
 	for kind_id in counts.size():
 		for i in counts[kind_id]:
@@ -503,6 +646,24 @@ func spawn_scenery() -> void:
 			add_child(obstacle)
 			register_footprint(position, radius)
 			entity_spawned.emit("terrain", position)
+
+
+## One masked scenery batch (shared by the layout-mode loops above).
+func _spawn_scenery_batch(category: String, count: int, kind_id: int,
+	protected: Array) -> void:
+	var radius: float = [22.0, 66.0, 60.0][kind_id]
+	for i in count:
+		var position := _mask_anchor(category, radius, protected, 110.0) \
+			if category != "" else _terrain_free_position(
+				get_random_position(), radius, protected, 110.0)
+		if position == Vector2.INF:
+			continue  # map too crowded at this spot; skip
+		var scene: PackedScene = scenery_scenes[kind_id]
+		var obstacle := scene.instantiate()
+		obstacle.global_position = position
+		add_child(obstacle)
+		register_footprint(position, radius)
+		entity_spawned.emit("terrain", position)
 
 
 ## Merge adjacent lakes into larger lakes
@@ -555,13 +716,11 @@ func merge_adjacent_lakes() -> void:
 func _terrain_free_position(anchor: Vector2, self_radius: float,
 	protected := [] as Array, protected_margin := 90.0,
 	nearest := false) -> Vector2:
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
 	var best := Vector2.INF
 	var best_dist := INF
 	for attempt in 24:
 		var candidate := _clamp_to_interior(anchor + Vector2(
-			rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0)
+			_rng.randf_range(-1.0, 1.0), _rng.randf_range(-1.0, 1.0)
 		) * float(attempt) * 12.0, self_radius)
 		if candidate.distance_to(city_position) < 140.0:
 			continue
@@ -593,7 +752,8 @@ func _terrain_free_position(anchor: Vector2, self_radius: float,
 
 
 func _clear_position(anchor: Vector2, spread: float) -> Vector2:
-	return anchor + Vector2(randf_range(-spread, spread), randf_range(-spread, spread))
+	return anchor + Vector2(
+		_rng.randf_range(-spread, spread), _rng.randf_range(-spread, spread))
 
 
 ## PUBLIC terrain-safe target for NPC target providers (2026-11-09): NPCs may
@@ -729,15 +889,19 @@ func _spawn_sacrifice(burnt_field_position: Vector2) -> void:
 
 
 ## Jittered position inside the mining district (spreads miners across it).
+## Layout mode: miners work the REAL mask-scattered mines instead.
 func _mine_spot() -> Vector2:
-	return mine_center + Vector2(randf_range(-160, 160), randf_range(-160, 160))
+	if _mine_spots.size() > 0:
+		var spot: Vector2 = _mine_spots[_rng.randi_range(0, _mine_spots.size() - 1)]
+		return spot + Vector2(_rng.randf_range(-24, 24), _rng.randf_range(-24, 24))
+	return mine_center + Vector2(_rng.randf_range(-160, 160), _rng.randf_range(-160, 160))
 
 
 func get_random_position() -> Vector2:
 	var margin := 100.0
 	return Vector2(
-		randf_range(-world_size.x / 2 + margin, world_size.x / 2 - margin),
-		randf_range(-world_size.y / 2 + margin, world_size.y / 2 - margin)
+		_rng.randf_range(-world_size.x / 2 + margin, world_size.x / 2 - margin),
+		_rng.randf_range(-world_size.y / 2 + margin, world_size.y / 2 - margin)
 	)
 
 
