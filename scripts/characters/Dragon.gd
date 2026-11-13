@@ -125,10 +125,19 @@ var game_manager: GameManager
 
 @onready var vis: Node2D = $Vis
 @onready var sprite: Node2D = $Vis/Sprite
-@onready var shadow: ColorRect = $Vis/Shadow
+@onready var shadow: Node2D = $Vis/Shadow
+@onready var near_wing_outer: Node2D = $Vis/Sprite/NearWingPivot/NearWingOuter
+@onready var far_wing_outer: Node2D = $Vis/Sprite/FarWingPivot/FarWingOuter
+@onready var tail_pivot: Node2D = $Vis/Sprite/TailPivot
+@onready var tail_tip_pivot: Node2D = $Vis/Sprite/TailPivot/TailTipPivot
+@onready var eye: Node2D = $Vis/Sprite/Eye
 @onready var near_wing_pivot: Node2D = $Vis/Sprite/NearWingPivot
 @onready var far_wing_pivot: Node2D = $Vis/Sprite/FarWingPivot
-@onready var claw_pivot: Node2D = $Vis/Sprite/ClawPivot
+## Wyvern (2026-11-13): no forelegs — the strike talon rides the near wing's
+## wrist, the same joint the dragon walks on.
+@onready var claw_pivot: Node2D = $Vis/Sprite/NearWingPivot/NearWingOuter/ClawPivot
+@onready var near_hip: Node2D = $Vis/Sprite/NearHipPivot
+@onready var far_hip: Node2D = $Vis/Sprite/FarHipPivot
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var fire_area: Area2D = $Vis/FireArea
 @onready var flame: Node2D = $Vis/FireArea/Flame
@@ -441,7 +450,7 @@ func _eat_meal_from(pen: AnimalPen) -> void:
 # scripts/characters/Dragon.gd
 func _apply_facing() -> void:
 	sprite.scale.x = float(facing)
-	fire_area.position.x = 42.0 * float(facing)   # now relative to Vis/Snout
+	fire_area.position.x = 63.0 * float(facing)   # mouth tip (Sprite-space ~64)
 	fire_collision.position.x = 27.0 * float(facing)  # adjust hitbox offset too
 	flame.scale.x = float(facing)
 
@@ -449,14 +458,31 @@ func _apply_facing() -> void:
 ## soldiers, goblins (+ the King), and crop fields (Field.burn → stubble →
 ## slow regrow). Goblins only AFTER their first encounter (popup honored —
 ## story before combat, user spec).
+## The wyvern redesign (2026-11-13) moved the mouth 21px further forward
+## (Sprite x 42 → 63). The breath cone is measured from this shifted point
+## so the ignition zone still matches the drawn flame — measuring from the
+## body origin left the far third of the visible flame harmless (the
+## "fire no longer kills farmers" regression, 2026-11-14).
+const MOUTH_SHIFT := 21.0
+
+func _fire_origin() -> Vector2:
+	return global_position + Vector2(MOUTH_SHIFT * float(facing), 0.0)
+
+## Everything flammable in the breath cone ignites. EVERY actor burns
+## (2026-11-14 user: "fire should kill all the actors, but the wizard who
+## survives two blasts" — Wizard.catch_fire counts the blasts).
+const FLAMMABLE_GROUPS: Array[String] = ["farmers", "miners", "soldiers",
+	"goblins", "king", "wizard", "adventurers", "fields"]
+
 func _ignite_flammables() -> void:
 	var facing_vec := Vector2(float(facing), 0.0)
-	for group: String in ["farmers", "miners", "soldiers", "goblins", "king", "fields"]:
+	var origin := _fire_origin()
+	for group: String in FLAMMABLE_GROUPS:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			# Fields are not BaseNPC subclasses, so handle them first
 			if node is Field:
 				var field := node as Field
-				var to_target := field.global_position - global_position
+				var to_target := field.global_position - origin
 				if to_target.length() <= fire_reach and \
 				   to_target.normalized().dot(facing_vec) >= fire_ignite_cone:
 					field.burn()
@@ -470,7 +496,7 @@ func _ignite_flammables() -> void:
 					and int((node as Goblin).service_state) == Goblin.ServiceState.UNINITIALIZED:
 				continue  # never encountered: the dragon cannot ignite it yet
 			var target_pos: Vector2 = base.global_position
-			var to_target := target_pos - global_position
+			var to_target := target_pos - origin
 			if to_target.length() <= fire_reach and \
 			   to_target.normalized().dot(facing_vec) >= fire_ignite_cone:
 				base.catch_fire()
@@ -669,24 +695,204 @@ func _tick_flight_visual(delta: float) -> void:
 	var lift_target: float = flight_lift if _flying else 0.0
 	_lift_current = move_toward(_lift_current, lift_target, flight_lift * 5.0 * delta)
 	var lift_ratio: float = _lift_current / flight_lift
-	var bob: float = sin(_flap_phase * TAU) * 3.5 * lift_ratio if _flying else 0.0
+	# Body rides the stroke: the downstroke pushes it up, the recovery lets
+	# it settle — lift peaks just after the wings bottom out.
+	var bob: float = 0.0
+	if _flying:
+		bob = sin((_flap_phase - 0.12) * TAU) * 3.5 * lift_ratio
 	# VIS_BASE_LIFT puts the ground contact at the node origin (y-sort base);
 	# the flight lift/bob ride on top of it.
-	vis.position.y = -_lift_current + bob * 0.4 - VIS_BASE_LIFT
-	# Wings: folded rest pose on the ground, full stroke while airborne. The
-	# far wing trails the near one and swings lower (depth read).
-	var rest := rad_to_deg(0.42)
-	if _flying:
-		near_wing_pivot.rotation_degrees = rest - 55.0 \
-			+ sin(_flap_phase * TAU) * 55.0
-		far_wing_pivot.rotation_degrees = rest - 48.0 \
-			+ sin(_flap_phase * TAU - 0.9) * 36.0
-	else:
-		near_wing_pivot.rotation_degrees = rest
-		far_wing_pivot.rotation_degrees = rest * 0.8
+	vis.position.y = -_lift_current + bob * 0.4 - VIS_BASE_LIFT + _walk_bob()
+	_pose_limbs(delta)
+	# Shadow stays on the ground under the lifted Vis, shrinking + fading.
+	shadow.position.y = _shadow_ground_y + _lift_current - bob * 0.4
 	shadow.scale = Vector2(1.0 - lift_ratio * 0.28, 1.0 - lift_ratio * 0.1)
 	shadow.modulate.a = 1.0 - lift_ratio * 0.5
+	_tick_idle_life(delta)
 	_emit_flight_chip()
+
+# --- wing / tail / eye art (2026-11-13 dragon redesign) -----------------------
+
+## Wing poses are expressed in the wing's own pointing-UP frame:
+##   elev  — scale.y foreshortening: 1 = raised high, 0 = edge-on toward the
+##           camera, negative = swung below (on the ground the wing is
+##           flipped fully down so the arm becomes a front leg).
+##   sweep — shoulder rotation in degrees.
+##   fold  — wrist rotation in degrees (the hand + outer membrane).
+##   chord — outer membrane width (1 = spread, <1 = partly furled).
+##   inner — inner membrane width (the arm-to-flank web furls when folded).
+##   tint  — 0..1 warm underside light (flight only).
+##   hand  — hand scale.y: -1 on the ground un-flips the folded hand so its
+##           fingers rise up along the flank while the arm points down.
+## Wyvern ground stance: the arm reaches down to the wrist talon planted on
+## the ground; the hand folds back up along the flank like a tent.
+const WING_GROUND := {"elev": -1.0, "sweep": -27.0, "fold": -52.0,
+	"chord": 0.36, "inner": 0.55, "tint": 0.0, "hand": -1.35}
+## Walk cycle: each limb spends STANCE of its cycle planted, sweeping from
+## its forward reach to its back reach, then lifts and swings forward.
+## Lateral-sequence gait: near hind → near wing → far hind → far wing.
+const STANCE := 0.62
+const WING_STEP_FWD := -44.0
+const WING_STEP_BACK := -12.0
+const LEG_STEP_FWD := -24.0
+const LEG_STEP_BACK := 20.0
+## World px the dragon travels per full walk cycle (feet slip a little at
+## the boost speeds — readable beats exact).
+const WALK_STRIDE_PX := 62.0
+## Fraction of the flap cycle spent on the (fast, powerful) downstroke; the
+## rest is the slower recovery upstroke.
+const DOWNSTROKE := 0.42
+## Span multipliers on the authored wing geometry (the far wing is also
+## drawn smaller in the tscn for perspective).
+const NEAR_WING_SCALE := 1.8
+const FAR_WING_SCALE := 1.7
+var _wing_blend: float = 0.0  # 0 = ground stance, 1 = full flight stroke
+var _walk_phase: float = 0.0
+var _walk_amt: float = 0.0    # 0 = standing, 1 = full walk cycle
+var _shadow_ground_y: float = 23.5
+var _idle_time: float = 0.0
+var _blink_left: float = 0.0
+var _next_blink: float = 3.0
+
+## One flap-cycle sample at phase p ∈ [0,1): a quick downstroke with the
+## wing fully spread, then an upstroke where the wrist flexes and the hand
+## trails (the wingtip lags the arm), unfurling again at the top.
+func _flap_pose(p: float) -> Dictionary:
+	var elev: float
+	var fold: float
+	var chord: float
+	var sweep: float
+	if p < DOWNSTROKE:
+		var t := p / DOWNSTROKE
+		var e := smoothstep(0.0, 1.0, t)
+		elev = lerpf(1.0, -0.82, e)
+		# hand snaps open at the top and stays braced through the stroke
+		fold = lerpf(-14.0, 6.0, minf(t * 2.5, 1.0))
+		chord = lerpf(0.9, 1.05, minf(t * 3.0, 1.0))
+		sweep = lerpf(-14.0, -6.0, e)
+	else:
+		var t := (p - DOWNSTROKE) / (1.0 - DOWNSTROKE)
+		var e := smoothstep(0.0, 1.0, t)
+		elev = lerpf(-0.82, 1.0, e)
+		# wrist flexes on recovery: the hand trails behind, then flicks up
+		var flex := sin(t * PI)
+		fold = lerpf(6.0, -14.0, smoothstep(0.7, 1.0, t)) - flex * 46.0
+		chord = lerpf(1.05, 0.9, t) - flex * 0.3
+		sweep = lerpf(-6.0, -14.0, e) - flex * 12.0
+	# Never fully edge-on — keeps a sliver of membrane visible mid-stroke.
+	if absf(elev) < 0.14:
+		elev = 0.14 * (signf(elev) if elev != 0.0 else 1.0)
+	return {"elev": elev, "sweep": sweep, "fold": fold, "chord": chord,
+		"inner": 1.0, "tint": clampf(-elev, 0.0, 1.0), "hand": 1.0}
+
+## Wing-as-foreleg step at limb phase p (0 = touch-down).
+func _wing_step_pose(p: float) -> Dictionary:
+	var pose: Dictionary = WING_GROUND.duplicate()
+	if p < STANCE:
+		pose["sweep"] = lerpf(WING_STEP_FWD, WING_STEP_BACK, p / STANCE)
+	else:
+		var t := (p - STANCE) / (1.0 - STANCE)
+		pose["sweep"] = lerpf(WING_STEP_BACK, WING_STEP_FWD, smoothstep(0.0, 1.0, t))
+		# lift the wrist clear of the ground: shorten the reach mid-swing
+		pose["elev"] = -1.0 + sin(t * PI) * 0.16
+		pose["fold"] += sin(t * PI) * 10.0
+	return pose
+
+## Hind leg step at limb phase p: hip rotation plus a lift on the swing.
+func _pose_hind_leg(hip: Node2D, p: float, amt: float) -> void:
+	var rot: float
+	var lift := 0.0
+	if p < STANCE:
+		rot = lerpf(LEG_STEP_FWD, LEG_STEP_BACK, p / STANCE)
+	else:
+		var t := (p - STANCE) / (1.0 - STANCE)
+		rot = lerpf(LEG_STEP_BACK, LEG_STEP_FWD, smoothstep(0.0, 1.0, t))
+		lift = sin(t * PI) * 0.15
+	# In flight the legs trail back, talons tucked.
+	hip.rotation_degrees = lerpf(rot * amt, 38.0, _wing_blend)
+	hip.scale.y = 1.0 - lerpf(lift * amt, 0.12, _wing_blend)
+
+## Wing-talon strike (E): the near wing rears up forward and slams down,
+## driven by the shared claw-swing clock (_claw_phase).
+func _strike_pose(base: Dictionary) -> Dictionary:
+	var pose: Dictionary = base.duplicate()
+	var reach := 1.0
+	if _claw_phase < 0.45:
+		reach = smoothstep(0.0, 1.0, _claw_phase / 0.45)
+	pose["sweep"] = lerpf(-128.0, -22.0, reach)
+	pose["elev"] = -1.0
+	pose["fold"] = lerpf(-20.0, WING_GROUND["fold"], reach)
+	var w := 1.0 - smoothstep(0.6, 1.0, _claw_phase)
+	return _blend_pose(base, pose, w)
+
+func _apply_wing(pivot: Node2D, outer: Node2D, pose: Dictionary, base_scale: float) -> void:
+	pivot.rotation_degrees = pose["sweep"]
+	pivot.scale = Vector2(base_scale * pose["inner"], base_scale * pose["elev"])
+	outer.rotation_degrees = pose["fold"]
+	outer.scale = Vector2(pose["chord"], pose["hand"])
+	# Underside catches warm light when the wing swings below in flight.
+	var tint := Color(1.0, 1.0, 1.0).lerp(Color(1.18, 0.95, 0.78), pose["tint"])
+	if pivot == far_wing_pivot:
+		tint = tint * Color(0.62, 0.55, 0.58)
+	pivot.modulate = tint
+
+func _blend_pose(a: Dictionary, b: Dictionary, t: float) -> Dictionary:
+	var r := {}
+	for k: String in a:
+		r[k] = lerpf(a[k], b[k], t)
+	return r
+
+## All limbs, every physics frame: ground stance / walk cycle / strike on
+## the ground, blended into the flap cycle by _wing_blend.
+func _pose_limbs(delta: float) -> void:
+	_wing_blend = move_toward(_wing_blend, 1.0 if _flying else 0.0, delta * 4.0)
+	var speed := velocity.length() if not _flying else 0.0
+	_walk_amt = move_toward(_walk_amt, 1.0 if speed > 10.0 else 0.0, delta * 5.0)
+	if speed > 10.0:
+		_walk_phase += delta * speed / WALK_STRIDE_PX
+	var stand: Dictionary = WING_GROUND.duplicate()
+	stand["fold"] += sin(_idle_time * 1.7) * 3.0   # breathing
+	var w := fposmod(_walk_phase, 1.0)
+	var near_pose := _blend_pose(stand, _wing_step_pose(fposmod(w + 0.25, 1.0)), _walk_amt)
+	var far_pose := _blend_pose(stand, _wing_step_pose(fposmod(w + 0.75, 1.0)), _walk_amt)
+	if _claw_animating:
+		near_pose = _strike_pose(near_pose)
+	if _wing_blend > 0.0:
+		var p := fposmod(_flap_phase, 1.0)
+		# Both wings beat together; the far one trails by a hair (depth read).
+		near_pose = _blend_pose(near_pose, _flap_pose(p), _wing_blend)
+		far_pose = _blend_pose(far_pose, _flap_pose(fposmod(p - 0.04, 1.0)), _wing_blend)
+	_apply_wing(near_wing_pivot, near_wing_outer, near_pose, NEAR_WING_SCALE)
+	_apply_wing(far_wing_pivot, far_wing_outer, far_pose, FAR_WING_SCALE)
+	_pose_hind_leg(near_hip, w, _walk_amt)
+	_pose_hind_leg(far_hip, fposmod(w + 0.5, 1.0), _walk_amt)
+
+## Body rise/fall on the walk: lowest as each limb plants (4 footfalls per
+## cycle, but hind plants are heavier).
+func _walk_bob() -> float:
+	var t := _walk_phase * TAU
+	return (sin(t * 2.0) * 0.9 + sin(t * 4.0) * 0.3) * _walk_amt
+
+## Tail sway (lazy on the ground, streaming + whipping in flight) and an
+## occasional blink. Purely cosmetic; never touches the AnimationPlayer's
+## Sprite tracks.
+func _tick_idle_life(delta: float) -> void:
+	_idle_time += delta
+	if _flying:
+		var p := _flap_phase * TAU
+		tail_pivot.rotation_degrees = -6.0 + sin(p - 1.2) * 5.0
+		tail_tip_pivot.rotation_degrees = sin(p - 2.2) * 12.0
+	else:
+		tail_pivot.rotation_degrees = sin(_idle_time * 1.3) * 4.0
+		tail_tip_pivot.rotation_degrees = sin(_idle_time * 1.3 - 1.1) * 10.0
+	if _blink_left > 0.0:
+		_blink_left -= delta
+		eye.scale.y = 0.15 if _blink_left > 0.0 else 1.0
+	else:
+		_next_blink -= delta
+		if _next_blink <= 0.0:
+			_blink_left = 0.13
+			_next_blink = randf_range(2.5, 5.5)
 
 ## Push chip updates on phase changes AND at each whole-second boundary so
 ## the HUD shows a readable countdown without a per-frame signal storm.
@@ -722,14 +928,14 @@ func _tick_claw_visual(delta: float) -> void:
 	claw_pivot.rotation_degrees = deg
 	# warm metal glint right at impact
 	var glint: bool = _claw_phase > 0.32 and _claw_phase < 0.58
-	(claw_pivot.get_node("Claw") as ColorRect).modulate = \
+	(claw_pivot.get_node("Claw") as CanvasItem).modulate = \
 		Color(1.0, 0.82, 0.5) if glint else Color.WHITE
 	# body lunge into the strike (flight only owns vis.y — x is free)
 	vis.position.x = sin(_claw_phase * PI) * 7.0
 	if _claw_phase >= 1.0:
 		_claw_animating = false
 		claw_pivot.rotation_degrees = 0.0
-		(claw_pivot.get_node("Claw") as ColorRect).modulate = Color.WHITE
+		(claw_pivot.get_node("Claw") as CanvasItem).modulate = Color.WHITE
 		vis.position.x = 0.0
 
 # --- wizard-shop upgrades (purchased via GameManager.prices) -------------------
@@ -803,11 +1009,16 @@ func die() -> void:
 	_lift_current = 0.0
 	vis.position.y = 0.0
 	vis.position.x = 0.0
-	near_wing_pivot.rotation_degrees = rad_to_deg(0.42)
-	far_wing_pivot.rotation_degrees = rad_to_deg(0.34)
+	_wing_blend = 0.0
+	_walk_amt = 0.0
+	_apply_wing(near_wing_pivot, near_wing_outer, WING_GROUND, NEAR_WING_SCALE)
+	_apply_wing(far_wing_pivot, far_wing_outer, WING_GROUND, FAR_WING_SCALE)
+	_pose_hind_leg(near_hip, 0.0, 0.0)
+	_pose_hind_leg(far_hip, 0.0, 0.0)
+	shadow.position.y = _shadow_ground_y
 	_claw_animating = false
 	claw_pivot.rotation_degrees = 0.0
-	(claw_pivot.get_node("Claw") as ColorRect).modulate = Color.WHITE
+	(claw_pivot.get_node("Claw") as CanvasItem).modulate = Color.WHITE
 	shadow.scale = Vector2.ONE
 	shadow.modulate.a = 1.0
 	animation_player.play("death")

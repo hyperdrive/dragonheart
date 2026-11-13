@@ -1,41 +1,51 @@
-[gd_scene load_steps=9 format=3 uid="uid://d6n2r5p4v8x7c"]
+[gd_scene format=3 uid="uid://b8663svc13gk"]
 
-[ext_resource type="Script" path="res://scripts/characters/Dragon.gd" id="1_m3q8w"]
-[ext_resource type="Script" path="res://scripts/dragon/GoldInterceptionSystem.gd" id="1_g4s2t"]
+[ext_resource type="Script" uid="uid://bdcjvrbgc5vyo" path="res://scripts/dragon/GoldInterceptionSystem.gd" id="1_g4s2t"]
+[ext_resource type="Script" uid="uid://0hrbl4ekqidv" path="res://scripts/characters/Dragon.gd" id="1_m3q8w"]
 
 [sub_resource type="RectangleShape2D" id="1_b5t6n"]
 size = Vector2(40, 30)
 
-[sub_resource type="Animation" id="1_idle"]
-length = 1.0
-loop_mode = 1
+[sub_resource type="RectangleShape2D" id="1_j7h1g"]
+size = Vector2(30, 20)
+
+[sub_resource type="Animation" id="3_death"]
+length = 2.0
 step = 0.1
 tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
 tracks/0/path = NodePath("Vis/Sprite:position")
 tracks/0/interp = 1
+tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.5, 1),
-"transitions": PackedFloat32Array(1, 1, 1),
+"times": PackedFloat32Array(0, 0.5, 1, 1.5, 2),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
 "update": 0,
-"values": [Vector2(0, -5), Vector2(0, -7), Vector2(0, -5)]
+"values": [Vector2(0, 0), Vector2(0, 5), Vector2(0, 10), Vector2(0, 15), Vector2(0, 20)]
 }
 tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
 tracks/1/path = NodePath("Vis/Sprite:rotation")
 tracks/1/interp = 1
+tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0, 0.5, 1),
-"transitions": PackedFloat32Array(1, 1, 1),
+"times": PackedFloat32Array(0, 0.5, 1, 1.5, 2),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
 "update": 0,
-"values": [0.0, 0.05, 0.0]
+"values": [0.0, 0.2, 0.4, 0.6, 0.8]
 }
 
 [sub_resource type="Animation" id="2_fire_breath"]
 length = 0.8
-loop_mode = 0
 step = 0.1
 tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
 tracks/0/path = NodePath("Vis/Sprite:position")
 tracks/0/interp = 1
+tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1),
@@ -43,8 +53,11 @@ tracks/0/keys = {
 "values": [Vector2(0, -5), Vector2(5, -5), Vector2(0, -5)]
 }
 tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
 tracks/1/path = NodePath("Vis/Sprite:rotation")
 tracks/1/interp = 1
+tracks/1/loop_wrap = true
 tracks/1/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1),
@@ -52,38 +65,16 @@ tracks/1/keys = {
 "values": [0.0, -0.2, 0.0]
 }
 
-[sub_resource type="Animation" id="3_death"]
-length = 2.0
-loop_mode = 0
-step = 0.1
-tracks/0/type = "value"
-tracks/0/path = NodePath("Vis/Sprite:position")
-tracks/0/interp = 1
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.5, 1.0, 1.5, 2.0),
-"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
-"update": 0,
-"values": [Vector2(0, 0), Vector2(0, 5), Vector2(0, 10), Vector2(0, 15), Vector2(0, 20)]
-}
-tracks/1/type = "value"
-tracks/1/path = NodePath("Vis/Sprite:rotation")
-tracks/1/interp = 1
-tracks/1/keys = {
-"times": PackedFloat32Array(0, 0.5, 1.0, 1.5, 2.0),
-"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
-"update": 0,
-"values": [0.0, 0.2, 0.4, 0.6, 0.8]
-}
-
-[sub_resource type="RectangleShape2D" id="1_j7h1g"]
-size = Vector2(30, 20)
-
 [sub_resource type="Animation" id="4_fire_breath_pulsed"]
 length = 0.8
 step = 0.1
+capture_included = true
 tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
 tracks/0/path = NodePath("Vis/Sprite:position")
 tracks/0/interp = 1
+tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.1, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
@@ -91,8 +82,11 @@ tracks/0/keys = {
 "values": [Vector2(0, -5), Vector2(0, -5), Vector2(5, -5), Vector2(0, -5)]
 }
 tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
 tracks/1/path = NodePath("Vis/Sprite:rotation")
 tracks/1/interp = 1
+tracks/1/loop_wrap = true
 tracks/1/keys = {
 "times": PackedFloat32Array(0, 0.1, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
@@ -100,35 +94,47 @@ tracks/1/keys = {
 "values": [0.0, 0.0, -0.2, 0.0]
 }
 tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
 tracks/2/path = NodePath("Vis/FireArea/Flame/OuterFlame:scale")
 tracks/2/interp = 1
+tracks/2/loop_wrap = true
 tracks/2/keys = {
 "times": PackedFloat32Array(0, 0.1, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [Vector2(0, 0), Vector2(1.5, 1.5), Vector2(1.0, 1.0), Vector2(1.0, 1.0)]
+"values": [Vector2(0, 0), Vector2(1.5, 1.5), Vector2(1, 1), Vector2(1, 1)]
 }
 tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
 tracks/3/path = NodePath("Vis/FireArea/Flame/MidFlame:scale")
 tracks/3/interp = 1
+tracks/3/loop_wrap = true
 tracks/3/keys = {
 "times": PackedFloat32Array(0, 0.1, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [Vector2(0, 0), Vector2(1.5, 1.5), Vector2(1.0, 1.0), Vector2(1.0, 1.0)]
+"values": [Vector2(0, 0), Vector2(1.5, 1.5), Vector2(1, 1), Vector2(1, 1)]
 }
 tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
 tracks/4/path = NodePath("Vis/FireArea/Flame/CoreFlame:scale")
 tracks/4/interp = 1
+tracks/4/loop_wrap = true
 tracks/4/keys = {
 "times": PackedFloat32Array(0, 0.1, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
-"values": [Vector2(0, 0), Vector2(1.5, 1.5), Vector2(1.0, 1.0), Vector2(1.0, 1.0)]
+"values": [Vector2(0, 0), Vector2(1.5, 1.5), Vector2(1, 1), Vector2(1, 1)]
 }
 tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
 tracks/5/path = NodePath("Vis/FireArea/Flame/OuterFlame:modulate:a")
 tracks/5/interp = 1
+tracks/5/loop_wrap = true
 tracks/5/keys = {
 "times": PackedFloat32Array(0, 0.1, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
@@ -136,8 +142,11 @@ tracks/5/keys = {
 "values": [0.0, 1.0, 0.8, 0.8]
 }
 tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
 tracks/6/path = NodePath("Vis/FireArea/Flame:visible")
 tracks/6/interp = 1
+tracks/6/loop_wrap = true
 tracks/6/keys = {
 "times": PackedFloat32Array(0, 0.8),
 "transitions": PackedFloat32Array(1, 1),
@@ -145,8 +154,11 @@ tracks/6/keys = {
 "values": [true, false]
 }
 tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
 tracks/7/path = NodePath("Vis/FireArea/EmberPieces/Ember1:visible")
 tracks/7/interp = 1
+tracks/7/loop_wrap = true
 tracks/7/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1),
@@ -154,8 +166,11 @@ tracks/7/keys = {
 "values": [false, true, true]
 }
 tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
 tracks/8/path = NodePath("Vis/FireArea/EmberPieces/Ember2:visible")
 tracks/8/interp = 1
+tracks/8/loop_wrap = true
 tracks/8/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1),
@@ -163,8 +178,11 @@ tracks/8/keys = {
 "values": [false, true, true]
 }
 tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
 tracks/9/path = NodePath("Vis/FireArea/EmberPieces/Ember3:visible")
 tracks/9/interp = 1
+tracks/9/loop_wrap = true
 tracks/9/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1),
@@ -172,8 +190,11 @@ tracks/9/keys = {
 "values": [false, true, true]
 }
 tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
 tracks/10/path = NodePath("Vis/FireArea/EmberPieces/Ember1:scale")
 tracks/10/interp = 1
+tracks/10/loop_wrap = true
 tracks/10/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1),
@@ -181,8 +202,11 @@ tracks/10/keys = {
 "values": [Vector2(0, 0), Vector2(0.3, 0.3), Vector2(0.3, 0.3)]
 }
 tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
 tracks/11/path = NodePath("Vis/FireArea/EmberPieces/Ember2:scale")
 tracks/11/interp = 1
+tracks/11/loop_wrap = true
 tracks/11/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1),
@@ -190,8 +214,11 @@ tracks/11/keys = {
 "values": [Vector2(0, 0), Vector2(0.3, 0.3), Vector2(0.3, 0.3)]
 }
 tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
 tracks/12/path = NodePath("Vis/FireArea/EmberPieces/Ember3:scale")
 tracks/12/interp = 1
+tracks/12/loop_wrap = true
 tracks/12/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1),
@@ -199,8 +226,11 @@ tracks/12/keys = {
 "values": [Vector2(0, 0), Vector2(0.3, 0.3), Vector2(0.3, 0.3)]
 }
 tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
 tracks/13/path = NodePath("Vis/FireArea/EmberPieces/Ember1:position")
 tracks/13/interp = 1
+tracks/13/loop_wrap = true
 tracks/13/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1),
@@ -208,8 +238,11 @@ tracks/13/keys = {
 "values": [Vector2(10, 0), Vector2(30, -10), Vector2(30, -10)]
 }
 tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
 tracks/14/path = NodePath("Vis/FireArea/EmberPieces/Ember2:position")
 tracks/14/interp = 1
+tracks/14/loop_wrap = true
 tracks/14/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1),
@@ -217,8 +250,11 @@ tracks/14/keys = {
 "values": [Vector2(-10, 5), Vector2(-25, 15), Vector2(-25, 15)]
 }
 tracks/15/type = "value"
+tracks/15/imported = false
+tracks/15/enabled = true
 tracks/15/path = NodePath("Vis/FireArea/EmberPieces/Ember3:position")
 tracks/15/interp = 1
+tracks/15/loop_wrap = true
 tracks/15/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1),
@@ -226,8 +262,11 @@ tracks/15/keys = {
 "values": [Vector2(-5, -5), Vector2(-20, -20), Vector2(-20, -20)]
 }
 tracks/16/type = "value"
+tracks/16/imported = false
+tracks/16/enabled = true
 tracks/16/path = NodePath("Vis/FireArea/EmberPieces/Ember1:modulate:a")
 tracks/16/interp = 1
+tracks/16/loop_wrap = true
 tracks/16/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.6, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
@@ -235,8 +274,11 @@ tracks/16/keys = {
 "values": [0.0, 1.0, 0.5, 0.0]
 }
 tracks/17/type = "value"
+tracks/17/imported = false
+tracks/17/enabled = true
 tracks/17/path = NodePath("Vis/FireArea/EmberPieces/Ember2:modulate:a")
 tracks/17/interp = 1
+tracks/17/loop_wrap = true
 tracks/17/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.6, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
@@ -244,8 +286,11 @@ tracks/17/keys = {
 "values": [0.0, 1.0, 0.5, 0.0]
 }
 tracks/18/type = "value"
+tracks/18/imported = false
+tracks/18/enabled = true
 tracks/18/path = NodePath("Vis/FireArea/EmberPieces/Ember3:modulate:a")
 tracks/18/interp = 1
+tracks/18/loop_wrap = true
 tracks/18/keys = {
 "times": PackedFloat32Array(0, 0.4, 0.6, 0.8),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
@@ -253,267 +298,666 @@ tracks/18/keys = {
 "values": [0.0, 1.0, 0.5, 0.0]
 }
 
-[sub_resource type="AnimationLibrary" id="AnimationLibrary_dragon"]
-_data = {
-"idle": SubResource("1_idle"),
-"fire_breath": SubResource("2_fire_breath"),
-"death": SubResource("3_death"),
-"fire_breath": SubResource("2_fire_breath"),
-"fire_breath_pulsed": SubResource("4_fire_breath_pulsed")
+[sub_resource type="Animation" id="1_idle"]
+loop_mode = 1
+step = 0.1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Vis/Sprite:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, -5), Vector2(0, -7), Vector2(0, -5)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Vis/Sprite:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.05, 0.0]
 }
 
-[node name="Dragon" type="CharacterBody2D" groups=["dragon"]]
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_dragon"]
+_data = {
+&"death": SubResource("3_death"),
+&"fire_breath": SubResource("2_fire_breath"),
+&"fire_breath_pulsed": SubResource("4_fire_breath_pulsed"),
+&"idle": SubResource("1_idle")
+}
+
+[node name="Dragon" type="CharacterBody2D" unique_id=1233513463 groups=["dragon"]]
 collision_layer = 2
-collision_mask = 19
+collision_mask = 51
 script = ExtResource("1_m3q8w")
 
-[node name="EncounterArea" type="Area2D" parent="."]
+[node name="EncounterArea" type="Area2D" parent="." unique_id=565607492]
 collision_layer = 0
 collision_mask = 4
 
-[node name="EncounterCollision" type="CollisionShape2D" parent="EncounterArea"]
+[node name="EncounterCollision" type="CollisionShape2D" parent="EncounterArea" unique_id=295604501]
 shape = SubResource("1_b5t6n")
-position = Vector2(0, 0)
 
-[node name="Vis" type="Node2D" parent="."]
+[node name="Vis" type="Node2D" parent="." unique_id=521834188]
 
-[node name="Shadow" type="ColorRect" parent="Vis"]
-offset_left = -16.0
-offset_top = 20.0
-offset_right = 16.0
-offset_bottom = 27.0
-color = Color(0, 0, 0, 0.4)
+[node name="Shadow" type="Polygon2D" parent="Vis"]
+position = Vector2(8, 23.5)
+color = Color(0.000, 0.000, 0.000, 0.320)
+antialiased = true
+polygon = PackedVector2Array(34, 0, 32.34, 1.39, 27.51, 2.65, 19.98, 3.64, 10.51, 4.28, 0, 4.5, -10.51, 4.28, -19.98, 3.64, -27.51, 2.65, -32.34, 1.39, -34, 0, -32.34, -1.39, -27.51, -2.65, -19.98, -3.64, -10.51, -4.28, -0, -4.5, 10.51, -4.28, 19.98, -3.64, 27.51, -2.65, 32.34, -1.39)
 
 [node name="Sprite" type="Node2D" parent="Vis"]
 position = Vector2(0, -5)
 
-[node name="Tail" type="ColorRect" parent="Vis/Sprite"]
-offset_left = -32.0
-offset_top = 2.0
-offset_right = -10.0
-offset_bottom = 10.0
-color = Color(0.62, 0.16, 0.14, 1)
-
-[node name="TailTip" type="ColorRect" parent="Vis/Sprite"]
-offset_left = -39.0
-offset_top = -1.0
-offset_right = -30.0
-offset_bottom = 8.0
-rotation = -0.5
-color = Color(0.5, 0.1, 0.1, 1)
-
 [node name="FarWingPivot" type="Node2D" parent="Vis/Sprite"]
-position = Vector2(-4, -12)
+position = Vector2(22, -4)
+modulate = Color(0.620, 0.550, 0.580, 1.000)
 
-[node name="FarWing" type="ColorRect" parent="Vis/Sprite/FarWingPivot"]
-offset_left = -2.0
-offset_top = 0.0
-offset_right = 14.0
-offset_bottom = 20.0
-color = Color(0.42, 0.08, 0.08, 1)
+[node name="FarWingInner" type="Polygon2D" parent="Vis/Sprite/FarWingPivot"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.400, 0.060, 0.070, 1.000, 0.400, 0.060, 0.070, 1.000, 0.860, 0.320, 0.170, 1.000, 0.860, 0.320, 0.170, 1.000, 0.620, 0.120, 0.100, 1.000, 0.620, 0.120, 0.100, 1.000)
+antialiased = true
+polygon = PackedVector2Array(1.32, 0.88, -5.28, -14.08, -20.24, -9.68, -17.6, -1.76, -10.56, 1.76, -4.4, 2.64)
 
-[node name="Body" type="ColorRect" parent="Vis/Sprite"]
-offset_right = 40.0
-offset_bottom = 28.0
-color = Color(0.82, 0.26, 0.2, 1)
+[node name="FarWingArm" type="Line2D" parent="Vis/Sprite/FarWingPivot"]
+points = PackedVector2Array(0, 0, -3.08, -7.92, -5.28, -14.08)
+width = 2.288
+default_color = Color(0.300, 0.040, 0.050, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
 
-[node name="Belly" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 2.0
-offset_top = 11.0
-offset_right = 36.0
-offset_bottom = 24.0
-color = Color(0.93, 0.65, 0.4, 1)
+[node name="FarWingOuter" type="Node2D" parent="Vis/Sprite/FarWingPivot"]
+position = Vector2(-5.28, -14.08)
 
-[node name="NeckBelly" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 22.0
-offset_top = -8.0
-offset_right = 34.0
-offset_bottom = 20.0
-color = Color(0.93, 0.65, 0.4, 1)
+[node name="FarWingMembrane" type="Polygon2D" parent="Vis/Sprite/FarWingPivot/FarWingOuter"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.400, 0.060, 0.070, 1.000, 0.400, 0.060, 0.070, 1.000, 0.860, 0.320, 0.170, 1.000, 0.620, 0.120, 0.100, 1.000, 0.860, 0.320, 0.170, 1.000, 0.620, 0.120, 0.100, 1.000, 0.860, 0.320, 0.170, 1.000, 0.860, 0.320, 0.170, 1.000)
+antialiased = true
+polygon = PackedVector2Array(0, 0, 2.64, -18.48, -3.08, -11.88, -7.92, -16.72, -10.12, -8.36, -15.84, -9.68, -12.32, -1.76, -14.96, 4.4)
 
-[node name="BackSpike1" type="ColorRect" parent="Vis/Sprite"]
-offset_left = -4.0
-offset_top = -6.0
-offset_right = 1.0
-offset_bottom = 2.0
-rotation = 0.35
-color = Color(0.55, 0.12, 0.1, 1)
+[node name="FarFinger1" type="Line2D" parent="Vis/Sprite/FarWingPivot/FarWingOuter"]
+points = PackedVector2Array(0, 0, 1.58, -9.68, 2.64, -18.48)
+width = 1.672
+default_color = Color(0.300, 0.040, 0.050, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
 
-[node name="BackSpike2" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 8.0
-offset_top = -6.0
-offset_right = 13.0
-offset_bottom = 2.0
-rotation = 0.35
-color = Color(0.55, 0.12, 0.1, 1)
+[node name="FarFinger2" type="Line2D" parent="Vis/Sprite/FarWingPivot/FarWingOuter"]
+points = PackedVector2Array(0, 0, -4.4, -9.68, -7.92, -16.72)
+width = 1.144
+default_color = Color(0.300, 0.040, 0.050, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
 
-[node name="BackSpike3" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 20.0
-offset_top = -6.0
-offset_right = 25.0
-offset_bottom = 2.0
-rotation = 0.35
-color = Color(0.55, 0.12, 0.1, 1)
+[node name="FarFinger3" type="Line2D" parent="Vis/Sprite/FarWingPivot/FarWingOuter"]
+points = PackedVector2Array(0, 0, -8.8, -5.28, -15.84, -9.68)
+width = 1.056
+default_color = Color(0.300, 0.040, 0.050, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
 
-[node name="Head" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 18.0
-offset_top = -16.0
-offset_right = 42.0
-offset_bottom = 0.0
-color = Color(0.9, 0.32, 0.24, 1)
+[node name="FarFinger4" type="Line2D" parent="Vis/Sprite/FarWingPivot/FarWingOuter"]
+points = PackedVector2Array(0, 0, -7.92, 2.2, -14.96, 4.4)
+width = 0.968
+default_color = Color(0.300, 0.040, 0.050, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
 
-[node name="Snout" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 34.0
-offset_top = -10.0
-offset_right = 48.0
-offset_bottom = -1.0
-color = Color(0.93, 0.65, 0.4, 1)
+[node name="FarWingThumb" type="Polygon2D" parent="Vis/Sprite/FarWingPivot/FarWingOuter"]
+color = Color(0.950, 0.890, 0.700, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-0.44, -1.32, 3.08, -3.08, 1.32, 0.44)
 
-[node name="Nostril" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 44.0
-offset_top = -8.0
-offset_right = 46.0
-offset_bottom = -5.0
-color = Color(0.25, 0.05, 0.05, 1)
+[node name="FarWingTipClaw" type="Polygon2D" parent="Vis/Sprite/FarWingPivot/FarWingOuter"]
+color = Color(0.950, 0.890, 0.700, 1.000)
+antialiased = true
+polygon = PackedVector2Array(1.76, -18.04, 4.4, -21.56, 3.52, -17.16)
 
-[node name="Jaw" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 36.0
-offset_top = -1.0
-offset_right = 44.0
-offset_bottom = 3.0
-rotation = 0.6
-color = Color(0.62, 0.16, 0.14, 1)
+[node name="FarHipPivot" type="Node2D" parent="Vis/Sprite"]
+position = Vector2(6, 5)
 
-[node name="HornBack" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 24.0
-offset_top = -26.0
-offset_right = 30.0
-offset_bottom = -14.0
-rotation = -0.3
-color = Color(0.88, 0.82, 0.62, 1)
+[node name="FarHindLeg" type="Polygon2D" parent="Vis/Sprite/FarHipPivot"]
+color = Color(0.513, 0.081, 0.078, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-6, -4, 5, -6, 9, 1, 8, 8, 4, 13, 5.5, 19, 3, 20.5, 0, 20.5, 0.2, 16, 1, 11, -3, 6, -6, 2)
 
-[node name="HornFront" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 32.0
-offset_top = -24.0
-offset_right = 37.0
-offset_bottom = -15.0
-rotation = -0.45
-color = Color(0.93, 0.88, 0.68, 1)
+[node name="FarHindFoot" type="Polygon2D" parent="Vis/Sprite/FarHipPivot"]
+color = Color(0.360, 0.050, 0.060, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-1, 19.6, 7, 19.6, 8, 22, -1.5, 22)
 
-[node name="Eye" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 30.0
-offset_top = -12.0
-offset_right = 34.0
-offset_bottom = -9.0
-color = Color(0.95, 0.9, 0.3, 1)
+[node name="FarHindTalons" type="Polygon2D" parent="Vis/Sprite/FarHipPivot"]
+color = Color(0.680, 0.570, 0.380, 1.000)
+antialiased = true
+polygon = PackedVector2Array(6, 19.8, 10, 21.4, 7.8, 21.2, 10.6, 22.4, 6.6, 22.4)
 
-[node name="EyePupil" type="ColorRect" parent="Vis/Sprite"]
-offset_left = 32.5
-offset_top = -11.5
-offset_right = 34.0
-offset_bottom = -9.5
-color = Color(0.1, 0.05, 0.05, 1)
+[node name="TailPivot" type="Node2D" parent="Vis/Sprite"]
+position = Vector2(-4, 6)
 
-[node name="ClawPivot" type="Node2D" parent="Vis/Sprite"]
-position = Vector2(24, 24)
+[node name="Tail" type="Polygon2D" parent="Vis/Sprite/TailPivot"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.900, 0.280, 0.180, 1.000, 0.798, 0.237, 0.157, 1.000, 0.655, 0.176, 0.126, 1.000, 0.564, 0.137, 0.105, 1.000, 0.543, 0.128, 0.101, 1.000, 0.594, 0.150, 0.112, 1.000, 0.533, 0.124, 0.098, 1.000, 0.442, 0.085, 0.078, 1.000, 0.391, 0.063, 0.067, 1.000, 0.360, 0.050, 0.060, 1.000, 0.391, 0.063, 0.067, 1.000, 0.391, 0.063, 0.067, 1.000)
+antialiased = true
+polygon = PackedVector2Array(3, -5, -10, -3, -22, -0.2, -34, 1.6, -44, 2, -52, 1, -52, 2.2, -44, 4, -34, 5, -22, 5.6, -10, 5, 3, 5)
 
-[node name="Claw" type="ColorRect" parent="Vis/Sprite/ClawPivot"]
-offset_left = 0.0
-offset_top = -3.0
-offset_right = 14.0
-offset_bottom = 5.0
-color = Color(0.95, 0.9, 0.72, 1)
+[node name="TailBelly" type="Polygon2D" parent="Vis/Sprite/TailPivot"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.791, 0.532, 0.162, 1.000, 0.791, 0.532, 0.162, 1.000, 0.740, 0.470, 0.130, 1.000, 0.791, 0.532, 0.162, 1.000, 0.875, 0.636, 0.216, 1.000, 0.943, 0.719, 0.259, 1.000, 0.884, 0.647, 0.222, 1.000, 0.858, 0.615, 0.205, 1.000, 0.926, 0.698, 0.248, 1.000, 0.943, 0.719, 0.259, 1.000)
+antialiased = true
+polygon = PackedVector2Array(3, 5, -10, 5, -22, 5.6, -34, 5, -44, 4, -44, 3.2, -34, 3.9, -22, 4.2, -10, 3.4, 3, 3.2)
 
-[node name="ClawBack" type="ColorRect" parent="Vis/Sprite/ClawPivot"]
-offset_left = -3.0
-offset_top = -2.0
-offset_right = 2.0
-offset_bottom = 6.0
-color = Color(0.7, 0.2, 0.18, 1)
+[node name="TailSpike1" type="Polygon2D" parent="Vis/Sprite/TailPivot"]
+color = Color(0.360, 0.050, 0.060, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-3, -3.8, -10, -8, -9, -3.3)
+
+[node name="TailSpike2" type="Polygon2D" parent="Vis/Sprite/TailPivot"]
+color = Color(0.360, 0.050, 0.060, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-13, -1.6, -20, -5.2, -19, -1.1)
+
+[node name="TailSpike3" type="Polygon2D" parent="Vis/Sprite/TailPivot"]
+color = Color(0.360, 0.050, 0.060, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-23, 0.4, -30, -2.6, -29, 0.9)
+
+[node name="TailSpike4" type="Polygon2D" parent="Vis/Sprite/TailPivot"]
+color = Color(0.360, 0.050, 0.060, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-33, 1.4, -40, -1, -39, 1.9)
+
+[node name="TailSpike5" type="Polygon2D" parent="Vis/Sprite/TailPivot"]
+color = Color(0.360, 0.050, 0.060, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-42, 1.6, -49, -0.2, -48, 2.1)
+
+[node name="TailTipPivot" type="Node2D" parent="Vis/Sprite/TailPivot"]
+position = Vector2(-51, 1.6)
+
+[node name="TailTip" type="Polygon2D" parent="Vis/Sprite/TailPivot/TailTipPivot"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.623, 0.104, 0.091, 1.000, 0.666, 0.113, 0.096, 1.000, 0.513, 0.081, 0.078, 1.000, 0.394, 0.057, 0.064, 1.000, 0.436, 0.066, 0.069, 1.000)
+antialiased = true
+polygon = PackedVector2Array(1, -1.1, -6, -1.6, -13, 0.2, -6, 1.6, 1, 1.1)
+
+[node name="TailBarb1" type="Polygon2D" parent="Vis/Sprite/TailPivot/TailTipPivot"]
+color = Color(0.360, 0.050, 0.060, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-3, -1.2, -8, -5.5, -6.5, -1.2)
+
+[node name="TailBarb2" type="Polygon2D" parent="Vis/Sprite/TailPivot/TailTipPivot"]
+color = Color(0.360, 0.050, 0.060, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-3, 1.2, -8, 5, -6.5, 1.2)
+
+[node name="Body" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.646, 0.172, 0.124, 1.000, 0.741, 0.212, 0.145, 1.000, 0.821, 0.246, 0.162, 1.000, 0.887, 0.275, 0.177, 1.000, 0.894, 0.277, 0.179, 1.000, 0.789, 0.233, 0.155, 1.000, 0.614, 0.158, 0.116, 1.000, 0.455, 0.091, 0.081, 1.000, 0.373, 0.055, 0.063, 1.000, 0.360, 0.050, 0.060, 1.000, 0.379, 0.058, 0.064, 1.000, 0.455, 0.091, 0.081, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-6, 4, 0, 1, 8, -1.5, 16, -3.6, 22, -3.8, 28, -0.5, 31, 5, 29, 10, 22, 12.6, 12, 13.2, 3, 12.4, -3, 10)
+
+[node name="BodySheen" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 0.550, 0.380, 0.450)
+antialiased = true
+polygon = PackedVector2Array(1, 1.4, 8, -0.6, 16, -2.6, 22, -2.8, 21, -1, 15, 0.6, 7, 2)
+
+[node name="Belly" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.958, 0.831, 0.483, 1.000, 0.834, 0.625, 0.281, 1.000, 0.761, 0.504, 0.164, 1.000, 0.745, 0.479, 0.138, 1.000, 0.766, 0.513, 0.172, 1.000, 0.823, 0.608, 0.264, 1.000, 0.813, 0.590, 0.248, 1.000, 0.802, 0.573, 0.231, 1.000, 0.813, 0.590, 0.248, 1.000, 0.880, 0.702, 0.357, 1.000, 0.990, 0.883, 0.533, 1.000)
+antialiased = true
+polygon = PackedVector2Array(30.6, 4.6, 29, 9.4, 22, 12.2, 12, 12.8, 3, 12, -2, 9.8, 4, 10.2, 12, 10.6, 20, 10.2, 26, 7.6, 29.4, 3.4)
+
+[node name="BellyPlate1" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(4.5, 10.3, 4.2, 12.1)
+width = 0.8
+default_color = Color(0.740, 0.470, 0.130, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="BellyPlate2" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(9.5, 10.5, 9.4, 12.6)
+width = 0.8
+default_color = Color(0.740, 0.470, 0.130, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="BellyPlate3" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(14.5, 10.6, 14.6, 12.8)
+width = 0.8
+default_color = Color(0.740, 0.470, 0.130, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="BellyPlate4" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(19.5, 10.3, 19.8, 12.4)
+width = 0.8
+default_color = Color(0.740, 0.470, 0.130, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="BellyPlate5" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(24, 8.8, 24.8, 11.4)
+width = 0.8
+default_color = Color(0.740, 0.470, 0.130, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="BellyPlate6" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(27.6, 6.2, 29.2, 8.6)
+width = 0.8
+default_color = Color(0.740, 0.470, 0.130, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="Neck" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.798, 0.198, 0.139, 1.000, 0.844, 0.235, 0.158, 1.000, 0.880, 0.264, 0.172, 1.000, 0.900, 0.280, 0.180, 1.000, 0.886, 0.269, 0.174, 1.000, 0.836, 0.229, 0.154, 1.000, 0.804, 0.203, 0.142, 1.000, 0.764, 0.171, 0.126, 1.000, 0.700, 0.120, 0.100, 1.000, 0.730, 0.144, 0.112, 1.000)
+antialiased = true
+polygon = PackedVector2Array(21, -3.8, 27, -8.4, 33, -12, 40, -14.2, 45, -12.6, 46.4, -7.6, 41.4, -4.4, 36.4, -0.4, 32, 6, 28, 3)
+
+[node name="NeckBelly" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(1.000, 0.900, 0.550, 1.000, 0.889, 0.717, 0.371, 1.000, 0.820, 0.602, 0.259, 1.000, 0.764, 0.510, 0.169, 1.000, 0.740, 0.470, 0.130, 1.000, 0.789, 0.550, 0.208, 1.000, 0.858, 0.665, 0.320, 1.000, 0.962, 0.837, 0.488, 1.000)
+antialiased = true
+polygon = PackedVector2Array(32, 6, 36.4, -0.4, 41.4, -4.4, 46.4, -7.6, 45.8, -9.2, 40.6, -6.2, 35.2, -2.2, 30.4, 3.8)
+
+[node name="NeckPlate1" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(31, 3.6, 33.6, 5.2)
+width = 0.7
+default_color = Color(0.740, 0.470, 0.130, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="NeckPlate2" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(34, 0, 36.2, 1.6)
+width = 0.7
+default_color = Color(0.740, 0.470, 0.130, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="NeckPlate3" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(37.4, -3.2, 39.2, -1.8)
+width = 0.7
+default_color = Color(0.740, 0.470, 0.130, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="NeckPlate4" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(41, -5.8, 42.6, -4.2)
+width = 0.7
+default_color = Color(0.740, 0.470, 0.130, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="NeckPlate5" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(44.4, -8, 45.8, -6.6)
+width = 0.7
+default_color = Color(0.740, 0.470, 0.130, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="BackSpike1" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.451, 0.069, 0.071, 1.000, 0.364, 0.051, 0.060, 1.000, 0.432, 0.065, 0.068, 1.000)
+antialiased = true
+polygon = PackedVector2Array(36.4, -13.2, 35.2, -17.8, 40.4, -14.2)
+
+[node name="BackSpike2" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.504, 0.080, 0.077, 1.000, 0.409, 0.060, 0.066, 1.000, 0.462, 0.071, 0.072, 1.000)
+antialiased = true
+polygon = PackedVector2Array(30.6, -10.4, 28.4, -15.4, 34.2, -12.6)
+
+[node name="BackSpike3" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.572, 0.094, 0.085, 1.000, 0.481, 0.075, 0.074, 1.000, 0.522, 0.083, 0.079, 1.000)
+antialiased = true
+polygon = PackedVector2Array(25.2, -6.8, 22.6, -11.6, 28.6, -9.4)
+
+[node name="BackSpike4" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.632, 0.106, 0.092, 1.000, 0.541, 0.087, 0.081, 1.000, 0.628, 0.105, 0.092, 1.000)
+antialiased = true
+polygon = PackedVector2Array(17, -3.6, 16, -8.4, 21.4, -3.8)
+
+[node name="BackSpike5" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.666, 0.113, 0.096, 1.000, 0.575, 0.094, 0.085, 1.000, 0.641, 0.108, 0.093, 1.000)
+antialiased = true
+polygon = PackedVector2Array(9.6, -1.8, 8.6, -6.6, 14, -3.1)
+
+[node name="BackSpike6" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.700, 0.120, 0.100, 1.000, 0.632, 0.106, 0.092, 1.000, 0.679, 0.116, 0.098, 1.000)
+antialiased = true
+polygon = PackedVector2Array(2, 0.6, 0.6, -3.6, 6.6, -1.1)
+
+[node name="HornBack" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.938, 0.876, 0.686, 1.000, 0.890, 0.819, 0.629, 1.000, 0.782, 0.691, 0.501, 1.000, 0.692, 0.584, 0.394, 1.000, 0.812, 0.726, 0.536, 1.000)
+antialiased = true
+polygon = PackedVector2Array(42.6, -15.4, 45.6, -17, 39, -20.6, 31, -23.6, 36.6, -19.6)
+
+[node name="Head" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.887, 0.320, 0.207, 1.000, 0.971, 0.410, 0.255, 1.000, 0.975, 0.415, 0.257, 1.000, 0.919, 0.355, 0.225, 1.000, 0.859, 0.290, 0.191, 1.000, 0.812, 0.240, 0.164, 1.000, 0.761, 0.185, 0.135, 1.000, 0.728, 0.150, 0.116, 1.000, 0.728, 0.150, 0.116, 1.000, 0.709, 0.130, 0.105, 1.000, 0.761, 0.185, 0.135, 1.000, 0.817, 0.245, 0.167, 1.000)
+antialiased = true
+polygon = PackedVector2Array(41, -14, 45, -17.6, 50, -17.8, 55, -15.4, 60, -12.8, 64.6, -10.8, 65.6, -8.6, 63.6, -7.2, 52, -7.2, 47, -6.4, 43, -8.6, 41, -11)
+
+[node name="Cheek" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(0.700, 0.120, 0.100, 1.000)
+antialiased = true
+polygon = PackedVector2Array(42.4, -11, 46, -9, 50.6, -7.4, 46.6, -6.6, 43.4, -8.4)
+
+[node name="CheekSpike1" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(0.680, 0.570, 0.380, 1.000)
+antialiased = true
+polygon = PackedVector2Array(43, -11.4, 36, -11.8, 42.4, -9.2)
+
+[node name="CheekSpike2" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(0.680, 0.570, 0.380, 1.000)
+antialiased = true
+polygon = PackedVector2Array(43.6, -8.8, 37.6, -6.6, 44, -7.2)
+
+[node name="Jaw" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.700, 0.120, 0.100, 1.000, 0.700, 0.120, 0.100, 1.000, 0.473, 0.073, 0.073, 1.000, 0.360, 0.050, 0.060, 1.000, 0.451, 0.069, 0.071, 1.000)
+antialiased = true
+polygon = PackedVector2Array(46.6, -7, 63.8, -7.2, 61.6, -5, 53, -3.8, 47, -4.8)
+
+[node name="Chin" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(0.960, 0.740, 0.270, 1.000)
+antialiased = true
+polygon = PackedVector2Array(48, -5, 60.6, -5.4, 59.4, -4.6, 53, -3.9)
+
+[node name="Teeth" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(0.950, 0.890, 0.700, 1.000)
+antialiased = true
+polygon = PackedVector2Array(51, -7.4, 52, -5.8, 53, -7.2, 55, -7.2, 56, -5.6, 57, -7.2, 59.4, -7.3, 60.2, -6, 61, -7.3, 62.6, -7.3, 63.2, -6.3, 63.6, -7.5, 63.6, -8, 51, -8)
+
+[node name="MouthLine" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(46.6, -7.5, 52, -7.7, 63.8, -7.6)
+width = 0.7
+default_color = Color(0.360, 0.050, 0.060, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="SnoutRidge" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 0.600, 0.420, 0.550)
+antialiased = true
+polygon = PackedVector2Array(51, -16.8, 57, -14, 64, -10.8, 58, -12.8, 52.6, -15.2)
+
+[node name="Nostril" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(0.080, 0.020, 0.020, 1.000)
+antialiased = true
+polygon = PackedVector2Array(63.5, -10.2, 63.29, -9.79, 62.74, -9.53, 62.06, -9.53, 61.51, -9.79, 61.3, -10.2, 61.51, -10.61, 62.06, -10.87, 62.74, -10.87, 63.29, -10.61)
+
+[node name="Brow" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(0.360, 0.050, 0.060, 1.000)
+antialiased = true
+polygon = PackedVector2Array(47, -16, 53, -17.2, 55.6, -15, 52, -15.1, 47.6, -14.4)
+
+[node name="Eye" type="Node2D" parent="Vis/Sprite"]
+position = Vector2(51.6, -13.8)
+
+[node name="EyeBall" type="Polygon2D" parent="Vis/Sprite/Eye"]
+color = Color(1.000, 0.820, 0.150, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-2.6, -0.1, -0.4, -1.3, 2.4, -0.6, 0.4, 1)
+
+[node name="EyePupil" type="Polygon2D" parent="Vis/Sprite/Eye"]
+color = Color(0.080, 0.020, 0.020, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-0.1, -1.1, 0.45, -0.3, 0.45, 0.4, -0.1, 0.9, -0.35, 0)
+
+[node name="EyeGlint" type="Polygon2D" parent="Vis/Sprite/Eye"]
+color = Color(1.000, 1.000, 0.900, 0.900)
+antialiased = true
+polygon = PackedVector2Array(-0.6, -0.4, -0.72, -0.15, -1, -0.05, -1.28, -0.15, -1.4, -0.4, -1.28, -0.65, -1, -0.75, -0.72, -0.65)
+
+[node name="HornFront" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.939, 0.877, 0.687, 1.000, 0.923, 0.858, 0.668, 1.000, 0.804, 0.717, 0.527, 1.000, 0.680, 0.570, 0.380, 1.000, 0.826, 0.743, 0.553, 1.000)
+antialiased = true
+polygon = PackedVector2Array(45.6, -17.4, 49.4, -18, 43, -22.4, 34.6, -27, 40.6, -21.6)
+
+[node name="HornSmall" type="Polygon2D" parent="Vis/Sprite"]
+color = Color(0.950, 0.890, 0.700, 1.000)
+antialiased = true
+polygon = PackedVector2Array(49.6, -17.6, 52, -17.4, 47.6, -21.6)
+
+[node name="HornRing1" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(41.6, -21.2, 43.4, -20)
+width = 0.6
+default_color = Color(0.680, 0.570, 0.380, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="HornRing2" type="Line2D" parent="Vis/Sprite"]
+points = PackedVector2Array(38, -23.6, 39.6, -22.6)
+width = 0.6
+default_color = Color(0.680, 0.570, 0.380, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="NearHipPivot" type="Node2D" parent="Vis/Sprite"]
+position = Vector2(2, 6)
+
+[node name="NearHindLeg" type="Polygon2D" parent="Vis/Sprite/NearHipPivot"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.858, 0.262, 0.171, 1.000, 0.900, 0.280, 0.180, 1.000, 0.755, 0.218, 0.148, 1.000, 0.609, 0.156, 0.115, 1.000, 0.505, 0.112, 0.092, 1.000, 0.381, 0.059, 0.065, 1.000, 0.360, 0.050, 0.060, 1.000, 0.360, 0.050, 0.060, 1.000, 0.443, 0.085, 0.078, 1.000, 0.547, 0.130, 0.102, 1.000, 0.651, 0.174, 0.125, 1.000, 0.734, 0.209, 0.143, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-6, -4, 5, -6, 9, 1, 8, 8, 4, 13, 5.5, 19, 3, 20.5, 0, 20.5, 0.2, 16, 1, 11, -3, 6, -6, 2)
+
+[node name="NearThighSheen" type="Polygon2D" parent="Vis/Sprite/NearHipPivot"]
+color = Color(1.000, 0.550, 0.380, 0.350)
+antialiased = true
+polygon = PackedVector2Array(-3, -3, 4, -4.5, 6.5, 0, 3, 3)
+
+[node name="NearHindFoot" type="Polygon2D" parent="Vis/Sprite/NearHipPivot"]
+color = Color(0.360, 0.050, 0.060, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-1, 19.6, 7, 19.6, 8, 22, -1.5, 22)
+
+[node name="NearHindTalons" type="Polygon2D" parent="Vis/Sprite/NearHipPivot"]
+color = Color(0.950, 0.890, 0.700, 1.000)
+antialiased = true
+polygon = PackedVector2Array(6, 19.8, 10, 21.4, 7.8, 21.2, 10.6, 22.4, 6.6, 22.4)
 
 [node name="NearWingPivot" type="Node2D" parent="Vis/Sprite"]
-position = Vector2(2, -14)
+position = Vector2(19, -3)
 
-[node name="Wing" type="ColorRect" parent="Vis/Sprite/NearWingPivot"]
-offset_left = -4.0
-offset_top = 0.0
-offset_right = 16.0
-offset_bottom = 28.0
-color = Color(0.6, 0.14, 0.12, 1)
+[node name="NearWingInner" type="Polygon2D" parent="Vis/Sprite/NearWingPivot"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.400, 0.060, 0.070, 1.000, 0.400, 0.060, 0.070, 1.000, 0.860, 0.320, 0.170, 1.000, 0.860, 0.320, 0.170, 1.000, 0.620, 0.120, 0.100, 1.000, 0.620, 0.120, 0.100, 1.000)
+antialiased = true
+polygon = PackedVector2Array(1.5, 1, -6, -16, -23, -11, -20, -2, -12, 2, -5, 3)
 
-[node name="WingBone" type="ColorRect" parent="Vis/Sprite/NearWingPivot"]
-offset_left = -4.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 26.0
-color = Color(0.45, 0.1, 0.1, 1)
+[node name="NearWingArm" type="Line2D" parent="Vis/Sprite/NearWingPivot"]
+points = PackedVector2Array(0, 0, -3.5, -9, -6, -16)
+width = 2.6
+default_color = Color(0.300, 0.040, 0.050, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
 
-[node name="CollisionShape" type="CollisionShape2D" parent="."]
-shape = SubResource("1_b5t6n")
+[node name="NearWingOuter" type="Node2D" parent="Vis/Sprite/NearWingPivot"]
+position = Vector2(-6, -16)
+
+[node name="NearWingMembrane" type="Polygon2D" parent="Vis/Sprite/NearWingPivot/NearWingOuter"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.400, 0.060, 0.070, 1.000, 0.400, 0.060, 0.070, 1.000, 0.860, 0.320, 0.170, 1.000, 0.620, 0.120, 0.100, 1.000, 0.860, 0.320, 0.170, 1.000, 0.620, 0.120, 0.100, 1.000, 0.860, 0.320, 0.170, 1.000, 0.860, 0.320, 0.170, 1.000)
+antialiased = true
+polygon = PackedVector2Array(0, 0, 3, -21, -3.5, -13.5, -9, -19, -11.5, -9.5, -18, -11, -14, -2, -17, 5)
+
+[node name="NearFinger1" type="Line2D" parent="Vis/Sprite/NearWingPivot/NearWingOuter"]
+points = PackedVector2Array(0, 0, 1.8, -11, 3, -21)
+width = 1.9
+default_color = Color(0.300, 0.040, 0.050, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="NearFinger2" type="Line2D" parent="Vis/Sprite/NearWingPivot/NearWingOuter"]
+points = PackedVector2Array(0, 0, -5, -11, -9, -19)
+width = 1.3
+default_color = Color(0.300, 0.040, 0.050, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="NearFinger3" type="Line2D" parent="Vis/Sprite/NearWingPivot/NearWingOuter"]
+points = PackedVector2Array(0, 0, -10, -6, -18, -11)
+width = 1.2
+default_color = Color(0.300, 0.040, 0.050, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="NearFinger4" type="Line2D" parent="Vis/Sprite/NearWingPivot/NearWingOuter"]
+points = PackedVector2Array(0, 0, -9, 2.5, -17, 5)
+width = 1.1
+default_color = Color(0.300, 0.040, 0.050, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="ClawPivot" type="Node2D" parent="Vis/Sprite/NearWingPivot/NearWingOuter"]
 position = Vector2(0, 0)
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
-libraries = {
-	"": SubResource("AnimationLibrary_dragon")
-}
-autoplay = "idle"
+[node name="Claw" type="Polygon2D" parent="Vis/Sprite/NearWingPivot/NearWingOuter/ClawPivot"]
+color = Color(0.950, 0.890, 0.700, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-1, -1.5, 5, -4.5, 3.4, -1.6, 5.6, -1, 1.6, 1)
 
-[node name="FireArea" type="Area2D" parent="Vis"]
-position = Vector2(44, -10)
+[node name="NearWingTipClaw" type="Polygon2D" parent="Vis/Sprite/NearWingPivot/NearWingOuter"]
+color = Color(0.950, 0.890, 0.700, 1.000)
+antialiased = true
+polygon = PackedVector2Array(2, -20.5, 5, -24.5, 4, -19.5)
 
-[node name="FireCollision" type="CollisionShape2D" parent="Vis/FireArea"]
-shape = SubResource("1_j7h1g")
+
+[node name="FireArea" type="Area2D" parent="Vis" unique_id=962695367]
+position = Vector2(63, -12)
+
+[node name="FireCollision" type="CollisionShape2D" parent="Vis/FireArea" unique_id=155789840]
 position = Vector2(15, 0)
+shape = SubResource("1_j7h1g")
 
-[node name="Flame" type="Node2D" parent="Vis/FireArea"]
+[node name="Flame" type="Node2D" parent="Vis/FireArea" unique_id=241539739]
 visible = false
 
-[node name="OuterFlame" type="ColorRect" parent="Vis/FireArea/Flame"]
-position = Vector2(12, -10)
-size = Vector2(44, 22)
-color = Color(1.0, 0.45, 0.05, 0.85)
+[node name="OuterFlame" type="ColorRect" parent="Vis/FireArea/Flame" unique_id=403964177]
+offset_left = 12.0
+offset_top = -10.0
+offset_right = 56.0
+offset_bottom = 12.0
+color = Color(1, 0.45, 0.05, 0.85)
 
-[node name="MidFlame" type="ColorRect" parent="Vis/FireArea/Flame"]
-position = Vector2(10, -7)
-size = Vector2(32, 15)
-color = Color(1.0, 0.65, 0.1, 0.95)
+[node name="MidFlame" type="ColorRect" parent="Vis/FireArea/Flame" unique_id=1761579978]
+offset_left = 10.0
+offset_top = -7.0
+offset_right = 42.0
+offset_bottom = 8.0
+color = Color(1, 0.65, 0.1, 0.95)
 
-[node name="CoreFlame" type="ColorRect" parent="Vis/FireArea/Flame"]
-position = Vector2(8, -4)
-size = Vector2(18, 8)
-color = Color(1.0, 0.95, 0.6, 1.0)
+[node name="CoreFlame" type="ColorRect" parent="Vis/FireArea/Flame" unique_id=793250827]
+offset_left = 8.0
+offset_top = -4.0
+offset_right = 26.0
+offset_bottom = 4.0
+color = Color(1, 0.95, 0.6, 1)
 
-[node name="FireDetector" type="Node2D" parent="Vis/FireArea"]
+[node name="FireDetector" type="Node2D" parent="Vis/FireArea" unique_id=563030850]
 
-[node name="EmberPieces" type="Node2D" parent="Vis/FireArea"]
-[node name="Ember1" type="ColorRect" parent="Vis/FireArea/EmberPieces"]
+[node name="EmberPieces" type="Node2D" parent="Vis/FireArea" unique_id=555032949]
+
+[node name="Ember1" type="ColorRect" parent="Vis/FireArea/EmberPieces" unique_id=523302442]
 visible = false
 offset_left = 10.0
 offset_top = -5.0
 offset_right = 18.0
 offset_bottom = 3.0
 color = Color(1, 0.6, 0.2, 1)
-[node name="Ember2" type="ColorRect" parent="Vis/FireArea/EmberPieces"]
+
+[node name="Ember2" type="ColorRect" parent="Vis/FireArea/EmberPieces" unique_id=2039025561]
 visible = false
 offset_left = -18.0
-offset_top = 0.0
 offset_right = -10.0
 offset_bottom = 8.0
 color = Color(1, 0.5, 0.1, 1)
-[node name="Ember3" type="ColorRect" parent="Vis/FireArea/EmberPieces"]
+
+[node name="Ember3" type="ColorRect" parent="Vis/FireArea/EmberPieces" unique_id=1059084500]
 visible = false
 offset_left = -10.0
 offset_top = -10.0
 offset_right = -2.0
 offset_bottom = -2.0
 color = Color(1, 0.7, 0.3, 1)
-[node name="Hurtbox" type="Area2D" parent="."]
+
+[node name="CollisionShape" type="CollisionShape2D" parent="." unique_id=726434892]
+shape = SubResource("1_b5t6n")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=322592567]
+libraries/ = SubResource("AnimationLibrary_dragon")
+autoplay = &"idle"
+
+[node name="Hurtbox" type="Area2D" parent="." unique_id=1663776217]
 collision_layer = 0
 collision_mask = 2
 
-[node name="HurtCollision" type="CollisionShape2D" parent="Hurtbox"]
+[node name="HurtCollision" type="CollisionShape2D" parent="Hurtbox" unique_id=108391929]
 shape = SubResource("1_b5t6n")
-position = Vector2(0, 0)
 
-[node name="GoldInterceptionSystem" type="Node" parent="." groups=["gold_interception_system"]]
+[node name="GoldInterceptionSystem" type="Node" parent="." unique_id=1079208937 groups=["gold_interception_system"]]
 script = ExtResource("1_g4s2t")

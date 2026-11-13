@@ -35,8 +35,34 @@ func _ready() -> void:
 
 # --- ablaze status -----------------------------------------------------------
 
-## Wizard is vulnerable to fire (no immunity or shield absorption).
+## Fire rule (2026-11-14 user: "fire should kill all the actors, but the
+## wizard who survives two blasts"): his wards turn the first TWO breath
+## blasts (a singe and a stagger, no burn); the third sets him ablaze like
+## anyone else. The dragon re-ignites every frame of a breath window, so a
+## blast only counts once per BLAST_WINDOW_MS (one 0.8s breath pulse).
+const WARDED_BLASTS := 2
+const BLAST_WINDOW_MS := 900
+const WARD_SINGE_DAMAGE := 10
+var _blasts_taken: int = 0
+var _blast_window_until: int = 0
+
 func catch_fire() -> void:
+	if not is_alive or _burning_left > 0.0:
+		return
+	var now := Time.get_ticks_msec()
+	if now < _blast_window_until:
+		return  # same breath pulse — already counted
+	_blast_window_until = now + BLAST_WINDOW_MS
+	_blasts_taken += 1
+	if _blasts_taken <= WARDED_BLASTS:
+		print("The wizard's wards drink the flames! (%d/%d)" % [_blasts_taken, WARDED_BLASTS])
+		take_damage(WARD_SINGE_DAMAGE)
+		if sprite != null and is_alive:
+			sprite.modulate = Color(1.0, 0.55, 0.3)
+			var tw := create_tween()
+			tw.tween_property(sprite, "modulate", Color.WHITE, 0.6)
+		return
+	print("The wards shatter — the wizard is ablaze!")
 	super.catch_fire()
 
 func _physics_process(delta: float) -> void:
