@@ -1,44 +1,139 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="144" height="120" viewBox="0 0 144 120">
-  <!-- vegetation ring: irregular outer blob -->
-  <path d="M 8 60 C 4 40, 20 26, 40 24 C 44 8, 64 4, 82 10 C 98 2, 114 12, 116 26 C 126 30, 126 40, 118 46 C 134 52, 136 66, 128 74 C 136 88, 120 100, 108 96 C 100 110, 80 116, 66 104 C 44 112, 20 98, 20 80 C 8 76, 8 70, 8 60 Z" fill="#4a7a44"/>
-  <!-- sandy beach: second blob, hugging the water with uneven width -->
-  <path d="M 18 60 C 14 42, 28 30, 44 28 C 48 12, 66 8, 80 14 C 94 8, 110 16, 112 30 C 120 34, 120 42, 112 46 C 126 50, 130 62, 122 70 C 128 84, 114 94, 102 90 C 96 102, 76 108, 64 96 C 44 104, 26 92, 26 76 C 16 72, 16 66, 18 60 Z" fill="#c8b57a"/>
-  <!-- water body: lobed blob with a bay biting in from the east -->
-  <path d="M 28 60 C 24 46, 34 36, 48 34 C 52 20, 68 16, 80 22 C 92 16, 104 24, 106 36 C 112 40, 112 46, 104 50 C 118 54, 122 64, 114 70 C 120 80, 108 88, 96 84 C 90 96, 72 100, 62 90 C 48 98, 34 88, 34 74 C 24 70, 24 64, 28 60 Z" fill="#2a6fb0"/>
-  <!-- shallow rim along the whole shoreline -->
-  <path d="M 28 60 C 24 46, 34 36, 48 34 C 52 20, 68 16, 80 22 C 92 16, 104 24, 106 36 C 112 40, 112 46, 104 50 C 118 54, 122 64, 114 70 C 120 80, 108 88, 96 84 C 90 96, 72 100, 62 90 C 48 98, 34 88, 34 74 C 24 70, 24 64, 28 60 Z" fill="none" stroke="#5fa8d8" stroke-width="3"/>
-  <!-- deeper mid-water -->
-  <ellipse cx="74" cy="60" rx="28" ry="20" fill="#2166a5" opacity="0.55"/>
-  <ellipse cx="78" cy="62" rx="16" ry="11" fill="#1a568b" opacity="0.65"/>
-  <!-- island in the south-west water -->
-  <ellipse cx="54" cy="80" rx="11" ry="9" fill="#c8b57a"/>
-  <ellipse cx="54" cy="80" rx="8" ry="6" fill="#4a7a44"/>
-  <ellipse cx="52" cy="78" rx="2.5" ry="2" fill="#5a9e4c"/>
-  <!-- sand spit reaching into the water from the south-east shore -->
-  <path d="M 121 78 C 112 82, 102 80, 98 74 C 104 68, 114 68, 121 72 Z" fill="#c8b57a"/>
-  <ellipse cx="100" cy="74" rx="4" ry="3" fill="#4a7a44"/>
-  <!-- ripples -->
-  <path d="M 44 52 q8 -5 16 0 q8 5 16 0" fill="none" stroke="#7cc0e8" stroke-width="2.5" opacity="0.8"/>
-  <path d="M 62 84 q8 -4 16 0" fill="none" stroke="#7cc0e8" stroke-width="2" opacity="0.6"/>
-  <path d="M 70 34 q7 -4 14 0" fill="none" stroke="#7cc0e8" stroke-width="2" opacity="0.5"/>
-  <!-- sparkles -->
-  <path d="M 88 44 h6 M 91 41 v6" stroke="#bfe2f5" stroke-width="1.5" opacity="0.7"/>
-  <path d="M 46 66 h5" stroke="#bfe2f5" stroke-width="1.5" opacity="0.5"/>
-  <!-- lily pads -->
-  <ellipse cx="66" cy="36" rx="5" ry="3" fill="#5a9e4c"/>
-  <ellipse cx="66" cy="36" rx="2" ry="1.2" fill="#2a6fb0" opacity="0.6"/>
-  <ellipse cx="92" cy="74" rx="5" ry="3" fill="#5a9e4c"/>
-  <!-- reeds on the north-west shore -->
-  <g stroke="#3f6b38" stroke-width="2" fill="none" stroke-linecap="round">
-    <path d="M 34 30 q-2 -8 1 -13"/>
-    <path d="M 38 28 q0 -9 3 -12"/>
-    <path d="M 42 31 q3 -7 2 -12"/>
+  <!-- Enchanted lake (2026-11-13 fantasy pass). Top-down only: Lake.gd
+       rotates/mirrors each spawn, so nothing here may need "up". Same
+       shoreline blobs as before (collision r=62 ≈ the vegetation ring). -->
+  <defs>
+    <radialGradient id="deep" cx="0.52" cy="0.5" r="0.55">
+      <stop offset="0" stop-color="#0f3a66"/>
+      <stop offset="0.55" stop-color="#1d5f9a"/>
+      <stop offset="1" stop-color="#3a9ac8"/>
+    </radialGradient>
+    <radialGradient id="grass" cx="0.5" cy="0.5" r="0.55">
+      <stop offset="0.6" stop-color="#4f8a46"/>
+      <stop offset="1" stop-color="#3c6e3a"/>
+    </radialGradient>
+    <radialGradient id="sand" cx="0.5" cy="0.5" r="0.55">
+      <stop offset="0.7" stop-color="#d8c487"/>
+      <stop offset="1" stop-color="#b9a468"/>
+    </radialGradient>
+    <radialGradient id="wisp" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e6fff7" stop-opacity="1"/>
+      <stop offset="0.35" stop-color="#7dffd8" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#7dffd8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="rune" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#9ff3ff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#9ff3ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lotus" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffd6f0" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#ff8ad0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- vegetation ring -->
+  <path d="M 8 60 C 4 40, 20 26, 40 24 C 44 8, 64 4, 82 10 C 98 2, 114 12, 116 26 C 126 30, 126 40, 118 46 C 134 52, 136 66, 128 74 C 136 88, 120 100, 108 96 C 100 110, 80 116, 66 104 C 44 112, 20 98, 20 80 C 8 76, 8 70, 8 60 Z" fill="url(#grass)"/>
+  <!-- grass tufts + wildflowers on the ring -->
+  <g fill="#5f9e52">
+    <circle cx="16" cy="54" r="2.2"/><circle cx="26" cy="34" r="2"/><circle cx="56" cy="12" r="2.2"/>
+    <circle cx="100" cy="10" r="2"/><circle cx="122" cy="38" r="1.8"/><circle cx="130" cy="64" r="2"/>
+    <circle cx="116" cy="94" r="2"/><circle cx="84" cy="108" r="2.2"/><circle cx="40" cy="104" r="2"/>
+    <circle cx="14" cy="74" r="1.8"/>
   </g>
-  <ellipse cx="35" cy="15" rx="1.6" ry="4" fill="#6b5a2e" transform="rotate(-12 35 15)"/>
-  <ellipse cx="41" cy="14" rx="1.6" ry="4" fill="#6b5a2e" transform="rotate(8 41 14)"/>
-  <!-- reeds on the south-east shore -->
-  <g stroke="#3f6b38" stroke-width="2" fill="none" stroke-linecap="round">
-    <path d="M 118 96 q2 -8 -1 -12"/>
-    <path d="M 122 94 q0 -8 -3 -11"/>
+  <g>
+    <circle cx="20" cy="46" r="1.1" fill="#f6e36a"/><circle cx="23" cy="50" r="1" fill="#ffffff"/>
+    <circle cx="62" cy="9" r="1.1" fill="#e98ad8"/><circle cx="94" cy="7" r="1" fill="#f6e36a"/>
+    <circle cx="125" cy="56" r="1.1" fill="#ffffff"/><circle cx="127" cy="80" r="1" fill="#e98ad8"/>
+    <circle cx="96" cy="106" r="1.1" fill="#f6e36a"/><circle cx="52" cy="108" r="1" fill="#ffffff"/>
+    <circle cx="30" cy="96" r="1.1" fill="#e98ad8"/><circle cx="12" cy="66" r="1" fill="#f6e36a"/>
+  </g>
+
+  <!-- beach -->
+  <path d="M 18 60 C 14 42, 28 30, 44 28 C 48 12, 66 8, 80 14 C 94 8, 110 16, 112 30 C 120 34, 120 42, 112 46 C 126 50, 130 62, 122 70 C 128 84, 114 94, 102 90 C 96 102, 76 108, 64 96 C 44 104, 26 92, 26 76 C 16 72, 16 66, 18 60 Z" fill="url(#sand)"/>
+  <!-- pebbles -->
+  <g fill="#9c917a">
+    <ellipse cx="22" cy="62" rx="1.6" ry="1.1"/><ellipse cx="46" cy="27" rx="1.4" ry="1"/>
+    <ellipse cx="84" cy="14" rx="1.6" ry="1.1"/><ellipse cx="118" cy="60" rx="1.5" ry="1"/>
+    <ellipse cx="100" cy="94" rx="1.6" ry="1.1"/><ellipse cx="44" cy="96" rx="1.4" ry="1"/>
+  </g>
+  <!-- shore boulders -->
+  <g>
+    <ellipse cx="112" cy="40" rx="5" ry="4" fill="#6e7380"/><ellipse cx="111" cy="39" rx="3" ry="2.2" fill="#8b909c"/>
+    <ellipse cx="30" cy="84" rx="4.4" ry="3.6" fill="#6e7380"/><ellipse cx="29" cy="83" rx="2.6" ry="2" fill="#8b909c"/>
+    <ellipse cx="72" cy="104" rx="3.6" ry="3" fill="#6e7380"/><ellipse cx="71.4" cy="103.2" rx="2" ry="1.6" fill="#8b909c"/>
+  </g>
+
+  <!-- water -->
+  <path d="M 28 60 C 24 46, 34 36, 48 34 C 52 20, 68 16, 80 22 C 92 16, 104 24, 106 36 C 112 40, 112 46, 104 50 C 118 54, 122 64, 114 70 C 120 80, 108 88, 96 84 C 90 96, 72 100, 62 90 C 48 98, 34 88, 34 74 C 24 70, 24 64, 28 60 Z" fill="url(#deep)"/>
+  <!-- shallows + foam line -->
+  <path d="M 28 60 C 24 46, 34 36, 48 34 C 52 20, 68 16, 80 22 C 92 16, 104 24, 106 36 C 112 40, 112 46, 104 50 C 118 54, 122 64, 114 70 C 120 80, 108 88, 96 84 C 90 96, 72 100, 62 90 C 48 98, 34 88, 34 74 C 24 70, 24 64, 28 60 Z" fill="none" stroke="#6cc6dc" stroke-width="4" opacity="0.6"/>
+  <path d="M 28 60 C 24 46, 34 36, 48 34 C 52 20, 68 16, 80 22 C 92 16, 104 24, 106 36 C 112 40, 112 46, 104 50 C 118 54, 122 64, 114 70 C 120 80, 108 88, 96 84 C 90 96, 72 100, 62 90 C 48 98, 34 88, 34 74 C 24 70, 24 64, 28 60 Z" fill="none" stroke="#e9fbff" stroke-width="0.9" stroke-dasharray="5 3 2 4" opacity="0.85"/>
+
+  <!-- ripples -->
+  <g fill="none" stroke="#8fd3ef" stroke-linecap="round">
+    <path d="M 44 52 q8 -5 16 0 q8 5 16 0" stroke-width="1.6" opacity="0.6"/>
+    <path d="M 80 74 q6 -3 12 0" stroke-width="1.4" opacity="0.5"/>
+    <path d="M 68 34 q7 -4 14 0" stroke-width="1.4" opacity="0.45"/>
+    <ellipse cx="88" cy="56" rx="7" ry="4.5" stroke-width="0.9" opacity="0.35"/>
+    <ellipse cx="88" cy="56" rx="3.5" ry="2.2" stroke-width="0.9" opacity="0.5"/>
+  </g>
+
+  <!-- island with a standing-stone rune circle -->
+  <ellipse cx="54" cy="80" rx="12" ry="10" fill="#d8c487"/>
+  <ellipse cx="54" cy="80" rx="9" ry="7.4" fill="#4f8a46"/>
+  <circle cx="54" cy="80" r="9" fill="url(#rune)"/>
+  <circle cx="54" cy="80" r="4.6" fill="none" stroke="#9ff3ff" stroke-width="0.7" opacity="0.9"/>
+  <path d="M54 76.6 l2.6 4.6 h-5.2 z" fill="none" stroke="#9ff3ff" stroke-width="0.6" opacity="0.9"/>
+  <g>
+    <ellipse cx="54" cy="73.8" rx="1.8" ry="1.3" fill="#5b606c"/><ellipse cx="53.7" cy="73.5" rx="1.1" ry="0.8" fill="#9aa0ac"/>
+    <ellipse cx="59.6" cy="78" rx="1.8" ry="1.3" fill="#5b606c"/><ellipse cx="59.3" cy="77.7" rx="1.1" ry="0.8" fill="#9aa0ac"/>
+    <ellipse cx="57.6" cy="85" rx="1.8" ry="1.3" fill="#5b606c"/><ellipse cx="57.3" cy="84.7" rx="1.1" ry="0.8" fill="#9aa0ac"/>
+    <ellipse cx="50.4" cy="85" rx="1.8" ry="1.3" fill="#5b606c"/><ellipse cx="50.1" cy="84.7" rx="1.1" ry="0.8" fill="#9aa0ac"/>
+    <ellipse cx="48.4" cy="78" rx="1.8" ry="1.3" fill="#5b606c"/><ellipse cx="48.1" cy="77.7" rx="1.1" ry="0.8" fill="#9aa0ac"/>
+  </g>
+
+  <!-- sand spit -->
+  <path d="M 121 78 C 112 82, 102 80, 98 74 C 104 68, 114 68, 121 72 Z" fill="#d8c487"/>
+  <ellipse cx="101" cy="74" rx="4" ry="3" fill="#4f8a46"/>
+
+  <!-- lily pads with glowing lotus flowers -->
+  <g>
+    <path d="M66 36 m-5 0 a5 3 0 1 0 10 0 a5 3 0 1 0 -10 0 z" fill="#5fa04e"/>
+    <path d="M66 36 l5 -1 l-1 2 z" fill="#1d5f9a"/>
+    <circle cx="66" cy="36" r="5" fill="url(#lotus)"/>
+    <circle cx="65" cy="35.6" r="1.6" fill="#ffb6e2"/><circle cx="65" cy="35.6" r="0.7" fill="#fff3a0"/>
+    <ellipse cx="74" cy="41" rx="3" ry="2" fill="#5fa04e"/>
+
+    <ellipse cx="92" cy="72" rx="5" ry="3.2" fill="#5fa04e"/>
+    <circle cx="92" cy="72" r="5" fill="url(#lotus)"/>
+    <circle cx="91.4" cy="71.6" r="1.6" fill="#ffffff"/><circle cx="91.4" cy="71.6" r="0.7" fill="#fff3a0"/>
+    <ellipse cx="84" cy="80" rx="2.6" ry="1.8" fill="#4f8f44"/>
+
+    <ellipse cx="40" cy="60" rx="3.6" ry="2.4" fill="#5fa04e"/>
+    <ellipse cx="44" cy="64" rx="2.4" ry="1.6" fill="#4f8f44"/>
+  </g>
+
+  <!-- reed tufts (top-down: radiating blades) -->
+  <g stroke="#3a6a34" stroke-width="1.4" stroke-linecap="round">
+    <path d="M34 28 l-4 -5 M34 28 l0 -6 M34 28 l4 -5 M34 28 l-5 -1 M34 28 l5 -1"/>
+    <path d="M42 24 l-3 -4 M42 24 l1 -5 M42 24 l4 -3"/>
+    <path d="M120 92 l-4 4 M120 92 l1 5 M120 92 l5 2 M120 92 l5 -2"/>
+    <path d="M24 74 l-5 -2 M24 74 l-5 3 M24 74 l-2 5"/>
+  </g>
+  <g fill="#7a5a30">
+    <ellipse cx="30" cy="23" rx="1.1" ry="1.8" transform="rotate(-40 30 23)"/>
+    <ellipse cx="38" cy="23" rx="1.1" ry="1.8" transform="rotate(40 38 23)"/>
+    <ellipse cx="121" cy="97" rx="1.1" ry="1.8"/>
+  </g>
+
+  <!-- will-o'-wisps over the water -->
+  <circle cx="80" cy="46" r="4.5" fill="url(#wisp)"/>
+  <circle cx="98" cy="62" r="3.5" fill="url(#wisp)"/>
+  <circle cx="46" cy="70" r="3" fill="url(#wisp)"/>
+
+  <!-- sparkles -->
+  <g stroke="#e6f7ff" stroke-width="1" stroke-linecap="round" opacity="0.85">
+    <path d="M70 60 h5 M72.5 57.5 v5"/>
+    <path d="M100 42 h4 M102 40 v4"/>
   </g>
 </svg>

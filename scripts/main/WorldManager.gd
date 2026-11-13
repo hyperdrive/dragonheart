@@ -263,7 +263,8 @@ func _mask_has_bright(img: Image) -> bool:
 ## checks (_terrain_free_position) — a candidate that drifted off its mask or
 ## into a footprint is rejected. Empty/missing mask → fully random anchor.
 func _mask_anchor(category: String, self_radius: float,
-	protected := [] as Array, protected_margin := 90.0) -> Vector2:
+	protected := [] as Array, protected_margin := 90.0,
+	allow_fallback := true) -> Vector2:
 	if active_layout == null or _mask_empty.get(category, true):
 		# No painted region: keep the standard random + clearance behavior.
 		return _terrain_free_position(
@@ -287,6 +288,8 @@ func _mask_anchor(category: String, self_radius: float,
 		if active_layout.sample_mask(category, spot) < WorldLayout.BRIGHT_THRESHOLD:
 			continue
 		return spot
+	if not allow_fallback:
+		return Vector2.INF  # caller retries smaller / skips
 	push_warning(("WorldManager: mask '%s' never produced a clear spot "
 		+ "— random fallback") % category)
 	return _terrain_free_position(
@@ -639,13 +642,14 @@ func spawn_scenery() -> void:
 	var counts := [tree_count, lake_count, mountain_count]
 	for kind_id in counts.size():
 		for i in counts[kind_id]:
-			var radius: float = [22.0, 66.0, 60.0][kind_id]
+			var scene: PackedScene = scenery_scenes[kind_id]
+			var obstacle := scene.instantiate()
+			var radius := _scenery_radius(kind_id, obstacle)
 			var position := _terrain_free_position(
 				get_random_position(), radius, protected, 110.0)
 			if position == Vector2.INF:
+				obstacle.free()
 				continue  # map too crowded at this spot; skip
-			var scene: PackedScene = scenery_scenes[kind_id]
-			var obstacle := scene.instantiate()
 			obstacle.global_position = position
 			add_child(obstacle)
 			register_footprint(position, radius)
@@ -655,19 +659,41 @@ func spawn_scenery() -> void:
 ## One masked scenery batch (shared by the layout-mode loops above).
 func _spawn_scenery_batch(category: String, count: int, kind_id: int,
 	protected: Array) -> void:
-	var radius: float = [22.0, 66.0, 60.0][kind_id]
 	for i in count:
-		var position := _mask_anchor(category, radius, protected, 110.0) \
-			if category != "" else _terrain_free_position(
-				get_random_position(), radius, protected, 110.0)
-		if position == Vector2.INF:
-			continue  # map too crowded at this spot; skip
 		var scene: PackedScene = scenery_scenes[kind_id]
 		var obstacle := scene.instantiate()
+		var radius := _scenery_radius(kind_id, obstacle)
+		var position := Vector2.INF
+		if obstacle is Mountain and category != "":
+			# A big mountain may not fit its painted region: step DOWN a
+			# size and retry inside the mask; never fall back off-mask.
+			var mountain := obstacle as Mountain
+			while true:
+				position = _mask_anchor(category, radius, protected, 110.0, false)
+				if position != Vector2.INF or mountain.size_index == 0:
+					break
+				mountain.size_index -= 1
+				radius = mountain.footprint_radius()
+		else:
+			position = _mask_anchor(category, radius, protected, 110.0) \
+				if category != "" else _terrain_free_position(
+					get_random_position(), radius, protected, 110.0)
+		if position == Vector2.INF:
+			obstacle.free()
+			continue  # map too crowded at this spot; skip
 		obstacle.global_position = position
 		add_child(obstacle)
 		register_footprint(position, radius)
 		entity_spawned.emit("terrain", position)
+
+
+## Placement radius for one scenery piece. Mountains roll their variant +
+## size (2026-11-13: three artworks x three sizes) with the world RNG BEFORE
+## placement, so spacing clears the mountain's real base, not a fixed guess.
+func _scenery_radius(kind_id: int, obstacle: Node) -> float:
+	if obstacle is Mountain:
+		return (obstacle as Mountain).roll(_rng)
+	return [22.0, 66.0, 60.0][kind_id]
 
 
 ## Merge OVERLAPPING lakes into one (2026-11-13 user spec: "if two lakes
@@ -744,7 +770,8 @@ func merge_adjacent_lakes() -> void:
 		keep.global_position = center
 		var spr := keep.get_node_or_null("Sprite") as Sprite2D
 		if spr != null:
-			spr.scale = Vector2.ONE * (radius / 62.0)  # native shape is 62
+			# native shape is r=62; the SVG imports at 2x (crisp), hence 0.5
+			spr.scale = Vector2.ONE * (radius / 62.0) * 0.5
 		for k in range(1, members.size()):
 			(circles[members[k]][0] as Node).queue_free()
 		register_footprint(center, radius)
@@ -985,6 +1012,10 @@ func spawn_goblin_mountain() -> void:
 	if mountain == null:
 		push_warning("WorldManager: Goblin Mountain scene failed to load")
 		return
+	if mountain is Mountain:
+		# Any artwork, but medium size: its footprint was reserved up front.
+		(mountain as Mountain).size_index = 1
+		(mountain as Mountain).roll(_rng)
 	mountain.global_position = goblin_mountain_position
 	add_child(mountain)
 	register_footprint(goblin_mountain_position, FOOTPRINT_RADIUS["mountain"])

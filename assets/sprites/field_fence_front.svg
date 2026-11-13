@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="16" viewBox="0 0 80 16">
+  <!-- front rail: drawn above farmers (FenceFront z) like the old rect -->
+  <rect x="3" y="5" width="74" height="2.4" fill="#8a6038"/>
+  <rect x="3" y="9" width="74" height="1.8" fill="#7a5230"/>
+  <path d="M3 5 h74" stroke="#b08050" stroke-width="0.6"/>
+  <rect x="1.7" y="2.4" width="2.8" height="11" fill="#5e3e22"/>
+  <rect x="1.7" y="2.4" width="2.8" height="1" fill="#8a6038"/>
+  <rect x="19.7" y="2.4" width="2.8" height="11" fill="#5e3e22"/>
+  <rect x="19.7" y="2.4" width="2.8" height="1" fill="#8a6038"/>
+  <rect x="37.7" y="2.4" width="2.8" height="11" fill="#5e3e22"/>
+  <rect x="37.7" y="2.4" width="2.8" height="1" fill="#8a6038"/>
+  <rect x="55.7" y="2.4" width="2.8" height="11" fill="#5e3e22"/>
+  <rect x="55.7" y="2.4" width="2.8" height="1" fill="#8a6038"/>
+  <rect x="73.7" y="2.4" width="2.8" height="11" fill="#5e3e22"/>
+  <rect x="73.7" y="2.4" width="2.8" height="1" fill="#8a6038"/>
+</svg>

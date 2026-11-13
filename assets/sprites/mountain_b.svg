@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Mountain variant B (2026-11-13): broad three-summit massif with a
+       waterfall spilling into a pool at the foot. Lit from upper-left.
+       Base line y=120, base half-width ≈63 (Mountain.gd BASE_HALF_SVG). -->
+  <defs>
+    <linearGradient id="litB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a39f9a"/>
+      <stop offset="1" stop-color="#6c6a6c"/>
+    </linearGradient>
+    <linearGradient id="shadeB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5e5c62"/>
+      <stop offset="1" stop-color="#3c3a42"/>
+    </linearGradient>
+    <linearGradient id="fallB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d8f2ff"/>
+      <stop offset="1" stop-color="#7cc4ec"/>
+    </linearGradient>
+    <linearGradient id="snowB" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d9e3ef"/>
+    </linearGradient>
+  </defs>
+
+  <!-- massif: lit west half, shaded east half -->
+  <polygon points="1,120 8,98 16,82 24,64 32,50 38,40 44,44 50,34 56,24 62,30 64,120" fill="url(#litB)"/>
+  <polygon points="62,30 68,36 74,28 80,22 86,32 92,42 98,52 104,48 110,60 118,80 124,98 127,120 64,120" fill="url(#shadeB)"/>
+  <!-- ridge between summits (lighter crest) -->
+  <path d="M32 50 L38 40 L44 44 L50 34 L56 24 L62 30 L68 36 L74 28 L80 22" fill="none" stroke="#c6c2bc" stroke-width="1.2" opacity="0.7"/>
+
+  <!-- snow on the three summits -->
+  <polygon points="38,40 44,44 50,34 56,24 62,30 60,36 56,32 53,40 49,38 45,48 41,44" fill="url(#snowB)"/>
+  <polygon points="74,28 80,22 86,32 84,36 80,30 77,38 74,34 70,38 68,36" fill="#cfd9e6"/>
+  <polygon points="98,52 104,48 110,60 106,58 103,64 100,58" fill="#c3cede"/>
+
+  <!-- strata -->
+  <g fill="none" stroke-linecap="round" stroke-width="1.1">
+    <path d="M14 88 l12 -3 l10 2 l12 -3" stroke="#5c5a5c"/>
+    <path d="M8 106 l14 -3 l12 3 l14 -4" stroke="#5c5a5c"/>
+    <path d="M26 66 l10 -2 l10 3" stroke="#5c5a5c"/>
+    <path d="M78 60 l10 4 l12 -2" stroke="#2c2a30"/>
+    <path d="M84 90 l12 4 l12 -3" stroke="#2c2a30"/>
+    <path d="M96 108 l10 3 l12 -2" stroke="#2c2a30"/>
+    <path d="M36 80 l3 7 l-2 6" stroke="#5c5a5c" stroke-width="0.9"/>
+    <path d="M100 74 l-3 8 l3 6" stroke="#2c2a30" stroke-width="0.9"/>
+  </g>
+
+  <!-- gully the falls run down -->
+  <path d="M60 52 C 58 70, 62 86, 58 104 L 68 104 C 70 86, 66 70, 66 52 Z" fill="#2f2e35"/>
+  <!-- waterfall -->
+  <path d="M61.5 54 C 60 70, 63 86, 60 104 L 66 104 C 68 86, 65 70, 64.5 54 Z" fill="url(#fallB)"/>
+  <g stroke="#ffffff" stroke-width="0.7" opacity="0.8">
+    <path d="M62.6 60 v8 M63.8 72 v9 M62.4 86 v8 M64.6 94 v7"/>
+  </g>
+  <!-- spray + pool -->
+  <ellipse cx="63" cy="113" rx="16" ry="5" fill="#2f6fa8"/>
+  <ellipse cx="63" cy="112" rx="12" ry="3.2" fill="#4c95cf"/>
+  <ellipse cx="63" cy="106" rx="8" ry="3.4" fill="#ffffff" opacity="0.45"/>
+  <ellipse cx="57" cy="108" rx="3" ry="2" fill="#ffffff" opacity="0.4"/>
+  <ellipse cx="70" cy="108" rx="3" ry="2" fill="#ffffff" opacity="0.35"/>
+
+  <!-- foot boulders -->
+  <polygon points="40,120 44,113 51,112 54,120" fill="#77757a"/>
+  <polygon points="44,113 51,112 48,116" fill="#9a979a"/>
+  <polygon points="80,120 84,114 92,113 95,120" fill="#45434a"/>
+  <polygon points="4,120 7,114 13,114 15,120" fill="#7a787c"/>
+
+  <!-- pines -->
+  <g>
+    <rect x="23" y="111" width="2" height="7" fill="#4a3424"/>
+    <polygon points="24,95 30,107 27,107 31,114 17,114 21,107 18,107" fill="#2e5a3a"/>
+    <polygon points="24,95 27,101 24,101" fill="#447a4e"/>
+    <rect x="31.2" y="113" width="1.6" height="5" fill="#4a3424"/>
+    <polygon points="32,102 36.5,110 34,110 37,115 27,115 30,110 27.5,110" fill="#28503a"/>
+    <rect x="103.2" y="111" width="1.6" height="6" fill="#3a2a1e"/>
+    <polygon points="104,99 108.5,107 106,107 109,113 99,113 102,107 99.5,107" fill="#22402e"/>
+    <rect x="113" y="113" width="1.4" height="5" fill="#3a2a1e"/>
+    <polygon points="113.7,104 117.5,110.5 115.5,110.5 118,115 109.4,115 112,110.5 110,110.5" fill="#1f3a2a"/>
+  </g>
+</svg>

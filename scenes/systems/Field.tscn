@@ -1,6 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://c8f1k4xq2m7dv"]
+[gd_scene load_steps=7 format=3 uid="uid://c8f1k4xq2m7dv"]
 
 [ext_resource type="Script" path="res://scripts/systems/Field.gd" id="1_field_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/field_wheat.svg" id="2_wheat"]
+[ext_resource type="Texture2D" path="res://assets/sprites/field_burnt.svg" id="3_burnt"]
+[ext_resource type="Texture2D" path="res://assets/sprites/field_fence_front.svg" id="4_fence"]
 
 [sub_resource type="RectangleShape2D" id="1_field_shape"]
 size = Vector2(68, 52)
@@ -10,126 +13,28 @@ groups=["fields", "flammable"]
 z_index = -1
 script = ExtResource("1_field_script")
 
-[node name="Soil" type="ColorRect" parent="."]
+[node name="Crops" type="ColorRect" parent="."]
 offset_left = -36.0
 offset_top = -28.0
 offset_right = 36.0
 offset_bottom = 28.0
-color = Color(0.23, 0.14, 0.07, 1)
-
-[node name="Crops" type="ColorRect" parent="."]
-offset_left = -32.0
-offset_top = -24.0
-offset_right = 32.0
-offset_bottom = 24.0
+mouse_filter = 2
 color = Color(0.28, 0.68, 0.18, 1)
 
-[node name="CropRows" type="Node2D" parent="."]
+[node name="CropRows" type="Sprite2D" parent="."]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_wheat")
 
-[node name="Row1" type="ColorRect" parent="CropRows"]
-offset_left = -27.0
-offset_top = -21.0
-offset_right = -21.0
-offset_bottom = 21.0
-color = Color(0.38, 0.82, 0.26, 1)
-
-[node name="Row2" type="ColorRect" parent="CropRows"]
-offset_left = -17.0
-offset_top = -21.0
-offset_right = -11.0
-offset_bottom = 21.0
-color = Color(0.38, 0.82, 0.26, 1)
-
-[node name="Row3" type="ColorRect" parent="CropRows"]
-offset_left = -3.0
-offset_top = -21.0
-offset_right = 3.0
-offset_bottom = 21.0
-color = Color(0.38, 0.82, 0.26, 1)
-
-[node name="Row4" type="ColorRect" parent="CropRows"]
-offset_left = 11.0
-offset_top = -21.0
-offset_right = 17.0
-offset_bottom = 21.0
-color = Color(0.38, 0.82, 0.26, 1)
-
-[node name="Row5" type="ColorRect" parent="CropRows"]
-offset_left = 21.0
-offset_top = -21.0
-offset_right = 27.0
-offset_bottom = 21.0
-color = Color(0.38, 0.82, 0.26, 1)
-
-[node name="StubbleRows" type="Node2D" parent="."]
+[node name="StubbleRows" type="Sprite2D" parent="."]
 visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("3_burnt")
 
-[node name="Row1" type="ColorRect" parent="StubbleRows"]
-offset_left = -27.0
-offset_top = -21.0
-offset_right = -21.0
-offset_bottom = 21.0
-color = Color(0.5, 0.4, 0.22, 1)
-
-[node name="Row2" type="ColorRect" parent="StubbleRows"]
-offset_left = -17.0
-offset_top = -21.0
-offset_right = -11.0
-offset_bottom = 21.0
-color = Color(0.5, 0.4, 0.22, 1)
-
-[node name="Row3" type="ColorRect" parent="StubbleRows"]
-offset_left = -3.0
-offset_top = -21.0
-offset_right = 3.0
-offset_bottom = 21.0
-color = Color(0.5, 0.4, 0.22, 1)
-
-[node name="Row4" type="ColorRect" parent="StubbleRows"]
-offset_left = 11.0
-offset_top = -21.0
-offset_right = 17.0
-offset_bottom = 21.0
-color = Color(0.5, 0.4, 0.22, 1)
-
-[node name="Row5" type="ColorRect" parent="StubbleRows"]
-offset_left = 21.0
-offset_top = -21.0
-offset_right = 27.0
-offset_bottom = 21.0
-color = Color(0.5, 0.4, 0.22, 1)
-
-[node name="FenceBack" type="ColorRect" parent="."]
-offset_left = -36.0
-offset_top = -32.0
-offset_right = 36.0
-offset_bottom = -28.0
-z_index = 1
-color = Color(0.5, 0.34, 0.18, 1)
-
-[node name="FenceFront" type="ColorRect" parent="."]
-offset_left = -36.0
-offset_top = 28.0
-offset_right = 36.0
-offset_bottom = 32.0
+[node name="FenceFront" type="Sprite2D" parent="."]
 z_index = 2
-color = Color(0.5, 0.34, 0.18, 1)
-
-[node name="Posts" type="ColorRect" parent="."]
-offset_left = -36.0
-offset_top = -32.0
-offset_right = -32.0
-offset_bottom = 32.0
-z_index = 2
-color = Color(0.42, 0.28, 0.15, 1)
-
-[node name="Posts2" type="ColorRect" parent="."]
-offset_left = 32.0
-offset_top = -32.0
-offset_right = 36.0
-offset_bottom = 32.0
-z_index = 2
-color = Color(0.42, 0.28, 0.15, 1)
+position = Vector2(0, 31)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("4_fence")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("1_field_shape")

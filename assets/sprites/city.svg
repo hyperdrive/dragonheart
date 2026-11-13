@@ -1,36 +1,172 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="160" viewBox="0 0 192 160">
-  <!-- keep (behind wall) -->
-  <rect x="74" y="20" width="44" height="80" fill="#9aa0aa"/>
-  <polygon points="70,20 96,0 122,20" fill="#8a5545"/>
-  <rect x="88" y="40" width="6" height="14" fill="#3a3f47"/>
-  <rect x="98" y="40" width="6" height="14" fill="#3a3f47"/>
-  <rect x="88" y="70" width="6" height="14" fill="#3a3f47"/>
-  <rect x="98" y="70" width="6" height="14" fill="#3a3f47"/>
-  <!-- temple roof -->
-  <polygon points="60,4 96,-14 132,4" fill="#b05040" transform="translate(0,10)"/>
-  <!-- walls -->
-  <rect x="14" y="78" width="164" height="56" fill="#a8aeb8"/>
-  <!-- battlements -->
-  <g fill="#a8aeb8">
-    <rect x="14" y="70" width="16" height="14"/>
-    <rect x="42" y="70" width="16" height="14"/>
-    <rect x="70" y="70" width="16" height="14"/>
-    <rect x="98" y="70" width="16" height="14"/>
-    <rect x="126" y="70" width="16" height="14"/>
-    <rect x="154" y="70" width="16" height="14"/>
-    <rect x="8" y="70" width="176" height="8"/>
+  <!-- Royal city (2026-11-13 fantasy pass): curtain wall with round
+       towers, gatehouse + portcullis, rooftops and a spired keep behind,
+       royal banners (gold crown on blue). Wall base y≈138 as before. -->
+  <defs>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c9c3b6"/>
+      <stop offset="1" stop-color="#9c9586"/>
+    </linearGradient>
+    <linearGradient id="stoneDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#aaa396"/>
+      <stop offset="1" stop-color="#7f786c"/>
+    </linearGradient>
+    <linearGradient id="towerR" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d8d2c4"/>
+      <stop offset="0.55" stop-color="#b3ac9e"/>
+      <stop offset="1" stop-color="#7d776b"/>
+    </linearGradient>
+    <linearGradient id="slate" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5a7bc0"/>
+      <stop offset="1" stop-color="#2c4180"/>
+    </linearGradient>
+    <linearGradient id="terra" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c8664a"/>
+      <stop offset="1" stop-color="#8a3a2a"/>
+    </linearGradient>
+    <radialGradient id="torch" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffd27a" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ff8a2a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- ===== behind the wall ===== -->
+  <!-- keep -->
+  <rect x="78" y="26" width="36" height="70" fill="url(#towerR)"/>
+  <polygon points="74,28 96,4 118,28" fill="url(#slate)"/>
+  <path d="M96 4 v-4" stroke="#6b5a3a" stroke-width="1"/>
+  <path d="M96 0.5 l8 2.5 l-8 2.5 z" fill="#2c4180"/>
+  <g fill="#c9c3b6">
+    <rect x="76" y="24" width="5" height="5"/><rect x="85" y="24" width="5" height="5"/>
+    <rect x="102" y="24" width="5" height="5"/><rect x="111" y="24" width="5" height="5"/>
   </g>
-  <!-- corner towers -->
-  <rect x="4" y="54" width="26" height="84" fill="#9aa0aa"/>
-  <polygon points="0,54 17,36 34,54" fill="#8a5545"/>
-  <rect x="162" y="54" width="26" height="84" fill="#9aa0aa"/>
-  <polygon points="158,54 175,36 192,54" fill="#8a5545"/>
-  <!-- gate -->
-  <path d="M82 134 v-28 a14 14 0 0 1 28 0 v28 z" fill="#4a3626"/>
-  <rect x="84" y="146" width="24" height="6" fill="#3a2c1e"/>
-  <!-- windows -->
-  <rect x="10" y="70" width="5" height="10" fill="#3a3f47"/>
-  <rect x="19" y="70" width="5" height="10" fill="#3a3f47"/>
-  <rect x="168" y="70" width="5" height="10" fill="#3a3f47"/>
-  <rect x="177" y="70" width="5" height="10" fill="#3a3f47"/>
+  <!-- keep: rose window + tall windows -->
+  <circle cx="96" cy="42" r="5" fill="#2a2630"/>
+  <circle cx="96" cy="42" r="3.6" fill="#ffcf6a" opacity="0.85"/>
+  <path d="M96 38.4 v7.2 M92.4 42 h7.2" stroke="#7a5a2a" stroke-width="0.7"/>
+  <path d="M86 70 v-10 a3 3 0 0 1 6 0 v10 z" fill="#2a2630"/>
+  <path d="M100 70 v-10 a3 3 0 0 1 6 0 v10 z" fill="#2a2630"/>
+  <path d="M87.5 68 v-7 a1.5 1.5 0 0 1 3 0 v7 z" fill="#ffcf6a" opacity="0.6"/>
+  <!-- side spires on the keep -->
+  <rect x="68" y="36" width="10" height="50" fill="url(#towerR)"/>
+  <polygon points="66,38 73,16 80,38" fill="url(#slate)"/>
+  <rect x="114" y="36" width="10" height="50" fill="url(#towerR)"/>
+  <polygon points="112,38 119,16 126,38" fill="url(#slate)"/>
+  <path d="M71.5 52 v-5 a1.5 1.5 0 0 1 3 0 v5 z" fill="#2a2630"/>
+  <path d="M117.5 52 v-5 a1.5 1.5 0 0 1 3 0 v5 z" fill="#2a2630"/>
+
+  <!-- town rooftops peeking over the wall -->
+  <g>
+    <rect x="34" y="62" width="18" height="16" fill="#d9cdb0"/>
+    <polygon points="32,63 43,52 54,63" fill="url(#terra)"/>
+    <rect x="52" y="66" width="14" height="12" fill="#cbbf9f"/>
+    <polygon points="50,67 59,58 68,67" fill="url(#slate)"/>
+    <rect x="126" y="64" width="16" height="14" fill="#d9cdb0"/>
+    <polygon points="124,65 134,55 144,65" fill="url(#terra)"/>
+    <rect x="142" y="60" width="14" height="18" fill="#cbbf9f"/>
+    <polygon points="140,61 149,51 158,61" fill="url(#terra)"/>
+    <rect x="44" y="58" width="2.5" height="6" fill="#6a5040"/>
+    <rect x="137" y="58" width="2.5" height="6" fill="#6a5040"/>
+    <g fill="#ffcf6a" opacity="0.8">
+      <rect x="40" y="67" width="3" height="4"/><rect x="57" y="70" width="3" height="3"/>
+      <rect x="131" y="68" width="3" height="4"/><rect x="147" y="65" width="3" height="4"/>
+    </g>
+  </g>
+  <!-- chimney smoke -->
+  <g fill="#c8c8cc">
+    <circle cx="45" cy="54" r="2.4" opacity="0.4"/><circle cx="47" cy="49" r="2" opacity="0.25"/>
+    <circle cx="138" cy="54" r="2.4" opacity="0.4"/><circle cx="140" cy="49" r="2" opacity="0.25"/>
+  </g>
+
+  <!-- ===== curtain wall ===== -->
+  <rect x="22" y="80" width="148" height="58" fill="url(#stone)"/>
+  <!-- crenellations -->
+  <g fill="url(#stone)">
+    <rect x="22" y="73" width="9" height="8"/><rect x="36" y="73" width="9" height="8"/>
+    <rect x="50" y="73" width="9" height="8"/><rect x="64" y="73" width="9" height="8"/>
+    <rect x="119" y="73" width="9" height="8"/><rect x="133" y="73" width="9" height="8"/>
+    <rect x="147" y="73" width="9" height="8"/><rect x="161" y="73" width="9" height="8"/>
+  </g>
+  <rect x="22" y="80" width="148" height="3" fill="#8e8778"/>
+  <!-- brick courses -->
+  <g stroke="#8e8778" stroke-width="0.7" fill="none">
+    <path d="M22 92 h148 M22 104 h148 M22 116 h148 M22 128 h148"/>
+    <path d="M34 83 v9 M58 83 v9 M134 83 v9 M158 83 v9 M46 92 v12 M70 92 v12 M122 92 v12 M146 92 v12 M34 104 v12 M58 104 v12 M134 104 v12 M158 104 v12 M46 116 v12 M70 116 v12 M122 116 v12 M146 116 v12 M34 128 v10 M58 128 v10 M134 128 v10 M158 128 v10"/>
+  </g>
+  <!-- ivy -->
+  <g fill="#4f7a3e">
+    <circle cx="28" cy="120" r="3"/><circle cx="31" cy="125" r="3.4"/><circle cx="27" cy="130" r="3.2"/>
+    <circle cx="30" cy="135" r="3"/><circle cx="35" cy="132" r="2.4"/>
+    <circle cx="164" cy="112" r="2.6"/><circle cx="161" cy="118" r="3"/><circle cx="165" cy="124" r="2.8"/>
+  </g>
+  <g fill="#6a9a4e">
+    <circle cx="29" cy="124" r="1.4"/><circle cx="28" cy="133" r="1.4"/><circle cx="163" cy="117" r="1.3"/>
+  </g>
+
+  <!-- ===== round corner towers ===== -->
+  <rect x="2" y="56" width="28" height="86" fill="url(#towerR)"/>
+  <ellipse cx="16" cy="142" rx="14" ry="3" fill="#7d776b"/>
+  <rect x="0" y="52" width="32" height="6" fill="url(#towerR)"/>
+  <polygon points="-1,53 16,22 33,53" fill="url(#slate)"/>
+  <path d="M16 22 v-7" stroke="#6b5a3a" stroke-width="1"/>
+  <path d="M16 15.5 l9 3 l-9 3 z" fill="#d23a3a"/>
+  <path d="M13 80 v-8 a3 3 0 0 1 6 0 v8 z" fill="#2a2630"/>
+  <path d="M13 108 v-8 a3 3 0 0 1 6 0 v8 z" fill="#2a2630"/>
+  <path d="M14.5 78 v-6 a1.5 1.5 0 0 1 3 0 v6 z" fill="#ffcf6a" opacity="0.7"/>
+
+  <rect x="162" y="56" width="28" height="86" fill="url(#towerR)"/>
+  <ellipse cx="176" cy="142" rx="14" ry="3" fill="#7d776b"/>
+  <rect x="160" y="52" width="32" height="6" fill="url(#towerR)"/>
+  <polygon points="159,53 176,22 193,53" fill="url(#slate)"/>
+  <path d="M176 22 v-7" stroke="#6b5a3a" stroke-width="1"/>
+  <path d="M176 15.5 l9 3 l-9 3 z" fill="#d23a3a"/>
+  <path d="M173 80 v-8 a3 3 0 0 1 6 0 v8 z" fill="#2a2630"/>
+  <path d="M173 108 v-8 a3 3 0 0 1 6 0 v8 z" fill="#2a2630"/>
+  <path d="M174.5 106 v-6 a1.5 1.5 0 0 1 3 0 v6 z" fill="#ffcf6a" opacity="0.7"/>
+
+  <!-- ===== gatehouse ===== -->
+  <rect x="74" y="72" width="44" height="68" fill="url(#stoneDark)"/>
+  <g fill="url(#stoneDark)">
+    <rect x="72" y="66" width="8" height="8"/><rect x="85" y="66" width="8" height="8"/>
+    <rect x="99" y="66" width="8" height="8"/><rect x="112" y="66" width="8" height="8"/>
+  </g>
+  <rect x="72" y="72" width="48" height="3" fill="#6f695e"/>
+  <!-- arrow slits -->
+  <rect x="79" y="80" width="2" height="7" fill="#2a2630"/>
+  <rect x="111" y="80" width="2" height="7" fill="#2a2630"/>
+  <!-- royal crest over the gate -->
+  <path d="M90 78 h12 v8 q-6 6 -12 0 z" fill="#2c4a9a" stroke="#d6b04a" stroke-width="0.8"/>
+  <path d="M92.5 84 l1 -3.5 l1.5 2 l1 -3 l1 3 l1.5 -2 l1 3.5 z" fill="#ffd34a"/>
+  <!-- arched gate with portcullis -->
+  <path d="M82 140 v-26 a14 14 0 0 1 28 0 v26 z" fill="#3a2c22"/>
+  <path d="M84 140 v-26 a12 12 0 0 1 24 0 v26 z" fill="#1c1512"/>
+  <g stroke="#6e6a64" stroke-width="1.2">
+    <path d="M88 104 v36 M93 102 v38 M99 102 v38 M104 104 v36"/>
+    <path d="M84 112 h24 M84 120 h24 M84 128 h24"/>
+  </g>
+  <path d="M82 114 a14 14 0 0 1 28 0" fill="none" stroke="#8e8778" stroke-width="2"/>
+  <!-- torches -->
+  <circle cx="77" cy="108" r="6" fill="url(#torch)"/>
+  <circle cx="115" cy="108" r="6" fill="url(#torch)"/>
+  <rect x="76" y="108" width="2" height="6" fill="#4a3424"/>
+  <rect x="114" y="108" width="2" height="6" fill="#4a3424"/>
+  <path d="M77 103 q-2 3 0 5 q2 -2 0 -5 z" fill="#ffb03a"/>
+  <path d="M115 103 q-2 3 0 5 q2 -2 0 -5 z" fill="#ffb03a"/>
+
+  <!-- hanging royal banners on the wall -->
+  <g>
+    <path d="M44 84 h12 v22 l-6 -4 l-6 4 z" fill="#2c4a9a"/>
+    <path d="M44 84 h12 v2 h-12 z" fill="#d6b04a"/>
+    <path d="M46.5 95 l1 -3.5 l1.5 2 l1 -3 l1 3 l1.5 -2 l1 3.5 z" fill="#ffd34a"/>
+    <path d="M136 84 h12 v22 l-6 -4 l-6 4 z" fill="#2c4a9a"/>
+    <path d="M136 84 h12 v2 h-12 z" fill="#d6b04a"/>
+    <path d="M138.5 95 l1 -3.5 l1.5 2 l1 -3 l1 3 l1.5 -2 l1 3.5 z" fill="#ffd34a"/>
+  </g>
+
+  <!-- cobbled road out of the gate -->
+  <path d="M82 140 h28 l6 12 h-40 z" fill="#8a7f6c"/>
+  <g fill="#a39883">
+    <circle cx="88" cy="144" r="1.4"/><circle cx="95" cy="146" r="1.5"/><circle cx="103" cy="144" r="1.4"/>
+    <circle cx="84" cy="149" r="1.4"/><circle cx="92" cy="150" r="1.5"/><circle cx="101" cy="150" r="1.5"/><circle cx="109" cy="149" r="1.4"/>
+  </g>
 </svg>

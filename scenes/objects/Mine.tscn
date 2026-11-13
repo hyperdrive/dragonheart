@@ -41,15 +41,61 @@ shape = SubResource("3_gem_shape")
 
 [node name="Hill" type="Sprite2D" parent="Sprite"]
 position = Vector2(0, -23)
-scale = Vector2(0.72, 0.72)
+scale = Vector2(0.36, 0.36)
 texture = ExtResource("2_hill_tex")
 
-[node name="Gold" type="Polygon2D" parent="Sprite"]
+[node name="Gold" type="Node2D" parent="Sprite"]
 position = Vector2(-13, -6)
-color = Color(1, 0.8, 0.2, 1)
-polygon = PackedVector2Array(-5, 3, 5, 3, 3, -2, 0, -4, -3, -2)
 
-[node name="Gems" type="Polygon2D" parent="Sprite"]
+[node name="Heap" type="Polygon2D" parent="Sprite/Gold"]
+color = Color(0.78, 0.55, 0.1, 1)
+antialiased = true
+polygon = PackedVector2Array(-6, 3, -4.5, -0.5, -2, -2.5, 1, -3.5, 3.5, -2, 5.5, 0.5, 6, 3)
+
+[node name="Nugget1" type="Polygon2D" parent="Sprite/Gold"]
+color = Color(1, 0.84, 0.25, 1)
+antialiased = true
+polygon = PackedVector2Array(-4, 1.5, -3, -0.8, -1, -1.2, 0, 0.8, -2, 2)
+
+[node name="Nugget2" type="Polygon2D" parent="Sprite/Gold"]
+color = Color(1, 0.9, 0.4, 1)
+antialiased = true
+polygon = PackedVector2Array(0.5, -1, 1.5, -3, 3.5, -2.4, 3.6, -0.4, 1.8, 0.4)
+
+[node name="Nugget3" type="Polygon2D" parent="Sprite/Gold"]
+color = Color(0.95, 0.75, 0.2, 1)
+antialiased = true
+polygon = PackedVector2Array(2, 2.4, 3, 0.4, 5, 0.8, 5, 2.6)
+
+[node name="Glint" type="Polygon2D" parent="Sprite/Gold"]
+color = Color(1, 1, 0.85, 1)
+antialiased = true
+polygon = PackedVector2Array(2.2, -2.6, 2.6, -2.2, 2.2, -1.8, 1.8, -2.2)
+
+[node name="Gems" type="Node2D" parent="Sprite"]
 position = Vector2(13, -6)
-color = Color(0, 0.8, 1, 1)
-polygon = PackedVector2Array(-5, 3, -2, -3, 2, -5, 5, 3)
+
+[node name="Base" type="Polygon2D" parent="Sprite/Gems"]
+color = Color(0.32, 0.33, 0.36, 1)
+antialiased = true
+polygon = PackedVector2Array(-5.5, 3, -4, 0.5, 4, 0.5, 5.5, 3)
+
+[node name="Crystal1" type="Polygon2D" parent="Sprite/Gems"]
+color = Color(0.2, 0.75, 1, 1)
+antialiased = true
+polygon = PackedVector2Array(-4, 2, -3.2, -2.5, -2, -4.5, -1, -2.5, -1, 2)
+
+[node name="Crystal2" type="Polygon2D" parent="Sprite/Gems"]
+color = Color(0.5, 0.9, 1, 1)
+antialiased = true
+polygon = PackedVector2Array(-1.5, 2, -0.8, -4, 0.6, -7, 2, -4, 2, 2)
+
+[node name="Crystal2Shade" type="Polygon2D" parent="Sprite/Gems"]
+color = Color(0.12, 0.55, 0.85, 1)
+antialiased = true
+polygon = PackedVector2Array(0.6, -7, 2, -4, 2, 2, 0.8, 2)
+
+[node name="Crystal3" type="Polygon2D" parent="Sprite/Gems"]
+color = Color(0.85, 0.35, 0.95, 1)
+antialiased = true
+polygon = PackedVector2Array(1.8, 2, 2.6, -1.5, 3.8, -3, 4.6, -1, 4.4, 2)

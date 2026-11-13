@@ -13,5 +13,5 @@ offset_bottom = 80.0
 color = Color(0.1, 0.1, 0.1, 0.3)
 
 [node name="Sprite" type="Sprite2D" parent="."]
-scale = Vector2(1.6, 1.6)
+scale = Vector2(0.8, 0.8)
 texture = ExtResource("1_city_tex")

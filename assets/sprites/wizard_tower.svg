@@ -1,46 +1,121 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="112" height="176" viewBox="0 0 112 176">
-  <!-- rock base -->
-  <ellipse cx="56" cy="164" rx="44" ry="10" fill="#4a5568"/>
-  <!-- tower body: tapered stone -->
-  <polygon points="34,160 38,40 74,40 78,160" fill="#6b5b8e"/>
-  <polygon points="38,40 42,160 38,160 34,60" fill="#7d6da0" opacity="0.7"/>
-  <!-- stone bands -->
-  <g fill="#5a4b7a">
-    <rect x="35" y="60" width="42" height="6"/>
-    <rect x="36" y="90" width="40" height="6"/>
-    <rect x="36.5" y="120" width="39" height="6"/>
-    <rect x="37" y="148" width="38" height="6"/>
+  <!-- Wizard tower (2026-11-14 fantasy pass): rough-hewn stone tower on a
+       rocky plinth, wrapped in a glowing rune spiral, a balcony with a
+       hanging lantern, a starry conical roof with a crescent finial, and a
+       floating orb ringed by orbiting runestones. Base line y≈164. -->
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#a59cc4"/>
+      <stop offset="0.5" stop-color="#7d73a3"/>
+      <stop offset="1" stop-color="#4b4370"/>
+    </linearGradient>
+    <linearGradient id="roof" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6a3fb0"/>
+      <stop offset="1" stop-color="#2e1a5c"/>
+    </linearGradient>
+    <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6c7080"/>
+      <stop offset="1" stop-color="#3e4150"/>
+    </linearGradient>
+    <radialGradient id="orbGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#bff9ff" stop-opacity="0.9"/>
+      <stop offset="0.4" stop-color="#3fe0ff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#3fe0ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="winGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#7ffff0" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#7ffff0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lamp" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffe08a" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffb040" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- rune circle glowing on the ground -->
+  <ellipse cx="56" cy="166" rx="46" ry="8" fill="#3fe0ff" opacity="0.12"/>
+  <ellipse cx="56" cy="166" rx="42" ry="6.5" fill="none" stroke="#6ff3ff" stroke-width="1" opacity="0.7"/>
+  <ellipse cx="56" cy="166" rx="34" ry="5" fill="none" stroke="#6ff3ff" stroke-width="0.6" opacity="0.5" stroke-dasharray="3 2"/>
+
+  <!-- rocky plinth -->
+  <path d="M16 166 C 18 156, 26 150, 36 150 L 76 150 C 86 150, 94 156, 96 166 Z" fill="url(#rock)"/>
+  <path d="M22 160 l8 -4 l6 2 M80 156 l8 3 l4 4" fill="none" stroke="#2c2f3a" stroke-width="1"/>
+  <!-- steps up to the door -->
+  <rect x="44" y="156" width="24" height="3" fill="#8a8ea0"/>
+  <rect x="42" y="159" width="28" height="3" fill="#7a7e90"/>
+  <rect x="40" y="162" width="32" height="3" fill="#6a6e80"/>
+
+  <!-- tower body (slight taper) -->
+  <polygon points="34,154 37,58 75,58 78,154" fill="url(#wall)"/>
+  <!-- stone courses -->
+  <g stroke="#4a4270" stroke-width="0.8" fill="none" opacity="0.8">
+    <path d="M36.7 70 h38.6 M36.4 82 h39.2 M36.1 94 h39.8 M35.8 106 h40.4 M35.5 118 h41 M35.2 130 h41.6 M34.9 142 h42.2"/>
+    <path d="M46 58 v12 M62 70 v12 M50 82 v12 M66 94 v12 M44 106 v12 M58 118 v12 M48 130 v12 M64 142 v12"/>
   </g>
-  <!-- glowing windows -->
-  <g fill="#5ff5e0">
-    <rect x="50" y="70" width="10" height="12" rx="2"/>
-    <rect x="50" y="100" width="10" height="12" rx="2"/>
-    <rect x="50" y="130" width="10" height="12" rx="2"/>
-    <rect x="49" y="62" width="12" height="20" rx="3" opacity="0.35"/>
-    <rect x="49" y="92" width="12" height="20" rx="3" opacity="0.35"/>
-    <rect x="49" y="122" width="12" height="20" rx="3" opacity="0.35"/>
-  </g>
+  <!-- glowing rune spiral climbing the tower -->
+  <path d="M35 150 C 50 146, 70 142, 77 136 M77 136 C 64 128, 46 126, 36 118 M36 118 C 50 112, 68 108, 76 100 M76 100 C 62 92, 46 90, 37 82 M37 82 C 50 76, 66 72, 75 64" fill="none" stroke="#6ff3ff" stroke-width="1.2" stroke-dasharray="1.5 2.5" opacity="0.85"/>
+
   <!-- door -->
-  <path d="M46 160 v-16 a10 10 0 0 1 20 0 v16 z" fill="#2c2440"/>
-  <!-- orb chamber -->
-  <polygon points="30,40 82,40 74,14 38,14" fill="#8a79ad"/>
-  <polygon points="34,40 78,40 72,16 40,16" fill="#9989bf" opacity="0.6"/>
-  <!-- roof spike -->
-  <polygon points="56,2 62,16 50,16" fill="#c9b9e8"/>
-  <!-- floating orb -->
-  <circle cx="56" cy="30" r="9" fill="#00e5ff" opacity="0.9"/>
-  <circle cx="56" cy="30" r="5.5" fill="#9ef7ff"/>
-  <circle cx="53" cy="27" r="2" fill="#ffffff"/>
-  <!-- arcanum sparks -->
-  <g fill="#ffe27a">
-    <circle cx="24" cy="34" r="3"/>
-    <circle cx="90" cy="44" r="2.5"/>
-    <circle cx="34" cy="18" r="2.5"/>
-    <circle cx="82" cy="26" r="2"/>
+  <path d="M47 156 v-18 a9 9 0 0 1 18 0 v18 z" fill="#2a2140"/>
+  <path d="M49 156 v-17 a7 7 0 0 1 14 0 v17 z" fill="#4a3624"/>
+  <path d="M53 140 v16 M59 140 v16" stroke="#35261a" stroke-width="0.8"/>
+  <circle cx="61" cy="148" r="1" fill="#e8c860"/>
+  <path d="M47 138 a9 9 0 0 1 18 0" fill="none" stroke="#c9bde8" stroke-width="1.4"/>
+
+  <!-- windows -->
+  <g>
+    <circle cx="56" cy="122" r="9" fill="url(#winGlow)"/>
+    <path d="M52 128 v-7 a4 4 0 0 1 8 0 v7 z" fill="#5ff5e0"/>
+    <path d="M56 117 v11 M52 123 h8" stroke="#2a2140" stroke-width="0.8"/>
+    <circle cx="56" cy="92" r="9" fill="url(#winGlow)"/>
+    <path d="M52 98 v-7 a4 4 0 0 1 8 0 v7 z" fill="#5ff5e0"/>
+    <path d="M56 87 v11 M52 93 h8" stroke="#2a2140" stroke-width="0.8"/>
+    <path d="M41 108 v-4 a2 2 0 0 1 4 0 v4 z" fill="#5ff5e0" opacity="0.8"/>
+    <path d="M68 76 v-4 a2 2 0 0 1 4 0 v4 z" fill="#5ff5e0" opacity="0.8"/>
   </g>
-  <!-- arcane octagram on the base -->
-  <g stroke="#5ff5e0" stroke-width="2" fill="none" opacity="0.85">
-    <polygon points="56,164 66,146 46,146"/>
-    <polygon points="56,140 66,158 46,158"/>
+
+  <!-- balcony ring with hanging lantern -->
+  <path d="M28 60 h56 l-4 6 h-48 z" fill="#5a5080"/>
+  <g fill="#5a5080">
+    <rect x="30" y="54" width="3" height="6"/><rect x="38" y="54" width="3" height="6"/>
+    <rect x="71" y="54" width="3" height="6"/><rect x="79" y="54" width="3" height="6"/>
+  </g>
+  <rect x="28" y="53" width="56" height="2" fill="#7a70a6"/>
+  <path d="M84 63 q6 2 6 8" fill="none" stroke="#3a3350" stroke-width="1"/>
+  <circle cx="90" cy="76" r="7" fill="url(#lamp)"/>
+  <rect x="88" y="71" width="4" height="6" fill="#ffd56a"/>
+  <path d="M88 71 h4 l-2 -2 z M88 77 h4" stroke="#3a3350" stroke-width="0.8" fill="#3a3350"/>
+
+  <!-- upper chamber -->
+  <polygon points="38,53 40,34 72,34 74,53" fill="url(#wall)"/>
+  <path d="M52 50 v-8 a4 4 0 0 1 8 0 v8 z" fill="#ffcf6a" opacity="0.9"/>
+  <!-- starry conical roof -->
+  <polygon points="32,36 56,8 80,36" fill="url(#roof)"/>
+  <path d="M32 36 h48" stroke="#8a60d0" stroke-width="1.6"/>
+  <g fill="#ffe27a">
+    <path d="M48 24 l1 2 l2 0.4 l-1.5 1.4 l0.4 2 l-1.9 -1 l-1.9 1 l0.4 -2 l-1.5 -1.4 l2 -0.4 z"/>
+    <circle cx="62" cy="18" r="1"/><circle cx="58" cy="30" r="0.9"/><circle cx="44" cy="32" r="0.8"/><circle cx="66" cy="28" r="0.8"/>
+  </g>
+  <!-- crescent finial -->
+  <path d="M56 8 c-3 -1 -4 -5 -1 -7 c-1 2 0 5 3 5 c-0.6 1 -1.2 1.8 -2 2 z" fill="#ffd34a"/>
+
+  <!-- floating orb + orbiting runestones -->
+  <g>
+    <circle cx="94" cy="24" r="14" fill="url(#orbGlow)"/>
+    <circle cx="94" cy="24" r="6" fill="#3fe0ff"/>
+    <circle cx="94" cy="24" r="3.8" fill="#bff9ff"/>
+    <circle cx="92.2" cy="22.2" r="1.3" fill="#ffffff"/>
+    <ellipse cx="94" cy="24" rx="12" ry="3.5" fill="none" stroke="#9ff3ff" stroke-width="0.6" opacity="0.7"/>
+    <rect x="80.5" y="23" width="3" height="4" rx="0.8" fill="#6c7080"/>
+    <rect x="104.5" y="21" width="3" height="4" rx="0.8" fill="#6c7080"/>
+    <path d="M81.4 25 h1.2 M105.4 23 h1.2" stroke="#6ff3ff" stroke-width="0.7"/>
+  </g>
+  <!-- arcane motes -->
+  <g fill="#ffe27a">
+    <circle cx="20" cy="70" r="1.4"/><circle cx="16" cy="100" r="1"/><circle cx="96" cy="112" r="1.2"/>
+    <circle cx="24" cy="40" r="1"/><circle cx="100" cy="90" r="0.9"/>
+  </g>
+  <g fill="#9ff3ff">
+    <circle cx="26" cy="132" r="1"/><circle cx="90" cy="140" r="1.1"/><circle cx="18" cy="56" r="0.8"/>
   </g>
 </svg>

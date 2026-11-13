@@ -1,31 +1,106 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="160" viewBox="0 0 192 160">
-  <!-- mountain silhouette (matches assets/sprites/mountain.svg palette) -->
-  <polygon points="96,10 178,150 14,150" fill="#6f7480"/>
-  <polygon points="150,70 192,150 104,150" fill="#5e6270"/>
-  <!-- snow cap -->
-  <polygon points="96,10 114,48 106,42 98,52 90,42 80,48" fill="#e8ecf2"/>
-  <!-- rocky shading -->
-  <polygon points="96,24 132,150 62,150" fill="#7c818d" opacity="0.55"/>
-  <!-- cave mouth -->
-  <path d="M64 150 v-34 a32 30 0 0 1 64 0 v34 z" fill="#171419"/>
-  <!-- gold hoard glowing inside the cave -->
-  <ellipse cx="96" cy="142" rx="26" ry="7" fill="#c9960f"/>
-  <circle cx="84" cy="138" r="5" fill="#ffd54a"/>
-  <circle cx="96" cy="136" r="6" fill="#ffe27a"/>
-  <circle cx="108" cy="138" r="5" fill="#ffd54a"/>
-  <circle cx="92" cy="133" r="3.5" fill="#fff2b0"/>
-  <circle cx="101" cy="132" r="3" fill="#fff2b0"/>
-  <!-- cave inner glow -->
-  <ellipse cx="96" cy="128" rx="20" ry="12" fill="#ffb638" opacity="0.25"/>
-  <!-- dragon sigil above the cave: winged mark -->
-  <path d="M72 88 q14 -18 24 -4 q10 -16 24 -2 q-10 8 -24 6 q-14 6 -24 0 z" fill="#2a2326"/>
-  <circle cx="96" cy="72" r="3" fill="#2a2326"/>
-  <!-- bone decorations flanking the lair -->
-  <g fill="#ddd6c8">
-    <ellipse cx="52" cy="146" rx="9" ry="3"/>
-    <circle cx="44" cy="144" r="3.5"/>
-    <circle cx="58" cy="143" r="3.5"/>
-    <ellipse cx="144" cy="147" rx="8" ry="3"/>
-    <circle cx="152" cy="145" r="3"/>
+  <!-- Dragon lair (2026-11-14, toned down per user): an ancient temple
+       ruin half-swallowed by a dark rock knoll. Black and grey; the only
+       color is a faint warm glow breathing out of the doorway. Base line
+       y=150; base spans x≈30..162 (DragonLair.tscn blocker matches). -->
+  <defs>
+    <linearGradient id="knoll" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a4a52"/>
+      <stop offset="1" stop-color="#26262c"/>
+    </linearGradient>
+    <linearGradient id="knollDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34343b"/>
+      <stop offset="1" stop-color="#18181c"/>
+    </linearGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a8a92"/>
+      <stop offset="1" stop-color="#5c5c64"/>
+    </linearGradient>
+    <linearGradient id="column" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9a9aa2"/>
+      <stop offset="0.5" stop-color="#7a7a82"/>
+      <stop offset="1" stop-color="#4a4a52"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.92" r="0.7">
+      <stop offset="0" stop-color="#ff9a3c" stop-opacity="0.45"/>
+      <stop offset="0.5" stop-color="#7a3416" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- rock knoll the temple is carved into -->
+  <path d="M22 150 C 20 120, 30 92, 48 74 C 60 54, 76 40, 96 38 C 118 36, 136 50, 148 70 C 162 90, 172 118, 170 150 Z" fill="url(#knoll)"/>
+  <path d="M96 38 C 118 36, 136 50, 148 70 C 162 90, 172 118, 170 150 L 120 150 C 128 110, 116 70, 96 38 Z" fill="url(#knollDark)"/>
+  <g fill="none" stroke="#1c1c21" stroke-width="1.1" stroke-linecap="round">
+    <path d="M40 104 l10 -4 l8 2"/><path d="M58 64 l8 -3 l8 2"/>
+    <path d="M140 80 l8 4 l6 -1"/><path d="M150 118 l10 3"/>
   </g>
+  <path d="M48 74 C 60 54, 76 40, 96 38" fill="none" stroke="#6a6a74" stroke-width="1.1" opacity="0.6"/>
+  <!-- dead tree clinging to the crown -->
+  <path d="M128 52 l-2 -12 l-5 -6 M126 42 l5 -7 M124 38 l-6 -2" fill="none" stroke="#2a2a30" stroke-width="1.4" stroke-linecap="round"/>
+
+  <!-- collapsed pediment -->
+  <polygon points="58,84 96,62 120,76 116,80 96,68 66,86" fill="url(#stone)"/>
+  <polygon points="120,76 134,84 128,86 118,80" fill="#5c5c64"/>
+  <!-- architrave (cracked lintel) with a worn dragon relief -->
+  <rect x="58" y="84" width="76" height="11" fill="url(#stone)"/>
+  <path d="M58 95 h76" stroke="#3a3a42" stroke-width="1"/>
+  <path d="M100 84 l-3 5 l2 6" fill="none" stroke="#2a2a30" stroke-width="1"/>
+  <path d="M78 91 q6 -6 12 -2 q4 -4 9 -1 q-3 3 -9 2 q-6 4 -12 1 z" fill="#6c6c74"/>
+  <circle cx="81" cy="89" r="0.9" fill="#3a3a42"/>
+  <!-- broken corner of the lintel lying on the steps -->
+  <polygon points="134,84 140,86 138,95 132,95" fill="#6e6e76"/>
+
+  <!-- doorway: darkness with a faint warm breath -->
+  <path d="M74 150 V 95 H 118 V 150 Z" fill="#0d0d10"/>
+  <path d="M74 150 V 95 H 118 V 150 Z" fill="url(#glow)"/>
+  <g fill="#d9a54a" opacity="0.55">
+    <circle cx="90" cy="146" r="0.9"/><circle cx="97" cy="144.6" r="1.1"/><circle cx="104" cy="146.4" r="0.8"/>
+  </g>
+
+  <!-- columns: left pair whole, right pair broken -->
+  <g>
+    <rect x="62" y="95" width="10" height="48" fill="url(#column)"/>
+    <rect x="60" y="93" width="14" height="3" fill="#8a8a92"/>
+    <rect x="60" y="141" width="14" height="3" fill="#6a6a72"/>
+    <path d="M65 97 v44 M69 97 v44" stroke="#5a5a62" stroke-width="0.6"/>
+    <path d="M64 112 l3 3 l-1 4" fill="none" stroke="#3a3a42" stroke-width="0.8"/>
+
+    <rect x="120" y="116" width="10" height="27" fill="url(#column)"/>
+    <polygon points="120,116 123,112 126,115 130,111 130,116" fill="#7a7a82"/>
+    <rect x="118" y="141" width="14" height="3" fill="#6a6a72"/>
+    <path d="M123 117 v24 M127 117 v24" stroke="#5a5a62" stroke-width="0.6"/>
+    <!-- the rest of that column, fallen -->
+    <g transform="rotate(-8 150 140)">
+      <rect x="138" y="136" width="22" height="9" rx="1" fill="url(#column)"/>
+      <ellipse cx="160" cy="140.5" rx="2" ry="4.5" fill="#5c5c64"/>
+    </g>
+    <!-- far-left stump -->
+    <rect x="44" y="128" width="9" height="15" fill="url(#column)"/>
+    <polygon points="44,128 47,124 50,127 53,125 53,128" fill="#7a7a82"/>
+  </g>
+
+  <!-- steps -->
+  <rect x="50" y="143" width="92" height="3.5" fill="#6a6a72"/>
+  <rect x="44" y="146.5" width="104" height="3.5" fill="#55555d"/>
+  <path d="M50 143 h92 M44 146.5 h104" stroke="#8a8a92" stroke-width="0.6" opacity="0.7"/>
+
+  <!-- rubble -->
+  <g>
+    <polygon points="32,150 34,144 40,143 42,150" fill="#5c5c64"/>
+    <polygon points="34,144 40,143 38,146" fill="#7a7a82"/>
+    <polygon points="150,150 152,146 158,146 159,150" fill="#4a4a52"/>
+    <rect x="56" y="139" width="5" height="4" fill="#6e6e76" transform="rotate(12 58 141)"/>
+    <circle cx="138" cy="148" r="1.6" fill="#4a4a52"/>
+    <circle cx="48" cy="148" r="1.4" fill="#6a6a72"/>
+  </g>
+  <!-- grey moss / creepers -->
+  <g fill="#4a5048" opacity="0.85">
+    <circle cx="60" cy="86" r="2.2"/><circle cx="63" cy="90" r="1.8"/><circle cx="62" cy="96" r="1.6"/>
+    <circle cx="131" cy="86" r="1.8"/><circle cx="46" cy="130" r="1.6"/>
+  </g>
+  <!-- a lone skull at the threshold, barely lit -->
+  <circle cx="84" cy="141" r="2.6" fill="#8e8a82"/>
+  <rect x="82.6" y="142.4" width="2.8" height="1.6" fill="#8e8a82"/>
+  <circle cx="83.2" cy="140.8" r="0.6" fill="#1a1a1e"/><circle cx="85" cy="140.8" r="0.6" fill="#1a1a1e"/>
 </svg>

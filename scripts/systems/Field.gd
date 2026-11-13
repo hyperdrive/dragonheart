@@ -34,8 +34,17 @@ var claim_expires: int = 0
 const COLOR_GROWN := Color(0.3, 0.75, 0.2, 1.0)
 const COLOR_STUBBLE := Color(0.45, 0.33, 0.2, 1.0)
 
+## Crop variety (2026-11-14 art pass): each plot grows wheat or a
+## vegetable patch. Pure visuals — the economy treats them identically.
+const CROP_ART: Array[Texture2D] = [
+	preload("res://assets/sprites/field_wheat.svg"),
+	preload("res://assets/sprites/field_veg.svg"),
+]
+
 func _ready() -> void:
 	add_to_group("fields")
+	if crop_rows is Sprite2D:
+		(crop_rows as Sprite2D).texture = CROP_ART[randi() % CROP_ART.size()]
 	_apply_state_visuals()
 	regrow_timer.timeout.connect(_on_regrow_timeout)
 	# Per-field tint variation (2026-11-09): identical plots look cloned;
