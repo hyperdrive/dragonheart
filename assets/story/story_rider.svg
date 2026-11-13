@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="552" height="100" viewBox="0 0 552 100">
+  <!-- Story vignette: the archer's oath (2026-11-14). -->
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e2a5a"/><stop offset="0.5" stop-color="#c86a5a"/><stop offset="1" stop-color="#ffd08a"/></linearGradient>
+    <radialGradient id="r2" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff0c0" stop-opacity="0.6"/><stop offset="1" stop-color="#fff0c0" stop-opacity="0"/></radialGradient>
+    <radialGradient id="r3" cx="0.5" cy="0.5" r="0.75"><stop offset="0.55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity="0.55"/></radialGradient>
+  </defs>
+  <rect x="0" y="0" width="552" height="100" fill="url(#g1)" opacity="1.0"/>
+  <circle cx="140" cy="86" r="70" fill="url(#r2)"/>
+  <g fill="#ffd8c0" opacity="0.55"><ellipse cx="320" cy="30" rx="30" ry="5"/><ellipse cx="334" cy="27" rx="16" ry="4"/></g>
+  <g fill="#ffd8c0" opacity="0.55"><ellipse cx="460" cy="54" rx="30" ry="5"/><ellipse cx="474" cy="51" rx="16" ry="4"/></g>
+  <g fill="#ffd8c0" opacity="0.55"><ellipse cx="90" cy="40" rx="30" ry="5"/><ellipse cx="104" cy="37" rx="16" ry="4"/></g>
+  <path d="M -20 100 L -20 80.2 Q 1.1 78.7 22.3 80.1 T 64.6 80.1 Q 85.7 78.6 106.9 78.5 T 149.1 76.8 Q 170.3 75.3 191.4 78.3 T 233.7 79.8 Q 254.9 78.3 276.0 79.9 T 318.3 80.1 Q 339.4 78.6 360.6 78.9 T 402.9 77.8 Q 424.0 76.3 445.1 77.9 T 487.4 78.1 Q 508.6 76.6 529.7 78.8 T 572.0 79.5 L 572 100 Z" fill="#3a2030" opacity="1.0"/>
+  <g transform="translate(300 52) scale(1.6 1.6)"><path d="M 4 -2 L 12 -20 L 6 -14 L 4 -19 L 1 -10 L -4 -12 L -2 -2 Z" fill="#1a0a10" opacity="0.8"/><path d="M 32 0 L 27 -2.6 L 22 -3.6 L 18 -2.6 L 13 -2 L 6 -2.4 L -4 -2 L -14 -0.6 L -26 1.6 L -38 5 L -48 4.4 L -52 6 L -47 6.8 L -38 7.6 L -26 5.4 L -12 4.6 L 0 4.6 L 10 3.6 L 16 2.6 L 22 2.4 L 27 1.6 Z" fill="#1a0a10"/><path d="M 23 -3 L 18 -8 L 21 -3 Z M 21 -3 L 14 -7 L 18 -2.6 Z" fill="#1a0a10"/><path d="M 6 -2 L 2 -26 L -3 -17 L -8 -24 L -10 -12 L -17 -16 L -13 -2 Z" fill="#1a0a10"/></g>
+  <g fill="#1a0a10"><circle cx="304" cy="38" r="2.6"/><path d="M 301 41 h 6 l -1 7 h -4 z"/></g>
+  <path d="M 312 34 q 6 6 0 12" stroke="#1a0a10" stroke-width="1.2" fill="none"/><path d="M 312 34 L 306 40 L 312 46" stroke="#e8d8c0" stroke-width="0.5" fill="none"/>
+  <path d="M 306 40 h 14" stroke="#1a0a10" stroke-width="0.8"/>
+  <rect x="0" y="0" width="552" height="100" fill="url(#r3)"/>
+  <rect x="1.5" y="1.5" width="549" height="97" fill="none" stroke="#c9a24a" stroke-width="1" opacity="0.7"/>
+</svg>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="552" height="100" viewBox="0 0 552 100">
+  <!-- Story vignette: a pig's last oink (2026-11-14). -->
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6ab0e0"/><stop offset="1" stop-color="#d8f0ff"/></linearGradient>
+    <radialGradient id="r2" cx="0.5" cy="0.5" r="0.75"><stop offset="0.55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity="0.55"/></radialGradient>
+  </defs>
+  <rect x="0" y="0" width="552" height="100" fill="url(#g1)" opacity="1.0"/>
+  <g fill="#ffffff" opacity="0.85"><ellipse cx="120" cy="22" rx="18" ry="6"/><ellipse cx="130" cy="18" rx="10" ry="6"/></g>
+  <g fill="#ffffff" opacity="0.85"><ellipse cx="380" cy="16" rx="18" ry="6"/><ellipse cx="390" cy="12" rx="10" ry="6"/></g>
+  <g fill="#ffffff" opacity="0.85"><ellipse cx="470" cy="30" rx="18" ry="6"/><ellipse cx="480" cy="26" rx="10" ry="6"/></g>
+  <path d="M -20 100 L -20 50.3 Q 1.1 48.2 22.3 55.0 T 64.6 59.7 Q 85.7 57.6 106.9 56.1 T 149.1 52.6 Q 170.3 50.5 191.4 55.4 T 233.7 58.3 Q 254.9 56.2 276.0 54.2 T 318.3 50.1 Q 339.4 48.0 360.6 54.9 T 402.9 59.6 Q 424.0 57.5 445.1 55.4 T 487.4 51.2 Q 508.6 49.1 529.7 52.2 T 572.0 53.1 L 572 100 Z" fill="#7ab85a" opacity="1.0"/>
+  <path d="M -20 100 L -20 75.6 Q 1.1 74.4 22.3 75.2 T 64.6 74.9 Q 85.7 73.7 106.9 75.1 T 149.1 75.3 Q 170.3 74.1 191.4 75.2 T 233.7 75.1 Q 254.9 73.9 276.0 75.2 T 318.3 75.3 Q 339.4 74.1 360.6 74.6 T 402.9 73.9 Q 424.0 72.7 445.1 75.0 T 487.4 76.2 Q 508.6 75.0 529.7 75.1 T 572.0 74.0 L 572 100 Z" fill="#5a9a46" opacity="1.0"/>
+  <rect x="0" y="84" width="552" height="16" fill="#4a8a3e"/>
+  <g transform="translate(300 90) scale(2.6 0.55)"><path d="M 30 0 L 6 -3 L 2 -26 L -8 -24 L -16 -16 L -14 -2 L -48 4 L -12 6 L 22 3 Z" fill="#1a3a1a" opacity="0.45"/></g>
+  <rect x="230" y="72" width="3" height="18" fill="#6a4628"/>
+  <rect x="244" y="72" width="3" height="18" fill="#6a4628"/>
+  <rect x="258" y="72" width="3" height="18" fill="#6a4628"/>
+  <rect x="272" y="72" width="3" height="18" fill="#6a4628"/>
+  <rect x="286" y="72" width="3" height="18" fill="#6a4628"/>
+  <rect x="300" y="72" width="3" height="18" fill="#6a4628"/>
+  <rect x="314" y="72" width="3" height="18" fill="#6a4628"/>
+  <rect x="328" y="72" width="3" height="18" fill="#6a4628"/>
+  <rect x="342" y="72" width="3" height="18" fill="#6a4628"/>
+  <rect x="356" y="72" width="3" height="18" fill="#6a4628"/>
+  <rect x="370" y="72" width="3" height="18" fill="#6a4628"/>
+  <rect x="228" y="76" width="146" height="2.4" fill="#8a6038"/><rect x="228" y="83" width="146" height="2.4" fill="#8a6038"/>
+  <ellipse cx="300" cy="86" rx="13" ry="8" fill="#f4a6b0"/><circle cx="312" cy="82" r="6" fill="#f4a6b0"/><ellipse cx="317" cy="83" rx="2.4" ry="2" fill="#e88a98"/><circle cx="313" cy="79" r="1" fill="#2a1a1a"/><path d="M 309 76 l 2 -4 l 2 3 z" fill="#e88a98"/><path d="M 290 92 v 4 M 296 93 v 4 M 304 93 v 4 M 309 92 v 4" stroke="#e88a98" stroke-width="2"/><path d="M 287 84 q -4 -2 -2 -5" stroke="#e88a98" stroke-width="1.2" fill="none"/>
+  <text x="322" y="70" font-family="serif" font-size="11" fill="#2a1a1a" font-weight="bold">!</text>
+  <g transform="translate(420 26) scale(-0.75 0.75)"><path d="M 4 -2 L 12 -20 L 6 -14 L 4 -19 L 1 -10 L -4 -12 L -2 -2 Z" fill="#2a0c0c" opacity="0.8"/><path d="M 32 0 L 27 -2.6 L 22 -3.6 L 18 -2.6 L 13 -2 L 6 -2.4 L -4 -2 L -14 -0.6 L -26 1.6 L -38 5 L -48 4.4 L -52 6 L -47 6.8 L -38 7.6 L -26 5.4 L -12 4.6 L 0 4.6 L 10 3.6 L 16 2.6 L 22 2.4 L 27 1.6 Z" fill="#2a0c0c"/><path d="M 23 -3 L 18 -8 L 21 -3 Z M 21 -3 L 14 -7 L 18 -2.6 Z" fill="#2a0c0c"/><path d="M 6 -2 L 2 -26 L -3 -17 L -8 -24 L -10 -12 L -17 -16 L -13 -2 Z" fill="#2a0c0c"/></g>
+  <rect x="0" y="0" width="552" height="100" fill="url(#r2)"/>
+  <rect x="1.5" y="1.5" width="549" height="97" fill="none" stroke="#c9a24a" stroke-width="1" opacity="0.7"/>
+</svg>

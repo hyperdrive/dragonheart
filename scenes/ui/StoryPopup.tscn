@@ -120,7 +120,7 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 expand_mode = 1
-stretch_mode = 5
+stretch_mode = 6
 
 [node name="StoryText" type="Label" parent="Center/Panel/VBox"]
 custom_minimum_size = Vector2(0, 170)

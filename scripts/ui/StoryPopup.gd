@@ -21,7 +21,7 @@ const STORIES := {
 	# --- peasant-burn horror stories (2026-11-09): five random variants ---
 	"peasant_burn_1": {
 		"title": "The Screaming Harvest",
-		"image": "res://assets/field_fire.svg",
+		"image": "res://assets/story/story_fields_burn.svg",
 		"tint": Color(0.4, 0.18, 0.1),
 		"text": "The peasant's scream cuts the night like a sickle through fog. His home collapses into flame, walls groaning as the dragon's shadow swallows the firelight whole. In the ashes, a charred hand still clutches a broken cradle — the dragon decides to keep it. A souvenir.",
 		"choices": [
@@ -32,7 +32,7 @@ const STORIES := {
 	},
 	"peasant_burn_2": {
 		"title": "Ashes of the Cradle",
-		"image": "res://assets/field_fire.svg",
+		"image": "res://assets/story/story_fields_burn.svg",
 		"tint": Color(0.42, 0.15, 0.08),
 		"text": "One house, then another, then the whole row — the dragon's fire does not discriminate. The peasant's wife runs into the flames, a white smock blazing like a surrender flag. The dragon catches her in mid-leap, cradles her burning frame, and lets her fall. Some feasts must be witnessed.",
 		"choices": [
@@ -43,7 +43,7 @@ const STORIES := {
 	},
 	"peasant_burn_3": {
 		"title": "The Fire That Speaks",
-		"image": "res://assets/field_fire.svg",
+		"image": "res://assets/story/story_fields_burn.svg",
 		"tint": Color(0.38, 0.16, 0.12),
 		"text": "The peasant begs for mercy with trembling hands. The dragon answers with a column of flame that lifts the thatch roof into the stars. In the silence after, a single child cowers behind a stone foundation — the dragon spares the child. Some stories need a witness.",
 		"choices": [
@@ -54,7 +54,7 @@ const STORIES := {
 	},
 	"peasant_burn_4": {
 		"title": "Soot on the Soul",
-		"image": "res://assets/field_fire.svg",
+		"image": "res://assets/story/story_fields_burn.svg",
 		"tint": Color(0.4, 0.2, 0.1),
 		"text": "The peasant runs, barefoot, toward the dragon with hands open — not in surrender, but in plea. The dragon burns him where he stands. The smell of roasting flesh hangs for miles. The dragon remembers: this is how kings hear you.",
 		"choices": [
@@ -65,7 +65,7 @@ const STORIES := {
 	},
 	"peasant_burn_5": {
 		"title": "The Burnt Letter",
-		"image": "res://assets/field_fire.svg",
+		"image": "res://assets/story/story_fields_burn.svg",
 		"tint": Color(0.36, 0.19, 0.11),
 		"text": "The peasant clutches a charred scroll — a plea to the king, a promise to the dragon. The dragon burns the scroll first, then the peasant. The words turn to ash: \"Please, please, I have children, I have debts, I have nothing left to give.\" The dragon takes the last page, unburnt. A keepsake.",
 		"choices": [
@@ -76,7 +76,7 @@ const STORIES := {
 	},
 	"field_burn": {
 		"title": "Ash on the Wind",
-		"image": "res://assets/field_fire.svg",
+		"image": "res://assets/story/story_fields_burn.svg",
 		"tint": Color(0.38, 0.22, 0.1),
 		"text": "The wheat dreams of summer and wakes black. Between the furrows the farmers scatter like tossed seed, skirts full of smoke and voices full of ruin: \"The dragon burns our fields! THE DRAGON BURNS OUR FIELDS!\" Somewhere above the ember column, something with far too many teeth decides the season has been excellent.",
 		"choices": [
@@ -87,7 +87,7 @@ const STORIES := {
 	},
 	"miner_burn": {
 		"title": "The Song of Singed Whiskers",
-		"image": "res://assets/pick_flame.svg",
+		"image": "res://assets/story/story_mine_fire.svg",
 		"tint": Color(0.24, 0.16, 0.1),
 		"text": "\"MINERS REFUSE TO WORK BECAUSE OF DRAGON TERROR!\" the criers howl through every square — though between us and the barrel, the miners are simply drinking the tavern dry and rehearsing excuses. The terror, mind you, is real: a scorched silhouette circling the mine is rather hard to conjure from nothing.",
 		"choices": [
@@ -98,7 +98,7 @@ const STORIES := {
 	},
 	"king_emerge": {
 		"title": "The King Descends",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king.svg",
 		"tint": Color(0.32, 0.2, 0.3),
 		"text": "Banners swallow the horizon; hooves shatter the frost. AND THEN — the King himself, gold-heavy sword drawn, voice rolling over every farmhand's head: \"CREATURE OF SMOKE AND THEFT! By my crown, by my fathers, and by every golden coin of this realm — I shall have your head above my gates by sunset!\" The dragon yawns, showing every knife of a tooth.",
 		"choices": [
@@ -111,7 +111,7 @@ const STORIES := {
 	# variations\") ---
 	"king_defiant": {
 		"title": "The Defiant King",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king.svg",
 		"tint": Color(0.32, 0.2, 0.2),
 		"text": "You have heard the songs — the old songs, the ones about the dragon I slew in my youth, the one they carved into the chapel doors. It was true. I was that man. I killed that beast while my hands were young and my heart was stupid enough to believe the stories would end there. But the stories do not end. They just find a new beast to be about. So here I am, old, slow, tired, wearing a crown that feels like a gravestone — and I am going to pick up my sword again. Not because I want to. Because a king who stops being a hero is just a man with good furniture, and I refuse to die that way.",
 		"choices": [
@@ -122,7 +122,7 @@ const STORIES := {
 	},
 	"king_courageous": {
 		"title": "The Fearless",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king.svg",
 		"tint": Color(0.3, 0.18, 0.22),
 		"text": "I am still the king. I am still the man who killed the last dragon, and I killed it while I was so afraid I could barely hold my sword — and that fear is the only reason I am alive. The dragon does not feel fear. It has never needed to. It has never met a man who had nothing left to lose, a man who would rather die on his feet than live on his knees. Today, you are that man. Today, we are all that man. And I promise you: when the beast looks into our eyes and sees no running, no begging, no white flags — it will know fear for the first time in its long, stupid life.",
 		"choices": [
@@ -133,7 +133,7 @@ const STORIES := {
 	},
 	"king_challenger": {
 		"title": "The Challenger",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king.svg",
 		"tint": Color(0.25, 0.15, 0.25),
 		"text": "Come forth, you wretched beast of fire and ruin! I have brought you the finest steel of twelve kingdoms, ten thousand men who fear neither death nor darkness, and a crown forged in the blood of conquerors. Today, dragon, you shall learn why even gods once trembled before kings!",
 		"choices": [
@@ -144,7 +144,7 @@ const STORIES := {
 	},
 	"king_unbowed": {
 		"title": "The Unbowed",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king.svg",
 		"tint": Color(0.28, 0.12, 0.22),
 		"text": "Look upon me, wyrm, and behold the one creature in this world that does not fear you! I have broken empires, buried tyrants, and walked through rivers of blood to claim this crown. Your fire is but a candle before the furnace of my wrath!",
 		"choices": [
@@ -155,7 +155,7 @@ const STORIES := {
 	},
 	"king_champion": {
 		"title": "The Champion",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king.svg",
 		"tint": Color(0.3, 0.2, 0.25),
 		"text": "By the heavens that witness us, by the earth that bears our feet, and by the ancient kings whose bones lie beneath these hills, I challenge thee! Let the mountains shatter and the skies turn black with ash, for I shall not yield one step. Come, serpent, and discover whether your flames burn hotter than the fury of a king!",
 		"choices": [
@@ -166,7 +166,7 @@ const STORIES := {
 	},
 	"king_renegade": {
 		"title": "The Renegade King",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king.svg",
 		"tint": Color(0.25, 0.18, 0.15),
 		"text": "Hear me, beast! The age of dragons ends beneath my banner, and from your ashes shall rise an age of men! Let your roar shake the heavens one final time, for when this day is done, the only thing left of your legend shall be the songs they sing of me!",
 		"choices": [
@@ -177,7 +177,7 @@ const STORIES := {
 	},
 	"king_defeat": {
 		"title": "The Crown Tumbles",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king_fallen.svg",
 		"tint": Color(0.2, 0.18, 0.2),
 		"text": "A third fall. THREE, and the third is FINAL. The King lies still beneath his own collapsed standard, helm rolling away in the dust, and the realm — farms silent, mines cold, treasury gutted — realizes in one held breath that it kneels to no man tonight. The last roar shakes harvest from every unburnt tree.",
 		"choices": [
@@ -190,7 +190,7 @@ const STORIES := {
 	# options\") ---
 	"king_defeat_fallen_crown": {
 		"title": "The Fallen Crown",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king_fallen.svg",
 		"tint": Color(0.25, 0.15, 0.18),
 		"text": "\"Impossible... I have brought empires to their knees... I have broken armies greater than the stars in heaven! And yet... a miserable, overgrown lizard dares to stand above me? Curse you, beast! May your gold turn to ashes, your wings to dust, and your name be forgotten by all but the worms!\"",
 		"choices": [
@@ -201,7 +201,7 @@ const STORIES := {
 	},
 	"king_defeat_prophecy": {
 		"title": "The King's Last Prophecy",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king_fallen.svg",
 		"tint": Color(0.22, 0.12, 0.2),
 		"text": "\"You may have broken my sword, dragon, but you have not broken my kingdom! A thousand sons shall rise to avenge me, and ten thousand more shall follow! They shall hunt you to the ends of the earth, and when they finally drag your carcass from its mountain, I shall be laughing from the halls of the dead!\"",
 		"choices": [
@@ -212,7 +212,7 @@ const STORIES := {
 	},
 	"king_defeat_curse": {
 		"title": "The Curse of the Dying King",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king_fallen.svg",
 		"tint": Color(0.28, 0.1, 0.22),
 		"text": "\"By my blood upon this soil, by my crown cast into the mud, I lay upon you the curse of kings! May every treasure you steal bring you sorrow, every maiden you carry bring you misery, and every victory leave you more wretched than the last! May you live a thousand years, dragon... and regret every single one!\"",
 		"choices": [
@@ -223,7 +223,7 @@ const STORIES := {
 	},
 	"king_defeat_defiance": {
 		"title": "The King's Final Defiance",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king_fallen.svg",
 		"tint": Color(0.3, 0.12, 0.15),
 		"text": "\"Do not mistake my fall for your triumph, serpent! A king does not die when his heart ceases beating, but when the last man forgets his name! And I swear upon the throne of my fathers... even if I must crawl from the grave with my bones for swords, I shall have my vengeance!\"",
 		"choices": [
@@ -234,7 +234,7 @@ const STORIES := {
 	},
 	"king_defeat_decree": {
 		"title": "The Last Royal Decree",
-		"image": "res://assets/king_crown.svg",
+		"image": "res://assets/story/story_king_fallen.svg",
 		"tint": Color(0.2, 0.15, 0.25),
 		"text": "\"Then hear my final decree, you winged abomination! I condemn you to an eternity of hunger, an ocean of loneliness, and a mountain of gold you shall never have the wit to spend! And when the last star fades and the world grows cold, may you still be sitting upon your worthless treasure... YOU GLORIFIED CHICKEN!\"",
 		"choices": [
@@ -245,7 +245,7 @@ const STORIES := {
 	},
 	"wizard_emerge": {
 		"title": "The Tower Reveals Its Master",
-		"image": "res://assets/wizard_bolt.svg",
+		"image": "res://assets/story/story_wizard.svg",
 		"tint": Color(0.2, 0.14, 0.3),
 		"text": "The shop door SLAMS open and out steps your so-tolerant, so-cheap merchant — the treacherous evil overlord himself. \"You flawless FOOL,\" he weeps with laughter, robes snapping like storm banners. \"I sold you flame, shield and speed… never at 8g did I say CHEAPLY! I AM the wizard — betrayer of nine courts, tyrant of ten shadows — and tonight your hoard is my inventory!\"",
 		"choices": [
@@ -256,7 +256,7 @@ const STORIES := {
 	},
 	"pig_eaten": {
 		"title": "A Pig's Last Oink",
-		"image": "res://assets/pig.svg",
+		"image": "res://assets/story/story_pig.svg",
 		"tint": Color(0.35, 0.22, 0.25),
 		"text": "The first pig of the war slides off the bone-hook of destiny and into a dragon's mouth with one bare moment of philosophical snort. The pen is quieter now. The town will bristle, gossip, and pay its ten food — but the fire in your chest remembers WARMTH tonight.",
 		"choices": [
@@ -266,7 +266,7 @@ const STORIES := {
 	},
 	"cow_eaten": {
 		"title": "The Cow's Moonlit Lament",
-		"image": "res://assets/cow.svg",
+		"image": "res://assets/story/story_cow.svg",
 		"tint": Color(0.24, 0.26, 0.2),
 		"text": "The first cow of the campaign looks up once — unhurried, ancient, disappointed — before jaws older than counties settle the matter. Somewhere a milk-bucket tips. The dragon swallows TWO flame charges and a veterinary-sized pride, and decides the moon owes it a favor.",
 		"choices": [
@@ -279,7 +279,7 @@ const STORIES := {
 	# are the slayer's signature. Choices are the dragon's last words.
 	"dragon_death_soldier": {
 		"title": "The Last Wingbeat",
-		"image": "res://assets/dragon_fall.svg",
+		"image": "res://assets/story/story_dragon_fall.svg",
 		"tint": Color(0.3, 0.26, 0.24),
 		"text": "No magic. No prophecy. Just town steel, held shoulder to shoulder by men who did NOT flee — pikes braced while the great shadow dove, and a droning farmhand chorus singing their one rehearsed line: \"THE DRAGON IS SLAIN!\" The commonest metal in the realm spelled the end of the rarest. The song will outlive the hoard.",
 		"choices": [
@@ -290,7 +290,7 @@ const STORIES := {
 	},
 	"dragon_death_archer": {
 		"title": "The Well-Aimed Silence",
-		"image": "res://assets/dragon_fall.svg",
+		"image": "res://assets/story/story_dragon_fall.svg",
 		"tint": Color(0.24, 0.3, 0.26),
 		"text": "The bolt that took him ran true from a hundred paces of patience — one archer, one arrow, one heartbeat at the draw. The town said dragons could not be whittled. The town was wrong. As the great wings fold, the archer lowers the bow without a word, and THAT silence is the loudest cheer the realm has ever heard.",
 		"choices": [
@@ -301,7 +301,7 @@ const STORIES := {
 	},
 	"dragon_death_king": {
 		"title": "The Crown's Vengeance",
-		"image": "res://assets/dragon_fall.svg",
+		"image": "res://assets/story/story_dragon_fall.svg",
 		"tint": Color(0.28, 0.22, 0.3),
 		"text": "The magic sword falls one final time, and the King stands unbeaten on the mountain of scales — the realm's crown unbroken, the hoard reclaimed, the burning season OVER. \"I told you, beast,\" he says to the cooling dark, \"by my fathers and every golden coin.\" Hills away, farms and mines exhale: the war is decided.",
 		"choices": [
@@ -312,7 +312,7 @@ const STORIES := {
 	},
 	"dragon_death_wizard": {
 		"title": "The Overlord Collects",
-		"image": "res://assets/dragon_fall.svg",
+		"image": "res://assets/story/story_dragon_fall.svg",
 		"tint": Color(0.2, 0.16, 0.3),
 		"text": "The lightning was never a duel — it was an INVOICE. The wizard strolls through thunder to the fallen hoard, rolling up his sleeves: \"Every upgrade you bought… every coin you stole… plus interest, penalties, and MY board.\" The backstabbing merchant finally closes the account he opened the day the dragon first came cheap at his door.",
 		"choices": [
@@ -323,7 +323,7 @@ const STORIES := {
 	},
 	"dragon_death": {
 		"title": "The Hoard Goes Cold",
-		"image": "res://assets/dragon_fall.svg",
+		"image": "res://assets/story/story_dragon_fall.svg",
 		"tint": Color(0.22, 0.2, 0.22),
 		"text": "The dragon never knew which blow mattered — the realm's cuts arrived together, patient and grey, the way debts do. One more wing settles over an unguarded hoard. Somewhere the town bells ring, and ring, and ring upon a story that no longer features a dragon except as a scar on the harvest calendar.",
 		"choices": [
@@ -335,7 +335,7 @@ const STORIES := {
 	# --- goblin encounter stories (2026-11-09) ---
 	"goblin_encounter_neutral": {
 		"title": "A Green Shadow",
-		"image": "",
+		"image": "res://assets/story/story_goblins.svg",
 		"tint": Color(0.15, 0.25, 0.15),
 		"text": "A small, green-skinned figure emerges from the mountain shadows. It holds a crude spear and eyes you warily. \"I am goblin,\" it says in a raspy voice. \"I dig for those who pay. For one gem, my tribe fetches gold from the nearest mine and trades it to you at your lair. Refuse, and I steal what I can.\"",
 		"choices": [
@@ -346,7 +346,7 @@ const STORIES := {
 	},
 	"goblin_encounter_hostile": {
 		"title": "War in the Mountains",
-		"image": "",
+		"image": "res://assets/story/story_goblins.svg",
 		"tint": Color(0.25, 0.1, 0.1),
 		"text": "The goblins have turned hostile! They swarm from the mountain passes, spears glinting in the dim light. \"WAARGH!\" they shriek, charging with desperate fury. They attack farmers and miners to steal food and gold.",
 		"choices": [
@@ -359,7 +359,7 @@ const STORIES := {
 	# character of the would be dragon rider\") ---
 	"sacrifice_approach_defiant": {
 		"title": "The Defiant",
-		"image": "res://assets/sprites/sacrifice.svg",
+		"image": "res://assets/story/story_sacrifice.svg",
 		"tint": Color(0.38, 0.28, 0.28),
 		"text": "They thought they'd break her with chains and fear. \"Do you know what we all taste of, old wyrm? Fear. Tears. The same porridge of terror, served in a different bowl. I am not that. I am inconvenient — I asked questions they could not answer. Eat me and you eat their garbage, and a dragon that eats garbage forgets the taste of kings.\" The village will be quiet tonight.",
 		"choices": [
@@ -370,7 +370,7 @@ const STORIES := {
 	},
 	"sacrifice_approach_courageous": {
 		"title": "The Unbowed",
-		"image": "res://assets/sprites/sacrifice.svg",
+		"image": "res://assets/story/story_sacrifice.svg",
 		"tint": Color(0.38, 0.28, 0.32),
 		"text": "She lifts her chin, chains clinking like a challenge. \"You can take my life, but not my spirit. Let me ride at your side — I've faced down wolves in the mountains and walked through fire to save my sister.\" The crowd holds its breath — this one might actually mean it.",
 		"choices": [
@@ -381,7 +381,7 @@ const STORIES := {
 	},
 	"sacrifice_approach_cunning": {
 		"title": "The Fox",
-		"image": "res://assets/sprites/sacrifice.svg",
+		"image": "res://assets/story/story_sacrifice.svg",
 		"tint": Color(0.32, 0.35, 0.28),
 		"text": "Her smile is a blade in velvet. \"I know where the treasury keeps its weakest guard. I know the mountain paths the soldiers avoid. I know how to make a king's enemies disappear — for a price. Let me serve, and I'll bring you more gold than you've seen in your hoard.\" A deal with a devil, perhaps.",
 		"choices": [
@@ -392,7 +392,7 @@ const STORIES := {
 	},
 	"sacrifice_approach_devout": {
 		"title": "The Prophet",
-		"image": "res://assets/sprites/sacrifice.svg",
+		"image": "res://assets/story/story_sacrifice.svg",
 		"tint": Color(0.28, 0.32, 0.38),
 		"text": "Tears streak the dust on her cheeks, but her voice is steady. \"The old gods whispered in my dreams. They said the dragon would come, and I must be ready. I am not afraid of your fire — I am the messenger. Let me ride, and I will sing songs of your glory when I am gone.\"",
 		"choices": [
@@ -403,7 +403,7 @@ const STORIES := {
 	},
 	"sacrifice_male_brute": {
 		"title": "The Mountain",
-		"image": "res://assets/sprites/sacrifice.svg",
+		"image": "res://assets/story/story_sacrifice.svg",
 		"tint": Color(0.3, 0.32, 0.28),
 		"text": "He spits blood and grins through broken teeth. \"You want food? Take my arm. But if you want a rider, I've wrestled grizzlies and won. I can break a man's spine with my thighs and shoot an arrow through an eye socket. You'll want me alive.\" A bear in human skin.",
 		"choices": [
@@ -414,7 +414,7 @@ const STORIES := {
 	},
 	"sacrifice_male_thief": {
 		"title": "The Shadow",
-		"image": "res://assets/sprites/sacrifice.svg",
+		"image": "res://assets/story/story_sacrifice.svg",
 		"tint": Color(0.28, 0.3, 0.32),
 		"text": "\"I steal what others cannot see — the king's secrets in his study, the merchant's gold in his vault, the guard's breath in the night. You burn, I slip through the cracks. Together, we own everything.\" A snake in a cage.",
 		"choices": [
@@ -425,7 +425,7 @@ const STORIES := {
 	},
 	"sacrifice_male_renegade": {
 		"title": "The Exile",
-		"image": "res://assets/sprites/sacrifice.svg",
+		"image": "res://assets/story/story_sacrifice.svg",
 		"tint": Color(0.32, 0.28, 0.3),
 		"text": "\"They called me traitor and hounded me to the edge of the world. I know their tactics, their weaknesses, their lies. Give me wings, and I'll bring their heads back in sacks. Or burn me — either way, they die.\" A wolf seeking pack.",
 		"choices": [
@@ -437,7 +437,7 @@ const STORIES := {
 	# --- rider upgrade story (2026-11-11) ---
 	"rider_upgraded": {
 		"title": "The Archer's Oath",
-		"image": "res://assets/sprites/dragon+rider.svg",
+		"image": "res://assets/story/story_rider.svg",
 		"tint": Color(0.25, 0.28, 0.35),
 		"text": "The rider draws the bowstring, the arrowhead gleaming with purpose. \"I swear on this bow,\" they say, \"no soldier, no goblin, no traitor to the throne shall pass this dragon without bleeding.\" The dragon rumbles, a sound like distant thunder — approval.",
 		"choices": [
