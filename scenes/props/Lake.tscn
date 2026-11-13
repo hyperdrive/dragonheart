@@ -1,13 +1,16 @@
-[gd_scene load_steps=3 format=3 uid="uid://l4k9f6q2v8c3"]
+[gd_scene load_steps=4 format=3 uid="uid://l4k9f6q2v8c3"]
 
 [ext_resource type="Texture2D" path="res://assets/sprites/lake.svg" id="1_lake_tex"]
+[ext_resource type="Script" path="res://scripts/props/Lake.gd" id="2_lake_script"]
 
 [sub_resource type="CircleShape2D" id="1_lake_shape"]
 radius = 62.0
 
 [node name="Lake" type="StaticBody2D" groups=["water"]]
-collision_layer = 1
+z_index = -1
+collision_layer = 32
 collision_mask = 0
+script = ExtResource("2_lake_script")
 
 [node name="Sprite" type="Sprite2D" parent="."]
 texture = ExtResource("1_lake_tex")

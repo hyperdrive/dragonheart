@@ -118,9 +118,9 @@ func _physics_process(delta: float) -> void:
 			_world().soldier_gold_cost = 999999
 			_world().soldiers_per_gem = 0
 			_world().king_threshold = 999999
-			# No hero raids mid-probe (a dead goblin would desync the counts).
-			if _world()._adventurer_timer != null:
-				_world()._adventurer_timer.stop()
+			# No hero raids mid-probe (a dead goblin would desync the counts):
+			# neutralize the gold trigger (no spawn timer exists anymore).
+			_world().adventurer_gold_trigger = 999999
 			# EMPLOY the tribe BEFORE any goblin can meet the dragon: the
 			# standing binds every current and future spawn (adopted in
 			# _ready). Choice 0 on the story popup would REFUSE — never let

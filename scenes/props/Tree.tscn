@@ -10,15 +10,15 @@ collision_layer = 16
 collision_mask = 0
 
 [node name="Sprite" type="Sprite2D" parent="."]
-position = Vector2(0, -18)
+position = Vector2(0, -27)
 scale = Vector2(1.4, 1.4)
 texture = ExtResource("1_tree_tex")
 
 [node name="TrunkShadow" type="ColorRect" parent="."]
 offset_left = -14.0
-offset_top = 8.0
+offset_top = -1.0
 offset_right = 14.0
-offset_bottom = 14.0
+offset_bottom = 5.0
 color = Color(0.2, 0.15, 0.1, 0.35)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]

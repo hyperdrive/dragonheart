@@ -66,16 +66,19 @@ enum SwarmState { CALM, RALLY, ATTACK }
 @export var king_threshold: int = 15
 
 @export_group("Adventurer")
-## Wandering hero (user spec 2026-11-12): one spawns at the city every 5
-## minutes, walks to the lair, kills goblins, steals the whole gold hoard,
-## and hauls it back to the town treasury. Counter-play: dragon fire.
-@export var adventurer_spawn_interval: float = 300.0
+## Wandering hero (user spec 2026-11-12): walks to the lair, kills goblins,
+## steals the whole gold hoard, and hauls it back to the town treasury.
+## Counter-play: dragon fire.
+## Trigger (2026-11-13 user spec): the hero comes as soon as the lair hoard
+## holds adventurer_gold_trigger gold — event-driven off GameManager
+## .stash_changed; the old 300 s spawn timer is gone. A successful raid
+## zeroes the hoard, so the hero only returns once the dragon re-banks
+## the trigger amount.
+@export var adventurer_gold_trigger: int = 10
 ## Concurrent hero cap: one adventurer at a time — the hoard raid drains
 ## ALL the lair gold, so overlapping heroes would just double-walk to an
 ## empty rock. Raise this for proper hero parties.
 @export var adventurer_max_alive: int = 1
-
-var _adventurer_timer: Timer
 
 @export_group("Swarm tactics")
 @export var rally_range: float = 340.0          # dragon distance to city → RALLY
@@ -284,8 +287,8 @@ func _mask_anchor(category: String, self_radius: float,
 		if active_layout.sample_mask(category, spot) < WorldLayout.BRIGHT_THRESHOLD:
 			continue
 		return spot
-	push_warning("WorldManager: mask '%s' never produced a clear spot "
-		+ "— random fallback" % category)
+	push_warning(("WorldManager: mask '%s' never produced a clear spot "
+		+ "— random fallback") % category)
 	return _terrain_free_position(
 		get_random_position(), self_radius, protected, protected_margin)
 
@@ -304,6 +307,9 @@ func _ready() -> void:
 		_rng.randomize()
 	if game_manager != null:
 		swarm_state_changed.connect(game_manager._on_swarm_state_changed)
+		# Hero trigger (2026-11-13): the adventurer comes as soon as the
+		# hoard holds the trigger gold — event-driven, no spawn timer.
+		game_manager.stash_changed.connect(_on_stash_changed)
 		# The goblin-encounter story answer selects the tribe's fate
 		# (user spec: accept → the whole tribe mines gem-for-gold).
 		if game_manager.has_signal("story_choice_made"):
@@ -361,12 +367,8 @@ func _ready() -> void:
 	_swarm_timer.timeout.connect(_on_swarm_tick)
 	add_child(_swarm_timer)
 
-	# Adventurer spawn timer (user spec 2026-11-12): a hero every 5 minutes.
-	_adventurer_timer = Timer.new()
-	_adventurer_timer.wait_time = adventurer_spawn_interval
-	_adventurer_timer.autostart = true
-	_adventurer_timer.timeout.connect(_on_adventurer_spawn_tick)
-	add_child(_adventurer_timer)
+	# Adventurer spawning (2026-11-13): no timer — the hero is triggered
+	# by the stash_changed connection in the game_manager block below.
 
 	# StuckMonitor watch (decision 2026-11-09): NPC supervision heartbeat.
 	_stuck_timer = Timer.new()
@@ -620,8 +622,10 @@ func spawn_farmers() -> void:
 ## the footprint registry (landmarks, fields) with proper radius padding.
 ## Only the dragon's spawn clearing stays a special protected spot.
 ## Layout mode (2026-11-12-world-editor): the two tree densities come from
-## their own masks (user spec), lakes from the lakes mask, mountains stay
-## random (no mask was specced); no layout → the legacy random scatter.
+## their own masks (user spec), lakes from the lakes mask, and mountains
+## from the mountains mask (2026-11-13 user request — an empty/unpainted
+## mountains mask falls back to random via _mask_anchor, so pre-existing
+## saved worlds keep generating); no layout → the legacy random scatter.
 func spawn_scenery() -> void:
 	var protected: Array = [
 		{"pos": Vector2.ZERO, "pad": 90.0},  # dragon start
@@ -630,7 +634,7 @@ func spawn_scenery() -> void:
 		_spawn_scenery_batch("forest_dense", tree_dense_count, 0, protected)
 		_spawn_scenery_batch("forest_sparse", tree_sparse_count, 0, protected)
 		_spawn_scenery_batch("lakes", lake_count, 1, protected)
-		_spawn_scenery_batch("", mountain_count, 2, protected)  # no mask
+		_spawn_scenery_batch("mountains", mountain_count, 2, protected)
 		return
 	var counts := [tree_count, lake_count, mountain_count]
 	for kind_id in counts.size():
@@ -666,46 +670,93 @@ func _spawn_scenery_batch(category: String, count: int, kind_id: int,
 		entity_spawned.emit("terrain", position)
 
 
-## Merge adjacent lakes into larger lakes
-## Two lakes are merged if they're within 50px of each other
+## Merge OVERLAPPING lakes into one (2026-11-13 user spec: "if two lakes
+## end up overlapping, merge them into one lake"). Lakes whose collision
+## circles intersect — chains included — cluster together, and each
+## cluster becomes ONE lake covering the union: area-weighted centroid as
+## the center, radius grown to cover every member. The scene's SHARED
+## shape SubResource is replaced with a fresh CircleShape2D first
+## (mutating the shared one would resize every lake at once), the sprite
+## scales to match, and the merged footprint is registered with its real
+## radius. Placement already keeps fresh lakes 30px apart, so generated
+## worlds rarely trigger this — it is the guarantee when overlaps do
+## appear (and it replaces the old 50px "near" merge, which fused lakes
+## that were NOT touching and replaced them with a smaller lake).
 func merge_adjacent_lakes() -> void:
-	var lakes: Array = get_tree().get_nodes_in_group("water") as Array
-	if lakes.size() < 2:
-		return  # nothing to merge
-	
-	var merged: Dictionary = {}  # Track which lakes have been merged
-	
-	# Find adjacent lakes and merge them
-	for i in lakes.size():
-		if lakes[i] is StaticBody2D and not merged.has(i):
-			var lake1_pos: Vector2 = lakes[i].global_position
-			var merged_group: Array = [i]
-			
-			for j in range(i + 1, lakes.size()):
-				if lakes[j] is StaticBody2D and not merged.has(j):
-					var lake2_pos: Vector2 = lakes[j].global_position
-					if lake1_pos.distance_to(lake2_pos) < 50.0:
-						merged[j] = true
-						merged_group.append(j)
-			
-			# If we found adjacent lakes, merge them
-			if merged_group.size() > 1:
-				# Create a new merged lake at the average position
-				var avg_pos: Vector2 = Vector2.ZERO
-				for idx in merged_group:
-					avg_pos += lakes[idx].global_position
-				avg_pos /= merged_group.size()
-				
-				# Remove old lakes
-				for idx in merged_group:
-					if lakes[idx] != null:
-						lakes[idx].queue_free()
-				
-				# Create new merged lake
-				var new_lake := preload("res://scenes/props/Lake.tscn").instantiate()
-				new_lake.global_position = avg_pos
-				add_child(new_lake)
-				register_footprint(avg_pos, 85.0)
+	var circles: Array = []  # [StaticBody2D, Vector2 center, float radius]
+	for lake: Node in get_tree().get_nodes_in_group("water"):
+		var body := lake as StaticBody2D
+		if body == null:
+			continue
+		var col := body.get_node_or_null("CollisionShape2D") \
+			as CollisionShape2D
+		var radius := 62.0
+		if col != null and col.shape is CircleShape2D:
+			radius = (col.shape as CircleShape2D).radius
+		circles.append([body, body.global_position, radius])
+	if circles.size() < 2:
+		return
+	# Union-find clustering: link every pair of intersecting circles.
+	var parent: Array[int] = []
+	parent.resize(circles.size())
+	for i in circles.size():
+		parent[i] = i
+	for i in circles.size():
+		for j in range(i + 1, circles.size()):
+			var dist: float = (circles[i][1] as Vector2) \
+				.distance_to(circles[j][1] as Vector2)
+			if dist >= float(circles[i][2]) + float(circles[j][2]):
+				continue  # not overlapping
+			var ri := _find_root(parent, i)
+			var rj := _find_root(parent, j)
+			if ri != rj:
+				parent[rj] = ri
+	# Gather cluster members under their root index.
+	var clusters := {}  # root index → Array of member indices
+	for i in circles.size():
+		var root := _find_root(parent, i)
+		if not clusters.has(root):
+			clusters[root] = []
+		(clusters[root] as Array).append(i)
+	for root: int in clusters:
+		var members: Array = clusters[root]
+		if members.size() < 2:
+			continue
+		# Area-weighted centroid, then the radius that covers the union.
+		var center := Vector2.ZERO
+		var weight_sum := 0.0
+		for idx: int in members:
+			var c: Array = circles[idx]
+			var weight: float = float(c[2]) * float(c[2])
+			center += (c[1] as Vector2) * weight
+			weight_sum += weight
+		center /= weight_sum
+		var radius := 0.0
+		for idx: int in members:
+			var c: Array = circles[idx]
+			radius = maxf(radius,
+				center.distance_to(c[1] as Vector2) + float(c[2]))
+		# Reuse the FIRST member as the merged lake; absorb the rest.
+		var keep := circles[members[0]][0] as StaticBody2D
+		var shape := CircleShape2D.new()
+		shape.radius = radius
+		(keep.get_node("CollisionShape2D") as CollisionShape2D).shape = shape
+		keep.global_position = center
+		var spr := keep.get_node_or_null("Sprite") as Sprite2D
+		if spr != null:
+			spr.scale = Vector2.ONE * (radius / 62.0)  # native shape is 62
+		for k in range(1, members.size()):
+			(circles[members[k]][0] as Node).queue_free()
+		register_footprint(center, radius)
+		print(("WorldManager: merged %d overlapping lakes into one "
+			+ "(radius %.0f at %s)") % [members.size(), radius, str(center)])
+
+
+func _find_root(parent: Array[int], i: int) -> int:
+	var r := i
+	while parent[r] != r:
+		r = parent[r]
+	return r
 
 
 ## Jitter around an anchor until the spot is reasonably free (checks the
@@ -1117,12 +1168,16 @@ func _on_goblin_spawn_tick() -> void:
 
 # --- adventurer spawning (2026-11-12, user spec) ------------------------------
 
-## A hero every 5 minutes (user spec: "Hero spawns with every 5 minutes"),
-## capped at adventurer_max_alive concurrent heroes. Counting by GROUP
-## size, not a death counter: the successful hero leaves via queue_free
-## after the treasury deposit (no die() → no npc_died), so a death-tracked
-## counter would leak the slot and silently stop all future spawns.
-func _on_adventurer_spawn_tick() -> void:
+## Hero trigger (2026-11-13 user spec): "as soon as there are 10gp in the
+## treasure" — event-driven off GameManager.stash_changed instead of the
+## old 300 s timer. Gold only (the raid itself steals gold only). The cap
+## is still counted by GROUP size, not a death counter: the successful hero
+## leaves via queue_free after the treasury deposit (no die() → no
+## npc_died), so a death-tracked counter would leak the slot and silently
+## stop all future spawns.
+func _on_stash_changed(res_type: String, amount: int) -> void:
+	if res_type != "gold" or amount < adventurer_gold_trigger:
+		return
 	if get_tree().get_nodes_in_group("adventurers").size() \
 			>= adventurer_max_alive:
 		return

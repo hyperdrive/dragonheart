@@ -10,11 +10,11 @@ size = Vector2(100, 100)
 
 [node name="Goblin" type="CharacterBody2D" groups=["goblins"]]
 collision_layer = 4
-collision_mask = 15
+collision_mask = 47
 script = ExtResource("1_g2b3n")
 
 [node name="Sprite" type="Node2D" parent="."]
-position = Vector2(0, -5)
+position = Vector2(0, -18)
 
 [node name="Body" type="ColorRect" parent="Sprite"]
 size = Vector2(12, 18)

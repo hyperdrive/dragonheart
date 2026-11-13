@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/city.svg" id="1_city_tex"]
 
 [node name="City" type="Node2D" groups=["city"]]
+z_index = -1
 
 [node name="Shadow" type="ColorRect" parent="."]
 offset_left = -96.0

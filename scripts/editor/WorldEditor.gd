@@ -14,6 +14,22 @@ extends Node2D
 ## Wheel = zoom, right/middle-drag = pan. Masks paint at half world
 ## resolution (WorldLayout.MASK_SCALE); brightness doubles as the game's
 ## rejection-sampling weight, so soft brush edges place more rarely.
+##
+## Display note: mask images are FORMAT_L8 where black (0) means "no paint".
+## Rendering that directly would stack five opaque BLACK rectangles over the
+## map. The MASK_SHADER below maps red-channel brightness → alpha instead, so
+## unpainted areas are fully transparent and paint shows in the category tint.
+## Save/load logic still reads the L8 brightness exactly as WorldLayout
+## expects (get_mask_image converts and samples .r).
+
+const MASK_SHADER := "
+shader_type canvas_item;
+uniform vec4 tint : source_color = vec4(1.0, 0.0, 1.0, 1.0);
+void fragment() {
+	float weight = texture(TEXTURE, UV).r;
+	COLOR = vec4(tint.rgb, weight);
+}
+"
 
 const KEY_ELEMENTS := {
 	"city": {"label": "City", "radius": 120.0, "color": Color(0.55, 0.6, 0.7)},
@@ -29,9 +45,10 @@ var world_size: Vector2 = Vector2(1920, 1920)
 var key_positions: Dictionary = {}
 var mask_images: Dictionary = {}       # category → Image (L8, half res)
 var mask_textures: Dictionary = {}     # category → ImageTexture (overlays)
+var mask_sprites: Dictionary = {}      # category → Sprite2D (for texture swaps)
 var current_place: String = "city"
 var current_brush: String = ""         # "" = not painting
-var brush_size: float = 60.0
+var brush_size: float = 120.0          # Fat brush default
 var world_name := "custom_world"
 var seed_value: int = 1
 
@@ -43,9 +60,13 @@ var _dirty_masks: Dictionary = {}      # category → true (texture update pendi
 var _tex_flush_timer := 0.0
 
 var _camera: Camera2D
+var _markers: Node2D                  # key elements + ghost, drawn OVER masks
 var _status: Label
 var _name_edit: LineEdit
 var _seed_box: SpinBox
+var _size_box: SpinBox                # square world edge (px)
+var _size_debounce: Timer             # delays resize while the box is dragged
+var _pending_size := 0.0
 
 func _ready() -> void:
 	_seed_value_reroll()
@@ -60,12 +81,11 @@ func _seed_value_reroll() -> void:
 func _build_canvas() -> void:
 	_camera = Camera2D.new()
 	_camera.position = Vector2.ZERO
-	var viewport_size := Vector2(get_viewport_rect().size)
-	var fit_zoom: float = minf(viewport_size.x / world_size.x,
-		viewport_size.y / world_size.y) * 0.95
-	_camera.zoom = Vector2(fit_zoom, fit_zoom)
 	add_child(_camera)
 	_camera.make_current()
+	_refit_camera()
+	var shader := Shader.new()
+	shader.code = MASK_SHADER
 	for category: String in WorldLayout.MASK_CATEGORIES:
 		var img := Image.create(
 			int(world_size.x * WorldLayout.MASK_SCALE),
@@ -79,20 +99,83 @@ func _build_canvas() -> void:
 		sprite.texture = tex
 		sprite.centered = true
 		sprite.scale = Vector2.ONE / WorldLayout.MASK_SCALE
-		sprite.modulate = Color(WorldLayout.MASK_CATEGORIES[category], 0.35)
+		var mat := ShaderMaterial.new()
+		mat.shader = shader
+		mat.set_shader_parameter("tint",
+			Color(WorldLayout.MASK_CATEGORIES[category], 1.0))
+		sprite.material = mat
 		add_child(sprite)
+		mask_sprites[category] = sprite
+	# Markers + ghost live on a child drawn AFTER the mask sprites,
+	# so paint never hides them.
+	_markers = Node2D.new()
+	_markers.z_index = 10
+	add_child(_markers)
+	_markers.draw.connect(_draw_markers)
 	queue_redraw()
 
+## Refit the camera so the whole world stays visible at the current size.
+func _refit_camera() -> void:
+	if _camera == null:
+		return
+	var viewport_size := Vector2(get_viewport_rect().size)
+	var fit_zoom: float = minf(viewport_size.x / world_size.x,
+		viewport_size.y / world_size.y) * 0.95
+	_camera.zoom = Vector2(fit_zoom, fit_zoom)
+	_camera.position = Vector2.ZERO
+
+# --- world size ----------------------------------------------------------------
+
+func _on_size_changed(v: float) -> void:
+	_pending_size = v
+	_size_debounce.start()
+
+func _apply_pending_size() -> void:
+	_set_world_size(_pending_size)
+
+## Change the square world edge. Existing mask paint is rescaled (bilinear)
+## so nothing painted is lost, placed key elements are pulled inside the new
+## walls, and the camera refits. Sizes already matching are a no-op refit.
+func _set_world_size(edge: float) -> void:
+	edge = clampf(edge, 960.0, 8192.0)
+	if not is_equal_approx(world_size.x, edge) \
+			or not is_equal_approx(world_size.y, edge):
+		world_size = Vector2(edge, edge)
+		# keep placed key elements inside the new boundary walls
+		var limit := world_size * 0.5 - Vector2(140.0, 140.0)
+		for key: String in key_positions:
+			key_positions[key] = (key_positions[key] as Vector2).clamp(-limit, limit)
+		# rescale painted masks to the new half-resolution dims
+		var new_dims := Vector2i((world_size * WorldLayout.MASK_SCALE).round())
+		for category: String in WorldLayout.MASK_CATEGORIES:
+			var img: Image = mask_images[category]
+			if img.get_size() != new_dims:
+				img.resize(new_dims.x, new_dims.y, Image.INTERPOLATE_BILINEAR)
+				var tex := ImageTexture.create_from_image(img)
+				mask_textures[category] = tex
+				var sprite: Sprite2D = mask_sprites[category]
+				sprite.texture = tex
+		_set_status("World size %d×%d" % [int(world_size.x), int(world_size.y)])
+	_refit_camera()
+	queue_redraw()
+	if _markers != null:
+		_markers.queue_redraw()
+
 func _build_ui() -> void:
-	var layer := CanvasLayer.new()
-	add_child(layer)
+	# UI lives in a CanvasLayer so the Camera2D zoom/pan never distorts it
+	# (Controls parented to this Node2D ride the camera's canvas transform).
+	var ui_layer := CanvasLayer.new()
+	ui_layer.layer = 1
+	add_child(ui_layer)
+
 	var top := HBoxContainer.new()
 	top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	top.offset_left = 8
 	top.offset_right = -8
 	top.offset_top = 4
+	top.offset_bottom = 48   # explicit height — don't rely on min-size clamping
 	top.add_theme_constant_override("separation", 6)
-	layer.add_child(top)
+	ui_layer.add_child(top)
 	var place_group := ButtonGroup.new()
 	var brush_group := ButtonGroup.new()
 	for key: String in KEY_ELEMENTS:
@@ -104,7 +187,9 @@ func _build_ui() -> void:
 		btn.pressed.connect(func() -> void:
 			current_place = key
 			current_brush = ""
-			queue_redraw())
+			queue_redraw()
+			if _markers != null:
+				_markers.queue_redraw())
 		top.add_child(btn)
 	var sep := VSeparator.new()
 	top.add_child(sep)
@@ -115,7 +200,9 @@ func _build_ui() -> void:
 		btn.button_group = brush_group
 		btn.pressed.connect(func() -> void:
 			current_brush = category
-			queue_redraw())
+			queue_redraw()
+			if _markers != null:
+				_markers.queue_redraw())
 		top.add_child(btn)
 	var eraser := Button.new()
 	eraser.text = "Eraser"
@@ -123,25 +210,31 @@ func _build_ui() -> void:
 	eraser.button_group = brush_group
 	eraser.pressed.connect(func() -> void:
 		current_brush = "eraser"
-		queue_redraw())
+		queue_redraw()
+		if _markers != null:
+			_markers.queue_redraw())
 	top.add_child(eraser)
 
 	var bottom := HBoxContainer.new()
 	bottom.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	bottom.offset_left = 8
 	bottom.offset_right = -8
-	bottom.offset_bottom = -4
-	bottom.add_theme_constant_override("separation", 6)
-	layer.add_child(bottom)
+	# Negative top margin defines the bar's height: anchors pin the top edge
+	# to the window bottom, so without it the rect starts BELOW the screen
+	# and the bar is invisible (this is why Save/Load "disappeared").
+	bottom.offset_top = -60
+	bottom.offset_bottom = -8
+	bottom.add_theme_constant_override("separation", 8)
+	ui_layer.add_child(bottom)
 	var size_label := Label.new()
 	size_label.text = "Brush"
 	bottom.add_child(size_label)
 	var size_slider := HSlider.new()
-	size_slider.min_value = 20.0
-	size_slider.max_value = 200.0
-	size_slider.step = 5.0
+	size_slider.min_value = 40.0
+	size_slider.max_value = 400.0
+	size_slider.step = 10.0
 	size_slider.value = brush_size
-	size_slider.custom_minimum_size = Vector2(120, 20)
+	size_slider.custom_minimum_size = Vector2(200, 24)
 	size_slider.value_changed.connect(func(v: float) -> void: brush_size = v)
 	bottom.add_child(size_slider)
 	var name_label := Label.new()
@@ -161,6 +254,24 @@ func _build_ui() -> void:
 	_seed_box.value = seed_value
 	_seed_box.value_changed.connect(func(v: float) -> void: seed_value = int(v))
 	bottom.add_child(_seed_box)
+	var world_size_label := Label.new()
+	world_size_label.text = "Size"
+	bottom.add_child(world_size_label)
+	_size_box = SpinBox.new()
+	_size_box.min_value = 960
+	_size_box.max_value = 8192
+	_size_box.step = 320
+	_size_box.value = world_size.x
+	_size_box.custom_minimum_size = Vector2(90, 0)
+	_size_box.value_changed.connect(_on_size_changed)
+	bottom.add_child(_size_box)
+	# Debounce: dragging the spinbox fires value_changed continuously; the
+	# mask rescale is expensive enough to batch into one apply per pause.
+	_size_debounce = Timer.new()
+	_size_debounce.one_shot = true
+	_size_debounce.wait_time = 0.25
+	_size_debounce.timeout.connect(_apply_pending_size)
+	add_child(_size_debounce)
 	var reroll := Button.new()
 	reroll.text = "Re-roll"
 	reroll.pressed.connect(func() -> void:
@@ -184,12 +295,20 @@ func _build_ui() -> void:
 	clear.text = "Clear"
 	clear.pressed.connect(_on_clear_pressed)
 	bottom.add_child(clear)
+
+	# Status text sits just below the top bar, never on top of it.
+	var settings := LabelSettings.new()
+	settings.font_size = 16
+	settings.font_color = Color(1, 1, 0.55)
+	settings.outline_size = 6
+	settings.outline_color = Color(0.1, 0.1, 0.1, 0.9)
 	_status = Label.new()
+	_status.label_settings = settings
 	_status.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	_status.offset_top = 40
+	_status.offset_top = 56
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_status.modulate = Color(1, 1, 0.6)
-	layer.add_child(_status)
+	_status.grow_horizontal = Control.GROW_DIRECTION_BOTH   # stay centered as text changes
+	ui_layer.add_child(_status)
 
 func _set_status(text: String) -> void:
 	if _status != null:
@@ -219,7 +338,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif current_place != "":
 				if _world_inside(world):
 					key_positions[current_place] = world
-					queue_redraw()
+					_markers.queue_redraw()
 	if event is InputEventMouseButton and not (event as InputEventMouseButton).pressed:
 		_flush_mask_textures()
 		_painting = false
@@ -245,7 +364,58 @@ func _process(delta: float) -> void:
 		_tex_flush_timer += delta
 		if _tex_flush_timer >= 0.12:
 			_flush_mask_textures()
-	queue_redraw()
+	if _markers != null:
+		_markers.queue_redraw()   # ghost follows the mouse every frame
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAW:
+		_draw_ground()
+
+# --- ground (root canvas, UNDER the mask sprites) --------------------------------
+
+func _draw_ground() -> void:
+	var half := world_size * 0.5
+	var ground := Rect2(-half, world_size)
+	draw_rect(ground, Color(0.5, 0.7, 0.4))          # bright grass base
+	var grid_color := Color(0.3, 0.3, 0.3, 0.4)
+	var step := 120.0
+	var x := -half.x
+	while x <= half.x:
+		draw_line(Vector2(x, -half.y), Vector2(x, half.y), grid_color)
+		x += step
+	var y := -half.y
+	while y <= half.y:
+		draw_line(Vector2(-half.x, y), Vector2(half.x, y), grid_color)
+		y += step
+	draw_rect(ground, Color(0.85, 0.85, 0.85), false, 2.0)   # clear outline
+
+# --- markers + ghost (child canvas, OVER the mask sprites) -----------------------
+
+func _draw_markers() -> void:
+	var font := ThemeDB.fallback_font
+	for key: String in KEY_ELEMENTS:
+		var pos: Vector2 = key_positions.get(key, Vector2.INF)
+		if pos == Vector2.INF:
+			continue
+		var info: Dictionary = KEY_ELEMENTS[key]
+		var color: Color = info["color"]
+		_markers.draw_circle(pos, 14.0, color)
+		_markers.draw_arc(pos, float(info["radius"]), 0, TAU, 48,
+			Color(color, 0.8), 3.0)
+		_markers.draw_string(font, pos + Vector2(-34, -20), info["label"],
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 1, 1))
+	var mouse := get_global_mouse_position()
+	if _world_inside(mouse):
+		if current_brush != "":
+			var tint: Color = Color(1, 1, 1, 0.5) \
+				if current_brush == "eraser" \
+				else Color(WorldLayout.MASK_CATEGORIES[current_brush], 0.5)
+			_markers.draw_circle(mouse, brush_size, tint)
+		elif current_place != "":
+			var info2: Dictionary = KEY_ELEMENTS[current_place]
+			_markers.draw_arc(mouse, float(info2["radius"]), 0, TAU, 48,
+				Color(info2["color"], 0.8), 3.0)
+			_markers.draw_circle(mouse, 10.0, Color(info2["color"], 0.9))
 
 # --- mask painting --------------------------------------------------------------
 
@@ -346,6 +516,8 @@ func _on_load_pressed() -> void:
 	world_size = layout.world_size
 	seed_value = layout.seed_value
 	_seed_box.value = seed_value
+	_size_box.set_value_no_signal(world_size.x)   # already applied on disk
+	_refit_camera()
 	for key: String in KEY_ELEMENTS:
 		match key:
 			"city": key_positions[key] = layout.city_position
@@ -368,6 +540,7 @@ func _on_load_pressed() -> void:
 		_dirty_masks[category] = true
 	_flush_mask_textures()
 	queue_redraw()
+	_markers.queue_redraw()
 	_set_status("Loaded '%s' (seed %d)" % [world_name, seed_value])
 
 func _on_play_pressed() -> void:
@@ -389,49 +562,5 @@ func _on_clear_pressed() -> void:
 		_dirty_masks[category] = true
 	_flush_mask_textures()
 	queue_redraw()
+	_markers.queue_redraw()
 	_set_status("Canvas cleared")
-
-# --- drawing ------------------------------------------------------------------
-
-func _draw() -> void:
-	var half := world_size * 0.5
-	var ground := Rect2(-half, world_size)
-	draw_rect(ground, Color(0.33, 0.5, 0.25))
-	# grid
-	var grid_color := Color(0, 0, 0, 0.12)
-	var step := 120.0
-	var x := -half.x
-	while x <= half.x:
-		draw_line(Vector2(x, -half.y), Vector2(x, half.y), grid_color)
-		x += step
-	var y := -half.y
-	while y <= half.y:
-		draw_line(Vector2(-half.x, y), Vector2(half.x, y), grid_color)
-		y += step
-	draw_rect(ground, Color(0.1, 0.1, 0.1), false, 4.0)
-	# placed key elements
-	var font := ThemeDB.fallback_font
-	for key: String in KEY_ELEMENTS:
-		var pos: Vector2 = key_positions.get(key, Vector2.INF)
-		if pos == Vector2.INF:
-			continue
-		var info: Dictionary = KEY_ELEMENTS[key]
-		var color: Color = info["color"]
-		draw_circle(pos, 14.0, color)
-		draw_arc(pos, float(info["radius"]), 0, TAU, 48,
-			Color(color, 0.5), 2.0)
-		draw_string(font, pos + Vector2(-34, -20), info["label"],
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1, 0.9))
-	# ghost
-	var mouse := get_global_mouse_position()
-	if _world_inside(mouse):
-		if current_brush != "":
-			var tint: Color = Color(1, 1, 1, 0.3) \
-				if current_brush == "eraser" \
-				else Color(WorldLayout.MASK_CATEGORIES[current_brush], 0.4)
-			draw_circle(mouse, brush_size, tint)
-		elif current_place != "":
-			var info2: Dictionary = KEY_ELEMENTS[current_place]
-			draw_arc(mouse, float(info2["radius"]), 0, TAU, 48,
-				Color(info2["color"], 0.6), 2.0)
-			draw_circle(mouse, 10.0, Color(info2["color"], 0.7))

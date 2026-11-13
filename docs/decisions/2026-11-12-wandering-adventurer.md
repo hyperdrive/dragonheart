@@ -26,3 +26,9 @@ fire is the counter-play.
 - Terrain-clearing matters twice over: an uncleared idle jitter parked the hero
   against the goblin mountain for 50s, and an uncleared hunt pick stalled 30s
   against the same rock (both now route through `terrain_free_target`).
+
+## 2026-11-13 update (user spec)
+
+| Decision | Choice | Why | Revisit when |
+|---|---|---|---|
+| Spawn trigger | The hoard itself calls the hero: `GameManager.stash_changed` (gold ≥ `adventurer_gold_trigger` = 10) spawns instantly; the 300 s timer is removed | User spec "as soon as there are 10gp in the treasure"; event-driven — no polling, no 5-minute delay; a raid zeroes the hoard so the hero only returns once the dragon re-banks the trigger | periodic pressure is wanted again (e.g. hoard is empty too long) |

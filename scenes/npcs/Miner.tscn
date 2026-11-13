@@ -8,12 +8,12 @@ size = Vector2(16, 32)
 
 [node name="Miner" type="CharacterBody2D" groups=["miners"]]
 collision_layer = 4
-collision_mask = 17
+collision_mask = 49
 
 script = ExtResource("2_r5s7t")
 
 [node name="Sprite" type="Node2D" parent="."]
-position = Vector2(0, -5)
+position = Vector2(0, -23)
 
 [node name="Body" type="ColorRect" parent="Sprite"]
 position = Vector2(-9, -12)
@@ -100,7 +100,7 @@ shape = SubResource("1")
 
 [node name="Cart" type="Node2D" parent="."]
 visible = false
-position = Vector2(26, 8)
+position = Vector2(26, -11)
 
 [node name="Handle" type="ColorRect" parent="Cart"]
 position = Vector2(-23, -8)

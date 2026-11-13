@@ -92,6 +92,8 @@ var health: int = 100
 var max_health: int = 100
 var is_firing: bool = false
 var fire_cooldown: float = 0.0
+var _fire_pulse_timer: float = 0.0
+var _fire_pulse_count: int = 0
 var flame_charges: float = max_flame_charges
 ## Temporary speed boost (wizard shop): multiplier on the unmodified `speed`
 ## while _speed_boost_left > 0. Purchasing refreshes the duration.
@@ -109,19 +111,30 @@ var carried_loot: Dictionary = {"gold": 0, "gems": 0}
 ## True from die() onward: blocks extra damage, input, activity re-entry.
 var _dying: bool = false
 
+## Visual base offset (2026-11-13 y-sort): the dragon's underside (Body,
+## Sprite-space bottom 28) ends 23px below the node origin once Sprite's
+## own −5 is added, so the Vis body rides at −23 — the ORIGIN (the y-sort
+## key) sits at the ground contact, like every other object. Applied in
+## _tick_flight_visual so the flight lift/bob stay relative. The FireArea
+## mouth anchor rides the same −23 (2026-11-13: flame origin tracks the
+## mouth, not the feet) — _apply_facing only flips its x, so the tscn y
+## is the single source of truth.
+const VIS_BASE_LIFT := 23.0
+
 var game_manager: GameManager
 
 @onready var vis: Node2D = $Vis
 @onready var sprite: Node2D = $Vis/Sprite
-@onready var shadow: ColorRect = $Shadow
+@onready var shadow: ColorRect = $Vis/Shadow
 @onready var near_wing_pivot: Node2D = $Vis/Sprite/NearWingPivot
 @onready var far_wing_pivot: Node2D = $Vis/Sprite/FarWingPivot
 @onready var claw_pivot: Node2D = $Vis/Sprite/ClawPivot
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
-@onready var fire_area: Area2D = $FireArea
-@onready var flame: Node2D = $FireArea/Flame
-@onready var fire_collision: CollisionShape2D = $FireArea/FireCollision
+@onready var fire_area: Area2D = $Vis/FireArea
+@onready var flame: Node2D = $Vis/FireArea/Flame
+@onready var fire_collision: CollisionShape2D = $Vis/FireArea/FireCollision
 @onready var interception_system: GoldInterceptionSystem = $GoldInterceptionSystem
+
 
 func _ready() -> void:
 	add_to_group("dragon")
@@ -145,6 +158,7 @@ func _ready() -> void:
 
 	# Fire breath window wiring handled in fire_breath(); the idle starts on play.
 	fire_area.monitoring = false  # breath window only, set in fire_breath()
+	flame.visible = false
 	flight_state_changed.emit(false, 0.0, false)  # initial HUD chip state
 
 func sync_from_game_manager() -> void:
@@ -167,18 +181,29 @@ func _physics_process(delta: float) -> void:
 		_speed_boost_left -= delta
 	if _strike_cooldown > 0.0:
 		_strike_cooldown = maxf(_strike_cooldown - delta, 0.0)
+	if is_firing and Input.is_action_pressed("fire") and flame_charges >= 1.0:
+		# Pulse: 0.8 s per charge, max 3 pulses (2.4 s total breath duration)
+		if _fire_pulse_count < 3:
+			_fire_pulse_timer += delta
+			if _fire_pulse_timer >= 0.8:
+				_fire_pulse_timer = 0.0
+				_fire_pulse_count += 1
+				fire_breath()
+		else:
+			# Max pulses reached — stop firing
+			is_firing = false
+			flame.visible = false
+			fire_area.monitoring = false
+			_fire_pulse_timer = 0.0
+			_fire_pulse_count = 0
 	if Input.is_action_just_pressed("fly"):
 		_try_flight()
 	if _flying:
 		_flight_left -= delta
-		# TERRAIN: flight never expires when over a lake
-		var over_water := false
-		for water_node in get_tree().get_nodes_in_group("water"):
-			var lake := water_node as StaticBody2D
-			if lake != null and lake.global_position.distance_to(global_position) < 70.0:
-				over_water = true
-				break
-		if not over_water and _flight_left <= 0.0:
+		# TERRAIN: flight never expires when over a lake — and landing
+		# over open water is refused (see _try_flight), so the dragon can
+		# never end up grounded inside a lake shape.
+		if not _over_water() and _flight_left <= 0.0:
 			land_flight()
 	elif _flight_recharge_left > 0.0:
 		_flight_recharge_left -= delta
@@ -413,11 +438,12 @@ func _eat_meal_from(pen: AnimalPen) -> void:
 ## explicit component mirroring — no negative scale on the physics Area2D.
 ## The rider needs no special case: it lives INSIDE Vis/Sprite, so the
 ## sprite.scale.x flip mirrors it along with the body.
+# scripts/characters/Dragon.gd
 func _apply_facing() -> void:
 	sprite.scale.x = float(facing)
-	fire_area.position.x = 20.0 * float(facing)      # breath origin offset
-	fire_collision.position.x = 15.0 * float(facing) # hitbox follows
-	flame.scale.x = float(facing)                    # flame visual mirrors
+	fire_area.position.x = 42.0 * float(facing)   # now relative to Vis/Snout
+	fire_collision.position.x = 27.0 * float(facing)  # adjust hitbox offset too
+	flame.scale.x = float(facing)
 
 ## Everything flammable caught in the breath cone ignites: farmers, miners,
 ## soldiers, goblins (+ the King), and crop fields (Field.burn → stubble →
@@ -514,6 +540,9 @@ func carried_total() -> int:
 		total += amount
 	return total
 
+## Pulsed fire breath — builds up sharply, then disperses into smaller embers.
+## While the fire key is held and charges are available, the animation cycles,
+## spending 1 charge per 0.8 s pulse.
 func fire_breath() -> void:
 	if _dying or is_firing or fire_cooldown > 0.0:
 		return
@@ -523,15 +552,17 @@ func fire_breath() -> void:
 	flame_charges -= 1.0
 	flame_charges_changed.emit(int(flame_charges), max_flame_charges)
 	is_firing = true
-	fire_cooldown = fire_rate
-	flame.visible = true          # visual breath (collision window matches)
 	fire_area.monitoring = true   # breath window: ignites flammable fields
-	animation_player.play("fire_breath")
+	flame.visible = true          # visual breath (collision window matches)
+	animation_player.play("fire_breath_pulsed")
 	fire_attacked.emit()
+	# Wait for the current pulse to finish (0.8 s) before re-spending a charge
 	await animation_player.animation_finished
 	is_firing = false
 	flame.visible = false
 	fire_area.monitoring = false
+	# dispersion pieces (embers) fade out via animation; they're left visible
+	# briefly then become invisible — no cleanup needed
 	if animation_player.has_animation("idle"):
 		animation_player.play("idle")
 
@@ -564,11 +595,16 @@ func take_damage(amount: int, bypass_shield: bool = false,
 
 ## Q toggles: ground+ready → take off; airborne → deliberate early landing
 ## (refund: unused burst seconds shorten the recharge); recharging → refused
-## with the wait printed.
+## with the wait printed. Landing over open water is refused (2026-11-13:
+## lakes block the grounded dragon again) — otherwise the dragon would
+## touch down INSIDE a lake shape and be trapped by it.
 func _try_flight() -> void:
 	if _dying:
 		return
 	if _flying:
+		if _over_water():
+			print("Too much water below to land — glide to a shore! (Q)")
+			return
 		land_flight()
 		return
 	if _flight_recharge_left > 0.0:
@@ -577,9 +613,13 @@ func _try_flight() -> void:
 		return
 	_flying = true
 	_flight_left = fly_duration
-	# ALOFT: treeline is beneath the wings (trees, layer 5 / value 16) —
-	# mountains and boundary walls (layer 1) still block the flight lane.
+	# ALOFT: treeline AND lakes are beneath the wings (trees, layer 5 /
+	# value 16; lakes, layer 6 / value 32) — mountains and boundary walls
+	# (layer 1) still block the flight lane. z_index 100 lifts the dragon
+	# ABOVE the whole y-sorted scene (2026-11-13: flying = top of the world).
 	set_collision_mask_value(5, false)
+	set_collision_mask_value(6, false)
+	z_index = 100
 	print("Your wings snap wide — AIRBORNE! (%.0fx speed for %ds)" % [
 		fly_speed / walk_speed, int(fly_duration)])
 	_emit_flight_chip(true)
@@ -590,11 +630,32 @@ func land_flight() -> void:
 	_flying = false
 	_flight_left = 0.0
 	_flight_recharge_left = flight_recharge
-	# Grounded again: trees block the dragon's lane exactly as for walkers.
+	# Grounded again: trees AND lakes block the dragon's lane exactly as
+	# for walkers (2026-11-13: walking across a lake is NOT allowed).
 	set_collision_mask_value(5, true)
+	set_collision_mask_value(6, true)
+	z_index = 0
 	print("Dragon folds back to the ground — wings tire (%ds till ready)."
 		% ceili(_flight_recharge_left))
 	_emit_flight_chip(true)
+
+## True while the dragon's center sits over lake water (used to keep the
+## flight burst alive over lakes and to refuse landing there). Reach
+## follows the lake's ACTUAL shape radius — merged lakes (2026-11-13)
+## grow past the default 62px, so a fixed offset would miss their shores.
+func _over_water() -> bool:
+	for water_node in get_tree().get_nodes_in_group("water"):
+		var lake := water_node as StaticBody2D
+		if lake == null:
+			continue
+		var reach := 70.0
+		var col := lake.get_node_or_null("CollisionShape2D") \
+			as CollisionShape2D
+		if col != null and col.shape is CircleShape2D:
+			reach = (col.shape as CircleShape2D).radius + 20.0
+		if lake.global_position.distance_to(global_position) < reach:
+			return true
+	return false
 
 ## One visual state machine: lift/bob on the Vis wrapper (the AnimationPlayer
 ## animates Sprite itself — Vis keeps code and tracks from fighting), wing
@@ -609,7 +670,9 @@ func _tick_flight_visual(delta: float) -> void:
 	_lift_current = move_toward(_lift_current, lift_target, flight_lift * 5.0 * delta)
 	var lift_ratio: float = _lift_current / flight_lift
 	var bob: float = sin(_flap_phase * TAU) * 3.5 * lift_ratio if _flying else 0.0
-	vis.position.y = -_lift_current + bob * 0.4
+	# VIS_BASE_LIFT puts the ground contact at the node origin (y-sort base);
+	# the flight lift/bob ride on top of it.
+	vis.position.y = -_lift_current + bob * 0.4 - VIS_BASE_LIFT
 	# Wings: folded rest pose on the ground, full stroke while airborne. The
 	# far wing trails the near one and swings lower (depth read).
 	var rest := rad_to_deg(0.42)

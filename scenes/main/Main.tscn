@@ -15,8 +15,10 @@ position_smoothing_enabled = true
 zoom = Vector2(0.75, 0.75)
 
 [node name="World" type="Node2D" parent="." groups=["world"]]
+y_sort_enabled = true
 [node name="Dragon" parent="World" instance=ExtResource("4_dragon_scene")]
 [node name="WorldManager" type="Node2D" parent="World"]
+y_sort_enabled = true
 script = ExtResource("3_world_manager_script")
 
 [node name="HUDLayer" type="CanvasLayer" parent="."]

@@ -111,22 +111,25 @@ func _physics_process(delta: float) -> void:
 			_world().soldier_gold_cost = 999999
 			_world().soldiers_per_gem = 0
 			_world().king_threshold = 999999
+			# Neutralize the hero trigger too: funding the hoard below would
+			# otherwise auto-spawn the adventurer via stash_changed before
+			# the SPAWN stage can arrange its own controlled hero.
+			_world().adventurer_gold_trigger = 999999
 			gm.add_stolen("gold", FUND_GOLD)  # the lair hoard to raid
 			_pass("BOOT: purchases neutralized, lair stash funded with %dg"
 				% FUND_GOLD)
 			_goto(S.SPAWN)
 		S.SPAWN:
-			# Timer config check (user spec: hero spawns every 5 minutes).
-			var timer := _world()._adventurer_timer as Timer
-			if timer == null:
-				_fail("no adventurer spawn timer on WorldManager")
+			# Trigger config check (2026-11-13 spec: hero comes as soon as
+			# the hoard holds 10gp — event-driven off stash_changed, with
+			# no spawn timer). BOOT neutralized the trigger so the funding
+			# could not auto-spawn; re-arm it here.
+			if "_adventurer_timer" in _world():
+				_fail("legacy adventurer spawn timer still present")
 				_goto(S.REPORT)
 				return
-			if absf(timer.wait_time - 300.0) > 0.01:
-				_fail("adventurer timer is %.0fs — expected 300s (5 min)"
-					% timer.wait_time)
-			else:
-				_pass("adventurer spawn timer runs every 300s (5 minutes)")
+			_world().adventurer_gold_trigger = 10
+			_pass("hero trigger armed: 10gp in the hoard, no spawn timer")
 			_world().spawn_adventurer()
 			_goblins_at_start = get_tree().get_nodes_in_group("goblins").size()
 			_min_goblins_seen = _goblins_at_start

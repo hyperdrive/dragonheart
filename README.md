@@ -36,6 +36,8 @@ A thriving settlement that feeds and funds its defenders:
 ## Gameplay Loop
 
 1. **Scout & Raid** — Hunt farmers, miners, and soldiers. Steal gold and gems.
+   - Flight (Q) clears trees AND lakes (no landing on water) — mountains and the boundary walls still block
+   - Depth: every object sorts by its base (feet/trunk/wall bottom) — a flying dragon renders above the whole scene
 2. **Upgrade** — Visit the wizard’s tower and spend your loot on:
    - More flame charges
    - Shield absorption
@@ -97,7 +99,7 @@ Your hoard grows. Your legend grows. The world fights back.
 
 - Dragon movement, flight, and fire breath
 - NPC AI (farmers, miners, soldiers, goblins)
-- Wandering adventurer — every 5 minutes a hero marches from the city, clears goblins, and tries to carry off your entire gold hoard (burn him to stop him)
+- Wandering adventurer — as soon as your hoard holds 10 gold, a hero marches from the city, clears goblins, and tries to carry off your entire gold stash (burn him to stop him)
 - Wizard shop with upgrades
 - King boss with multiple lives
 - Shield absorption system
@@ -118,13 +120,14 @@ Your hoard grows. Your legend grows. The world fights back.
 2. **Place key elements** (city, dragon lair, goblin mountain, wizard tower, etc.) by clicking on the canvas with the left mouse button.
 
 3. **Paint masks** to control where randomized elements appear:
-   - Select a mask brush (fields, mines, forest dense, forest sparse, lakes)
+   - Select a mask brush (fields, mines, forest dense, forest sparse, lakes, mountains)
    - Drag to paint bright areas (brightness = placement weight)
    - Use the Eraser to clear mistakes
 
 4. **Adjust settings**:
    - Brush size slider controls mask brush radius
    - World name field sets the output directory
+   - Size field sets the square world edge (960–8192 px; existing paint rescales)
    - Seed value determines random placements (same seed = identical world)
 
 5. **Save** your layout:

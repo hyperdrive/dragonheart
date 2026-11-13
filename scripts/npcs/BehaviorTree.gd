@@ -23,9 +23,10 @@ enum State { IDLE, MOVING, WORKING, FLEEING, DEAD }
 const TARGET_NONE := Vector2.INF
 const ARRIVAL_DISTANCE := 12.0
 ## Scenery mask for detour/shadow rays: boundary + terrain (layer 1) AND
-## trees (layer 5, value 16) — walkers must route around trunks even
-## though only their BASE strip blocks (mountains/lakes stay layer 1).
-const SCENERY_RAY_MASK := 17
+## trees (layer 5, value 16) AND lakes (layer 6, value 32 — lakes left
+## layer 1 in 2026-11-13 so the dragon's flight lane clears them; walking
+## NPCs must still route around the shore).
+const SCENERY_RAY_MASK := 49
 
 ## One schedulable piece of work. Subclasses define activities in code
 ## (decision record: no .tres behavior configs).

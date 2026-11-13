@@ -20,13 +20,16 @@ const MASK_SCALE := 0.5
 const BRIGHT_THRESHOLD := 0.5
 
 ## Category → mask file name (and editor tint). Two forest densities
-## (user spec) — "forest" is split into dense and sparse masks.
+## (user spec) — "forest" is split into dense and sparse masks. Mountains
+## added 2026-11-13 (user request): empty/unpainted mask → random scatter,
+## matching the legacy behavior for worlds saved before this category.
 const MASK_CATEGORIES := {
 	"fields": Color(0.2, 0.85, 0.3),
 	"mines": Color(0.9, 0.75, 0.2),
 	"forest_dense": Color(0.1, 0.5, 0.15),
 	"forest_sparse": Color(0.4, 0.8, 0.4),
 	"lakes": Color(0.25, 0.5, 0.95),
+	"mountains": Color(0.62, 0.6, 0.58),
 }
 
 @export_group("World")
@@ -58,6 +61,7 @@ const MASK_CATEGORIES := {
 @export var forest_dense_mask: Texture2D
 @export var forest_sparse_mask: Texture2D
 @export var lakes_mask: Texture2D
+@export var mountains_mask: Texture2D
 
 
 static func world_dir(world_name: String) -> String:
@@ -125,6 +129,7 @@ func get_mask_texture(category: String) -> Texture2D:
 		"forest_dense": return forest_dense_mask
 		"forest_sparse": return forest_sparse_mask
 		"lakes": return lakes_mask
+		"mountains": return mountains_mask
 	push_warning("WorldLayout: unknown mask category '%s'" % category)
 	return null
 
@@ -136,6 +141,7 @@ func set_mask_texture(category: String, tex: Texture2D) -> void:
 		"forest_dense": forest_dense_mask = tex
 		"forest_sparse": forest_sparse_mask = tex
 		"lakes": lakes_mask = tex
+		"mountains": mountains_mask = tex
 		_:
 			push_warning("WorldLayout: unknown mask category '%s'" % category)
 

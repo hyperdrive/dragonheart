@@ -26,3 +26,10 @@ recommendations recorded as settled.
 - The game never edits a layout at runtime; the editor is the only writer.
 - Resolution order for the active world: `WorldSession.pending_world` (set by
   the editor's Play button or a probe) → `--world=<name>` user arg → none.
+
+## 2026-11-13 update (user spec)
+
+| Decision | Choice | Why | Revisit when |
+|---|---|---|---|
+| Mountains mask | Sixth mask category `mountains` (`masks/mountains.png`); mountains spawn via the same mask-anchor machinery. Empty/unpainted mask → random fallback | User request ("so they don't spawn everywhere"); reuses the category table end to end; pre-2026-11-13 saves load unchanged | mountains need distinct placement rules |
+| World size | Editor "Size" spinbox — square edge 960–8192 px, step 320, debounced apply; existing mask paint rescales bilinearly; placed key elements clamp inside the new walls; camera refits | Walls, interior clamps and mask coords already derive from `layout.world_size`, so the game side needed no changes | non-square worlds are wanted |

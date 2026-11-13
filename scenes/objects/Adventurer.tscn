@@ -5,11 +5,11 @@
 
 [node name="Adventurer" type="CharacterBody2D" groups=["adventurers"]]
 collision_layer = 4
-collision_mask = 17
+collision_mask = 49
 script = ExtResource("1_adv01")
 
 [node name="Sprite" type="Node2D" parent="."]
-position = Vector2(0, -5)
+position = Vector2(0, -54)
 
 [node name="Backpack" type="ColorRect" parent="Sprite"]
 position = Vector2(-16, -4)

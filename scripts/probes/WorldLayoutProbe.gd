@@ -8,7 +8,8 @@ extends Node2D
 ##   1. FALLBACK: no world selected → the legacy procedural generation runs
 ##      (city at its default export position, no layout active).
 ##   2. BUILD+SAVE: a sample layout is built in code — key elements placed,
-##      five masks painted (incl. the two forest densities), fixed seed —
+##      six masks painted (incl. the two forest densities and mountains),
+##      fixed seed —
 ##      and saved to res://worlds/sample_world/ (this also leaves an
 ##      inspectable example world in the repo).
 ##   3. LAYOUT MODE: the game boots on that world — landmarks stand at the
@@ -40,9 +41,10 @@ const SEED := 424242
 const REGIONS := {
 	"fields": [Vector2(100, 100), Vector2(850, 850)],
 	"mines": [Vector2(-950, -950), Vector2(-300, -300)],
-	"forest_dense": [Vector2(-950, 100), Vector2(-400, 800)],
+	"forest_dense": [Vector2(-950, 100), Vector2(-400, 650)],
 	"forest_sparse": [Vector2(300, -950), Vector2(950, -200)],
 	"lakes": [Vector2(500, 500), Vector2(950, 950)],
+	"mountains": [Vector2(-950, 700), Vector2(-300, 950)],
 }
 
 var state: int = S.BOOT
@@ -118,6 +120,10 @@ func _build_sample_layout() -> WorldLayout:
 	layout.pig_pen_position = PIG_POS
 	layout.cow_pen_position = COW_POS
 	layout.mine_center = MINE_CENTER_POS
+	# The painted mountains band is sized for 3 rocks with full clearance
+	# (150px spacing, pig-pen exclusion) — the default 5 would overflow it
+	# and the overflow falls back to random scatter off-mask.
+	layout.mountain_count = 3
 	for category: String in WorldLayout.MASK_CATEGORIES:
 		var img := layout.blank_mask_image(category)
 		_paint_region(img, layout, REGIONS[category])
@@ -288,6 +294,23 @@ func _physics_process(_delta: float) -> void:
 			else:
 				_fail("REGRESSION: mines off the mines mask: %s"
 					% str(mine_check["off"]))
+				_goto(S.REPORT)
+				return
+			# Scattered mountains sit on the mountains mask; the goblin
+			# rock is a PLACED landmark (GOBLIN_POS), not mask-scattered.
+			var scattered: Array[Node2D] = []
+			for m: Node in get_tree().get_nodes_in_group("mountains"):
+				var mountain := m as Node2D
+				if mountain != null \
+						and mountain.global_position.distance_to(GOBLIN_POS) > 1.0:
+					scattered.append(mountain)
+			var mountain_check := _all_on_mask("mountains", scattered)
+			if mountain_check["ok"]:
+				var mountains_msg := "MOUNTAINS: all %d scattered mountains inside the mountains mask" % scattered.size()
+				_pass(mountains_msg)
+			else:
+				_fail("REGRESSION: mountains off the mountains mask: %s"
+					% str(mountain_check["off"]))
 				_goto(S.REPORT)
 				return
 			_tree_positions.clear()
