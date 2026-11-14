@@ -215,13 +215,20 @@ func _resolve_weapon() -> void:
 	if _weapon == null:
 		_weapon = get_node_or_null("Sprite/Sword") as ColorRect
 
-func _animate_combat(delta: float) -> void:
+## Who this fighter is swinging at right now (null = nobody in reach).
+## Soldiers fight the dragon; the adventurer also cuts down goblins.
+func _combat_target() -> Node2D:
 	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
-	var fighting := is_alive and _burning_left <= 0.0 \
-		and dragon != null and is_instance_valid(dragon) \
-		and global_position.distance_to(dragon.global_position) <= attack_range
+	if dragon != null and is_instance_valid(dragon) \
+			and global_position.distance_to(dragon.global_position) <= attack_range:
+		return dragon
+	return null
+
+func _animate_combat(delta: float) -> void:
+	var foe := _combat_target()
+	var fighting := is_alive and _burning_left <= 0.0 and foe != null
 	if _rig != null:
-		_animate_rig_slash(delta, fighting, dragon)
+		_animate_rig_slash(delta, fighting, foe)
 		return
 	if _weapon == null:
 		return

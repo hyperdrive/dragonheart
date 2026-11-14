@@ -34,6 +34,8 @@ const LEG_LEN := 16.0
 var arms_override := false
 ## Forward lean of the upper body in radians (+ = toward facing).
 var lean := 0.0
+## Crouch (px): sinks the upper body over bent knees — sneaking, kneeling.
+var crouch := 0.0
 
 var _phase := 0.0
 var _walk_amt := 0.0
@@ -83,7 +85,7 @@ func tick(delta: float, velocity: Vector2, alive: bool = true) -> void:
 	for n: String in ["Torso", "Head", "ArmFront", "ArmBack"]:
 		var node := part(n)
 		if node != null:
-			node.position = _homes[n] + Vector2(lean * 6.0, bob + breathe + drop)
+			node.position = _homes[n] + Vector2(lean * 6.0, bob + breathe + drop + crouch)
 	var torso := part("Torso")
 	if torso != null:
 		torso.rotation = lean * 0.6

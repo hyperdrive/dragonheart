@@ -96,6 +96,109 @@ func _ready() -> void:
 		2.0, Callable()
 	)
 
+# --- the hero's story on the rig (2026-11-14) ---------------------------------
+
+## The nearest living goblin within sword reach — else the dragon.
+func _combat_target() -> Node2D:
+	var best: Node2D = null
+	var best_d := attack_range + 8.0
+	for node: Node in get_tree().get_nodes_in_group("goblins"):
+		var g := node as BaseNPC
+		if g == null or not g.is_alive:
+			continue
+		var d := global_position.distance_to(g.global_position)
+		if d < best_d:
+			best_d = d
+			best = g
+	return best if best != null else super._combat_target()
+
+const SNEAK_SPEED := 42.0
+const WALK_SPEED := 70.0
+const SCOOP_HZ := 2.4
+var _scoop_phase := 0.0
+var _coin_flung := false
+var _story_pose := false
+
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	_animate_story(delta)
+
+## Sneak to the lair (crouched, creeping), scoop the hoard into the sack,
+## then the getaway with the bulging sack bouncing on his back.
+func _animate_story(delta: float) -> void:
+	var rig := sprite as HumanoidRig
+	if rig == null:
+		return
+	var sack := get_node_or_null("Sprite/Torso/LootSack") as Node2D
+	if sack != null:
+		sack.visible = _carrying_loot() and is_alive
+		if sack.visible:
+			sack.position.y = -16.0 - absf(sin(rig.walk_phase())) * 1.4
+	if not is_alive or _burning_left > 0.0 or _swing_animating:
+		_story_pose = false
+		rig.crouch = 0.0
+		return
+	var act := ""
+	var st: int = -1
+	if behavior_tree != null and behavior_tree.current_activity != null:
+		act = str(behavior_tree.current_activity.id)
+		st = behavior_tree.state
+	if act == "raid_lair" and st == BehaviorTree.State.MOVING:
+		# creeping up on the hoard
+		speed = SNEAK_SPEED
+		_story_pose = true
+		rig.arms_override = true
+		var t := rig.walk_phase()
+		rig.set_arms(-34.0 + sin(t) * 8.0, -20.0 - sin(t) * 8.0)
+		rig.lean = 0.3
+		rig.crouch = 2.6
+	elif act == "raid_lair" and st == BehaviorTree.State.WORKING:
+		# on his knees in the gold, shovelling it into the sack
+		_story_pose = true
+		rig.arms_override = true
+		_scoop_phase = fmod(_scoop_phase + delta * SCOOP_HZ, 1.0)
+		var dip := sin(_scoop_phase * TAU)
+		rig.set_arms(-40.0 - dip * 50.0, -30.0 + dip * 40.0)
+		rig.lean = 0.42
+		rig.crouch = 4.0
+		if _scoop_phase > 0.5 and not _coin_flung:
+			_coin_flung = true
+			_fling_coin()
+		elif _scoop_phase < 0.25:
+			_coin_flung = false
+	else:
+		speed = WALK_SPEED
+		if _story_pose:
+			_story_pose = false
+			rig.arms_override = false
+			rig.crouch = 0.0
+			rig.lean = 0.0
+		if _carrying_loot():
+			rig.lean = 0.16   # hunched under the sack, hurrying for the gate
+
+## A coin arcs from the hoard over his shoulder into the sack.
+func _fling_coin() -> void:
+	if not is_inside_tree():
+		return
+	var coin := Polygon2D.new()
+	var pts := PackedVector2Array()
+	for k in 8:
+		var a := TAU * float(k) / 8.0
+		pts.append(Vector2(cos(a) * 1.3, sin(a) * 0.9))
+	coin.polygon = pts
+	coin.color = Color(1.0, 0.84, 0.3)
+	coin.z_index = 3
+	get_parent().add_child(coin)
+	var from := global_position + Vector2(10.0 * float(facing), -2.0)
+	var to := global_position + Vector2(-6.0 * float(facing), -22.0)
+	coin.global_position = from
+	var tw := coin.create_tween()
+	tw.tween_method(func(u: float) -> void:
+		if is_instance_valid(coin):
+			coin.global_position = from.lerp(to, u) + Vector2(0.0, -14.0 * sin(u * PI)),
+		0.0, 1.0, 0.4)
+	tw.tween_callback(coin.queue_free)
+
 # --- activity target providers ----------------------------------------------
 
 ## Goblin hunt DPS (independent accumulator — see _goblin_debt): 15/s into
