@@ -153,41 +153,106 @@ func _on_story_choice(kind: String, choice_index: int) -> void:
 	# popup — but the popup already exists (field_burn created it), so the
 	# signal fired into the void and the rider option never unlocked.
 	if kind.begins_with("sacrifice_"):
-		_on_sacrifice_choice_from_popup(choice_index)
+		_on_sacrifice_choice(kind, choice_index)
 	# Goblin-encounter answers are handled by WorldManager (it connects
 	# story_choice_made). The answer is tribal once-per-run, so GameManager
 	# must NOT pick goblins — get_first_node_in_group would strand the rest.
 
-## Handle sacrifice story choices
-func _on_sacrifice_choice_from_popup(choice_index: int) -> void:
-	print("GameManager: Sacrifice choice made, index: %d" % choice_index)
-	# Choice 0: Eat (+2 flame charges) — Choice 1: train as rider — 2: leave
-	match choice_index:
-		1:
-			print("GameManager: Dragon chose to train the sacrifice as a rider")
-			train_sacrifice_as_rider()
-		0:
-			print("GameManager: Dragon chose to eat the sacrifice")
-			eat_sacrifice()
-		_:
-			print("GameManager: Dragon chose to leave the sacrifice")
-	# The pole is done either way: eaten, claimed, or spared — the victim
-	# leaves the field (the rider "goes to the lair" between the scenes).
+## Sacrifice dialogues (2026-11-14). Every captive is a named personality
+## (Sacrifice.gd picks one). Approach "sacrifice_<p>" offers
+## 0 Bring to lair · 1 Eat! · 2 Leave. The first two open TWO more
+## dialogues (…_lair_2/_lair_3 or …_eat_2/_eat_3 — the captive tries to
+## wriggle out of it, except the defiant one who demands to be eaten);
+## the action happens when the third is answered.
+const SACRIFICE_PERSONALITIES: Array[String] = ["defiant", "courageous",
+	"cunning", "devout", "brute", "thief", "renegade"]
+## The next dialogue to open once the current popup closes (stages chain
+## through _on_story_closed so the popup's own close doesn't eat them).
+var _pending_story_kind: String = ""
+
+func _on_sacrifice_choice(kind: String, choice_index: int) -> void:
+	var rest := kind.trim_prefix("sacrifice_")
+	var parts := rest.split("_")
+	var personality := parts[0]
+	if parts.size() == 1:
+		# the approach
+		match choice_index:
+			0:
+				_pending_story_kind = "sacrifice_%s_lair_2" % personality
+			1:
+				_pending_story_kind = "sacrifice_%s_eat_2" % personality
+			_:
+				print("GameManager: the dragon leaves %s at the stake" % personality)
+				_release_sacrifice()
+		return
+	var path := parts[1]          # "lair" | "eat" | "outcome"
+	if path == "outcome":
+		return                    # the closing report: nothing more to do
+	var stage := int(parts[2])    # 2 | 3
+	if stage < 3:
+		_pending_story_kind = "sacrifice_%s_%s_%d" % [personality, path, stage + 1]
+		return
+	# The action, then a plain report of what just happened (2026-11-14
+	# fix: "you flew her to the lair" / the flame bonus, if any).
+	if path == "lair":
+		train_sacrifice_as_rider(personality)
+		_pending_story_kind = "sacrifice_%s_outcome_lair" % personality
+	elif eat_sacrifice(personality) > 0:
+		_pending_story_kind = "sacrifice_%s_outcome_eat" % personality
+	_release_sacrifice()
+
+## The pole is done: eaten, carried off to the lair, or spared.
+func _release_sacrifice() -> void:
 	for node: Node in get_tree().get_nodes_in_group("sacrifice"):
 		var sacrifice := node as Sacrifice
 		if sacrifice != null and sacrifice._story_triggered:
 			sacrifice.remove_sacrifice()
 
-## Train the sacrifice as a dragon rider (unlocks the 10g wizard option)
-func train_sacrifice_as_rider() -> void:
-	_trainable_sacrifice = true
-	print("GameManager: Sacrifice marked as trainable for rider")
+## Train the sacrifice as a dragon rider (unlocks the 10g wizard option).
+## The personality rides along: the defiant one shoots 1.5x faster.
+var _trainable_personality: String = ""
 
-## Eat the sacrifice for flame charges
-func eat_sacrifice() -> void:
-	if dragon != null and is_instance_valid(dragon):
-		dragon.call("increase_flame_capacity", 2)
-		print("GameManager: Dragon gained 2 flame charges from eating sacrifice")
+func train_sacrifice_as_rider(personality: String = "") -> void:
+	_trainable_sacrifice = true
+	_trainable_personality = personality
+	print("GameManager: %s waits in the lair to be trained as a rider" % personality)
+
+## Eating: the defiant one burns hot (+2 flame capacity); every other
+## captive has a 50% chance of +1.
+func eat_sacrifice(personality: String = "") -> int:
+	if dragon == null or not is_instance_valid(dragon):
+		return 0
+	var gain := 2 if personality == "defiant" else (1 if randf() < 0.5 else 0)
+	if gain > 0:
+		dragon.call("increase_flame_capacity", gain)
+	print("GameManager: the dragon ate %s — +%d flame capacity" % [personality, gain])
+	return gain
+
+## Captive rotation (2026-11-14 fix: "circulate the characters so we don't
+## end up showing the same sacrifice"): a shuffled deck of all seven. Every
+## captive appears once before anyone repeats, and on a reshuffle the last
+## three captives go to the BACK — at least three others between repeats.
+const RECENT_GAP := 3
+var _sacrifice_deck: Array[String] = []
+var _recent_sacrifices: Array[String] = []
+
+func next_sacrifice_personality() -> String:
+	if _sacrifice_deck.is_empty():
+		var fresh: Array[String] = []
+		var recent: Array[String] = []
+		for p in SACRIFICE_PERSONALITIES:
+			if p in _recent_sacrifices:
+				recent.append(p)
+			else:
+				fresh.append(p)
+		fresh.shuffle()
+		recent.shuffle()
+		_sacrifice_deck = fresh + recent
+	var next: String = _sacrifice_deck.pop_front()
+	_recent_sacrifices.append(next)
+	if _recent_sacrifices.size() > RECENT_GAP:
+		_recent_sacrifices.pop_front()
+	return next
 
 ## Show epic story when rider is upgraded
 func _on_rider_upgraded() -> void:
@@ -198,6 +263,12 @@ func _on_rider_upgraded() -> void:
 ## A dragon-death chapter ENDS the run instead: the chapter has played,
 ## so the world reloads (hub owns the teardown; Dragon.die only asks).
 func _on_story_closed() -> void:
+	if _pending_story_kind != "":
+		# the next sacrifice dialogue: stay paused, reopen right away
+		var next := _pending_story_kind
+		_pending_story_kind = ""
+		_open_story_now(next)
+		return
 	story_open = false
 	get_tree().paused = false
 	if _pending_death_reload:
@@ -416,7 +487,10 @@ func purchase_upgrade(kind: String) -> bool:
 		"rider_train":
 			if dragon_ref.has_method("upgrade_rider"):
 				dragon_ref.call("upgrade_rider")
+				# Brannagh the Defiant shoots out of pure spite: 1.5x faster.
+				dragon_ref.set("rider_fire_mult", 1.5 if _trainable_personality == "defiant" else 1.0)
 				_trainable_sacrifice = false  # consumed
+				_trainable_personality = ""
 			else:
 				print("Dragon: upgrade_rider method not found")
 				return false

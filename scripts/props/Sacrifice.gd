@@ -19,6 +19,8 @@ var _story_triggered: bool = false
 
 ## 20% chance the captive is male (trainable as rider)
 @export var is_male: bool = false
+## Which named captive this is ("" = pick by gender on approach).
+@export var personality: String = ""
 
 @onready var visual: Node2D = $Visual
 
@@ -44,8 +46,16 @@ var _struggle_phase: float = 0.0
 const STRUGGLE_HZ := 1.6
 
 func _ready() -> void:
-	# Randomize gender: 20% male
-	is_male = randf() < 0.2
+	# The next captive in the rotation (GameManager's shuffled deck of all
+	# seven, 2026-11-14) — gender follows from who it is.
+	if personality == "":
+		var gm := get_tree().get_first_node_in_group("game_manager")
+		if gm != null and gm.has_method("next_sacrifice_personality"):
+			personality = gm.call("next_sacrifice_personality")
+	if personality != "":
+		is_male = personality in ["brute", "thief", "renegade"]
+	else:
+		is_male = randf() < 0.2
 	set_meta("is_male", is_male)
 	_struggle_phase = randf() * TAU  # multiple captives never sway in sync
 	_build_visuals()
@@ -212,11 +222,16 @@ func _trigger_story() -> void:
 		print("Sacrifice: GameManager not found!")
 		return
 
-	# Determine which story to show (user: character-driven variants — pick
-	# one randomly; all map to same 3 choices).
-	var story_kind := "sacrifice_approach_defiant"
-	if is_male:
-		story_kind = "sacrifice_male_renegade"
+	# A named personality per captive (2026-11-14): the women are Brannagh
+	# (defiant), Ysolde (courageous), Vesna (cunning) and Sister Aldith
+	# (devout); the men Horrik (brute), Corvin (thief) and Garreth
+	# (renegade). Each has her/his own three-stage dialogue.
+	if personality == "":
+		var pool: Array[String] = ["defiant", "courageous", "cunning", "devout"]
+		if is_male:
+			pool = ["brute", "thief", "renegade"]
+		personality = pool[randi() % pool.size()]
+	var story_kind := "sacrifice_" + personality
 
 	print("Sacrifice: Showing story '%s'" % story_kind)
 

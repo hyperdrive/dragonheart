@@ -10,7 +10,9 @@ extends Node2D
 ##      sacrifice_choice_made connection of its chance to connect).
 ##   2. Close it, burn 2 more fields → the 3rd burn spawns the Sacrifice.
 ##   3. Fly the dragon to the sacrifice → the sacrifice story popup opens.
-##   4. Pick choice 1 ("Take to lair. Train as rider.")
+##   4. Pick choice 0 ("Bring to lair") and answer the two follow-up
+##      dialogues (2026-11-14: the captive wriggles; the action lands on
+##      the third answer)
 ##      → REGRESSION CHECK: GameManager.has_trainable_sacrifice() must be true.
 ##   5. Open the wizard menu → the "Train Dragon Rider (10g)" button must be
 ##      VISIBLE and ENABLED (this is the user-reported failure).
@@ -163,9 +165,32 @@ func _physics_process(delta: float) -> void:
 				_fail("sacrifice story popup never opened on approach")
 				_goto(S.REPORT)
 		S.CHOOSE:
-			# THE regression: pick "Take to lair. Train as rider." (index 1).
+			# THE regression: pick "Bring to lair" (index 0 since the
+			# 2026-11-14 dialogues), then answer the two follow-up dialogues
+			# the captive drags it out with — the rider is claimed only on
+			# the THIRD answer.
 			var popup := _popup()
-			popup._on_choice_pressed(1)
+			var kind0 := popup.current_kind
+			popup._on_choice_pressed(0)
+			for stage in [2, 3]:
+				var want := "%s_lair_%d" % [kind0, stage]
+				if popup.current_kind != want or not popup.visible:
+					_fail("expected dialogue '%s' after the previous answer, got '%s'"
+						% [want, popup.current_kind])
+					_goto(S.REPORT)
+					return
+				if stage == 2 and gm.has_trainable_sacrifice():
+					_fail("rider claimed before the dialogue finished")
+				popup._on_choice_pressed(0)
+			# 2026-11-14: a closing report says plainly she was flown home.
+			var outcome := "%s_outcome_lair" % kind0
+			if popup.current_kind != outcome or not popup.visible:
+				_fail("expected the '%s' report after the third answer, got '%s'"
+					% [outcome, popup.current_kind])
+				_goto(S.REPORT)
+				return
+			popup._on_choice_pressed(0)
+			_pass("three-stage lair dialogue + 'flown to the lair' report (%s)" % kind0)
 			_goto(S.SHOP_OPEN)
 		S.SHOP_OPEN:
 			if not _frames(3):

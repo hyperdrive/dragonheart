@@ -12,6 +12,9 @@ class_name AnimalPen
 @export_group("Pen")
 @export var animal_name: String = "pig"
 @export var heal_amount: int = 15
+## Healing rolls between heal_amount and heal_max per animal (2026-11-14:
+## pigs heal 10-20). heal_max below heal_amount = a fixed heal.
+@export var heal_max: int = 0
 ## Flame charges restored to the dragon per animal eaten (max 4).
 @export var flame_recharge: int = 1
 ## Full restore (user spec 2026-11-10): the dragon gets FULL health AND
@@ -71,7 +74,8 @@ func take_animal_for_dragon(from_dragon: CharacterBody2D) -> Dictionary:
 	if not consume_animal():
 		return {}
 	print(" Dragon snacked on a %s at the pen" % animal_name)
-	return {"heal": heal_amount, "flame": flame_recharge}
+	var heal := randi_range(heal_amount, heal_max) if heal_max > heal_amount else heal_amount
+	return {"heal": heal, "flame": flame_recharge}
 
 ## Empty-slot check for respawn rules.
 func has_empty_slot() -> bool:

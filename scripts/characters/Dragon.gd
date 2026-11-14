@@ -397,26 +397,22 @@ func _strike_kill(npc: BaseNPC) -> void:
 ## re-specced 2026-11-10: cow = FULL health + full flames, pig = 2 flames).
 func _eat_meal_from(pen: AnimalPen) -> void:
 	var full_restore := pen.full_restore
-	var flame_only := pen.heal_amount <= 0 and not full_restore
-	# Refusals (a meal the dragon cannot benefit from is never spent —
-	# species-aware: cows waste only when BOTH are full, pigs only when
-	# flames are full since they heal nothing, generic when health is full).
+	# Refusals (a meal the dragon cannot benefit from is never spent). A
+	# meal is wasted only when NOTHING it gives can land (2026-11-14: pigs
+	# now heal 10-20 as well as +2 flames — eat one at full health and it
+	# still refills flames, at full flames it still heals).
 	var health_full := health >= max_health
 	var flames_full := flame_charges >= max_flame_charges
-	if full_restore and health_full and flames_full:
-		eat_refused.emit("health")
-		eat_refused.emit("flames")
-		print("Dragon: full — a whole cow would be wasted!")
-		return
-	if flame_only and flames_full:
-		eat_refused.emit("flames")
-		print("Dragon: flames already full — the pig would be wasted!")
-		return
-	if not full_restore and not flame_only and health_full:
-		eat_refused.emit("health")
-		if flames_full:
+	var heals := full_restore or pen.heal_amount > 0
+	var fuels := full_restore or pen.flame_recharge > 0
+	var health_gain := heals and not health_full
+	var flame_gain := fuels and not flames_full
+	if not health_gain and not flame_gain:
+		if heals:
+			eat_refused.emit("health")
+		if fuels:
 			eat_refused.emit("flames")
-		print("Dragon: full — eating would be wasted!")
+		print("Dragon: full — the %s would be wasted!" % pen.animal_name)
 		return
 	var meal := pen.take_animal_for_dragon(self)
 	if meal.is_empty():
@@ -1171,6 +1167,9 @@ func upgrade_rider() -> void:
 ## like an archer, NOT like the breath cone (fire_reach is for fire only).
 var _rider_shoot_cooldown: float = 0.0
 const RIDER_SHOOT_INTERVAL := 1.5  # seconds between shots
+## Per-rider fire rate (2026-11-14): Brannagh the Defiant shoots 1.5x
+## faster than any other rider (set by GameManager when she is trained).
+var rider_fire_mult: float = 1.0
 const RIDER_ARROW_SCENE := preload("res://scenes/objects/Arrow.tscn")
 
 func _rider_shoot_at_enemies(delta: float) -> void:
@@ -1193,7 +1192,7 @@ func _rider_shoot_at_enemies(delta: float) -> void:
 				nearest_enemy = npc
 	if nearest_enemy != null:
 		_rider_shoot_at(nearest_enemy)
-		_rider_shoot_cooldown = RIDER_SHOOT_INTERVAL
+		_rider_shoot_cooldown = RIDER_SHOOT_INTERVAL / maxf(rider_fire_mult, 0.1)
 
 ## Loose one rider arrow. Arrow.launch aims it; rider_arrow=true makes the
 ## arrow hunt soldiers/goblins instead of the DRAGON (bug fix 2026-11-11:
