@@ -25,15 +25,27 @@ const GOLD_DROP_SCENE := preload("res://scenes/objects/GoldDrop.tscn")
 var can_mine: bool = true
 var mining_cooldown: float = 0.0
 
-## Mining swing (2026-11-09): code-driven hammering on the Pick ColorRect.
-## Pivot is the top of the handle (overhead grip); the swing raises the pick
-## then slams it down, flashing warm on impact, with a little body dip.
-const PICK_SWING_HZ := 2.2
-const PICK_RAISED_DEG := -62.0
-const PICK_SLAMMED_DEG := 12.0
+## Mining swing (2026-11-14 rig pass): a two-handed overhead pick swing on
+## the HumanoidRig — a slow wind-up over the shoulder (leaning back), a
+## fast slam into the seam (leaning in), a short recovery. At impact the
+## pick head throws stone chips and sparks. The Pick node pivots at the
+## grip (its steel head crowns the handle), so the arms carry the head
+## through the arc.
+const PICK_SWING_HZ := 1.1
+const ARM_RAISED_DEG := -168.0
+const ARM_SLAM_DEG := -38.0
+const PICK_RAISED_DEG := 135.0   # head thrown back over the shoulder
+const PICK_SLAM_DEG := 175.0     # head driven into the seam ahead
+## Cart push (2026-11-14): leaning arms on the push bar, wheels turning.
+const CART_SCALE := 1.4
+const CART_WHEEL_R := 3.3 * CART_SCALE
 var _pick_swing_phase := 0.0
 var _pick_animating := false
-var _pick: ColorRect
+var _impact_done := false
+var _pick: Node2D
+var _rig: HumanoidRig
+var _cart_roll := 0.0
+var _last_pos := Vector2.ZERO
 
 @onready var cart: Node2D = $Cart
 
@@ -49,7 +61,7 @@ func _physics_process(delta: float) -> void:
 # --- mining hammering (2026-11-09) --------------------------------------------
 
 func _animate_mining(delta: float) -> void:
-	if _pick == null:
+	if _pick == null or _rig == null:
 		return
 	var working: bool = is_alive and _burning_left <= 0.0 \
 		and behavior_tree != null \
@@ -58,23 +70,64 @@ func _animate_mining(delta: float) -> void:
 		and str(behavior_tree.current_activity.id) == "mine"
 	if working:
 		_pick_animating = true
-		_pick_swing_phase += delta * TAU * PICK_SWING_HZ
-		# 0 = fully raised (overswing), 1 = slammed into the seam.
-		var t := 0.5 + 0.5 * sin(_pick_swing_phase - PI / 2.0)
-		# pivot lives at the pick's BOTTOM edge (set in _ready): grip
-		# fixed, upper half + steel head sweep the arc.
-		_pick.rotation_degrees = lerpf(PICK_RAISED_DEG, PICK_SLAMMED_DEG, t)
-		# the little body dip into every hit keeps the whole figure alive
-		sprite.position = _sprite_home + Vector2(
-			0.0, 2.0 * maxf(0.0, sin(_pick_swing_phase)))
-		# impact flash: the pick glints warm at the bottom of each slam
-		var slam := t > 0.82
-		_pick.modulate = Color(1.0, 0.85, 0.55) if slam else Color.WHITE
+		_rig.arms_override = true
+		_pick_swing_phase = fmod(_pick_swing_phase + delta * PICK_SWING_HZ, 1.0)
+		var p := _pick_swing_phase
+		_apply_mining_pose(p)
+		if p >= 0.71 and not _impact_done:
+			_impact_done = true
+			_spawn_strike_debris()
+		elif p < 0.5:
+			_impact_done = false
 	elif _pick_animating:
 		_pick_animating = false
-		_pick.rotation_degrees = 0.0
+		_rig.arms_override = false
+		_rig.lean = 0.0
+		_pick.rotation_degrees = -20.0
 		_pick.modulate = Color.WHITE
-		sprite.position = _sprite_home
+
+## One sample of the swing at cycle phase p ∈ [0,1):
+## 0..0.6 wind-up (ease out), 0.6..0.72 slam, 0.72..1 recover.
+func _apply_mining_pose(p: float) -> void:
+	var lift: float
+	if p < 0.6:
+		lift = smoothstep(0.0, 1.0, p / 0.6)
+	elif p < 0.72:
+		lift = 1.0 - pow((p - 0.6) / 0.12, 2.0)
+	else:
+		lift = smoothstep(0.0, 1.0, (p - 0.72) / 0.28) * 0.15
+	var arm := lerpf(ARM_SLAM_DEG, ARM_RAISED_DEG, lift)
+	_rig.set_arms(arm, arm + 8.0)
+	_pick.rotation_degrees = lerpf(PICK_SLAM_DEG, PICK_RAISED_DEG, lift)
+	_rig.lean = lerpf(0.28, -0.14, lift)
+	var slam := p >= 0.71 and p < 0.78
+	_pick.modulate = Color(1.0, 0.85, 0.55) if slam else Color.WHITE
+
+## Stone chips + sparks flying off the pick head at the moment of impact.
+func _spawn_strike_debris() -> void:
+	var head := _pick.get_node_or_null("PickHead") as Node2D
+	if head == null or not is_inside_tree():
+		return
+	var origin := _pick.to_global(Vector2(0.0, -17.0))  # the steel head
+	for i in 7:
+		var bit := Polygon2D.new()
+		var spark := i < 3
+		bit.polygon = PackedVector2Array([Vector2(-0.8, -0.8), Vector2(0.9, -0.5),
+			Vector2(0.6, 0.9), Vector2(-0.7, 0.6)]) if not spark \
+			else PackedVector2Array([Vector2(-0.5, -0.5), Vector2(0.5, -0.5),
+			Vector2(0.5, 0.5), Vector2(-0.5, 0.5)])
+		bit.color = Color(1.0, 0.85, 0.4) if spark else Color(0.55, 0.53, 0.5)
+		bit.z_index = 3
+		get_parent().add_child(bit)
+		bit.global_position = origin
+		var dir := Vector2(randf_range(-1.0, 1.0) + 0.6 * float(facing), randf_range(-1.6, -0.4)).normalized()
+		var dist := randf_range(8.0, 18.0) * (1.4 if spark else 1.0)
+		var tw := bit.create_tween().set_parallel(true)
+		tw.tween_property(bit, "global_position", origin + dir * dist + Vector2(0, 6), 0.35) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(bit, "modulate:a", 0.0, 0.4)
+		tw.tween_property(bit, "rotation", randf_range(-6.0, 6.0), 0.4)
+		tw.chain().tween_callback(bit.queue_free)
 
 
 ## The claws arriving under the dropper's nose (not the flee trigger at 180)
@@ -99,12 +152,10 @@ func _ready() -> void:
 	flee_speed_multiplier = 1.3
 
 	super._ready()
-	_pick = get_node_or_null("Sprite/Pick") as ColorRect
-	# The swing pivots at the pick's BOTTOM edge (grip fixed, head sweeps —
-	# mirrors the soldier's weapon swing). Set once here: static geometry,
-	# not something _animate_mining needs to re-derive every frame.
-	if _pick != null:
-		_pick.pivot_offset = Vector2(_pick.size.x * 0.5, _pick.size.y - 2.0)
+	_rig = sprite as HumanoidRig
+	# Pick rides the near hand; its node pivots at the grip (head on top).
+	_pick = get_node_or_null("Sprite/ArmFront/Pick") as Node2D
+	_last_pos = global_position
 
 	# Cart visibility tracks the payload slot (shown while gold/gems aboard).
 	cart.visible = payload_amount > 0
@@ -294,8 +345,30 @@ func _drop_payload(_dragon_position: Vector2) -> void:
 func _push_cart() -> void:
 	if cart == null:
 		return
-	cart.position = Vector2(26.0 * float(facing), 8.0)
-	cart.scale.x = float(facing)
+	var k := CART_SCALE * visual_scale
+	cart.position = Vector2(24.0 * float(facing), 2.0) * visual_scale
+	cart.scale = Vector2(k * float(facing), k)
+	var moved := global_position.distance_to(_last_pos)
+	_last_pos = global_position
+	if not cart.visible or _rig == null:
+		return
+	# Wheels roll with the ground covered; the load jounces on the ruts.
+	_cart_roll += moved
+	var spin := _cart_roll / (CART_WHEEL_R * visual_scale)
+	for w: String in ["Wheel", "Wheel2"]:
+		var wheel := cart.get_node_or_null(w) as Node2D
+		if wheel != null:
+			wheel.rotation = spin
+	var cargo := cart.get_node_or_null("Load") as Node2D
+	if cargo != null:
+		cargo.position.y = -absf(sin(_cart_roll * 0.35)) * 0.7
+	# Hands on the push bar while the cart is aboard (unless swinging).
+	if not _pick_animating and _burning_left <= 0.0:
+		_rig.arms_override = true
+		_rig.set_arms(-58.0, -50.0)
+		_rig.lean = 0.22 if velocity.length() > 6.0 else 0.1
+		if _pick != null:
+			_pick.visible = false  # the pick rides in the cart (CartPick)
 
 ## carrying_changed: show the cart only while a payload is actually aboard —
 ## filling it at the mine, hiding it after delivery or a dragon steal.
@@ -303,3 +376,10 @@ func _on_carrying_changed(_res_type: String, amount: int) -> void:
 	if cart == null:
 		return
 	cart.visible = amount > 0
+	if _pick != null:
+		_pick.visible = amount <= 0
+	if amount <= 0 and _rig != null and not _pick_animating:
+		_rig.arms_override = false
+		_rig.lean = 0.0
+		if _pick != null:
+			_pick.rotation_degrees = -20.0

@@ -191,20 +191,40 @@ const COMBAT_LEAN_RAD := 0.09
 
 var _swing_phase := 0.0
 var _swing_animating := false
-var _weapon: ColorRect
+var _weapon: ColorRect          # legacy ColorRect weapon (the King's Sword)
+
+## Rig soldiers (2026-11-14): an arming sword in the near hand, the shield
+## braced on the far arm. The slash runs on the HumanoidRig like the
+## miner's pick: wind-up over the shoulder, a fast diagonal cut at the
+## dragon, a short recovery — the soldier turns to face his foe.
+const SLASH_HZ := 1.5
+const SLASH_ARM_RAISED := -172.0
+const SLASH_ARM_CUT := -52.0
+const SLASH_BLADE_RAISED := 140.0
+const SLASH_BLADE_CUT := 158.0
+const SWORD_REST_DEG := -26.0
+var _rig: HumanoidRig
+var _rig_sword: Node2D
 
 func _resolve_weapon() -> void:
+	_rig = sprite as HumanoidRig
+	if _rig != null:
+		_rig_sword = get_node_or_null("Sprite/ArmFront/Sword") as Node2D
+		return
 	_weapon = get_node_or_null("Sprite/Spear") as ColorRect
 	if _weapon == null:
 		_weapon = get_node_or_null("Sprite/Sword") as ColorRect
 
 func _animate_combat(delta: float) -> void:
-	if _weapon == null:
-		return
 	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
 	var fighting := is_alive and _burning_left <= 0.0 \
 		and dragon != null and is_instance_valid(dragon) \
 		and global_position.distance_to(dragon.global_position) <= attack_range
+	if _rig != null:
+		_animate_rig_slash(delta, fighting, dragon)
+		return
+	if _weapon == null:
+		return
 	if fighting:
 		_swing_animating = true
 		_swing_phase += delta * TAU * SWORD_SWING_HZ
@@ -225,6 +245,42 @@ func _animate_combat(delta: float) -> void:
 		_weapon.rotation_degrees = 0.0
 		_weapon.modulate = Color.WHITE
 		sprite.rotation = 0.0
+
+func _animate_rig_slash(delta: float, fighting: bool, dragon: Node2D) -> void:
+	if _rig_sword == null:
+		return
+	if fighting:
+		_swing_animating = true
+		_rig.arms_override = true
+		# square up to the dragon
+		var want := 1 if dragon.global_position.x >= global_position.x else -1
+		if want != facing:
+			facing = want
+			_apply_facing()
+		_swing_phase = fmod(_swing_phase + delta * SLASH_HZ, 1.0)
+		_apply_slash_pose(_swing_phase)
+	elif _swing_animating:
+		_swing_animating = false
+		_rig.arms_override = false
+		_rig.lean = 0.0
+		_rig_sword.rotation_degrees = SWORD_REST_DEG
+		_rig_sword.modulate = Color.WHITE
+
+## One sample of the slash at cycle phase p ∈ [0,1): 0..0.55 wind-up,
+## 0.55..0.68 the cut, 0.68..1 recover. The shield arm stays braced.
+func _apply_slash_pose(p: float) -> void:
+	var lift: float
+	if p < 0.55:
+		lift = smoothstep(0.0, 1.0, p / 0.55)
+	elif p < 0.68:
+		lift = 1.0 - pow((p - 0.55) / 0.13, 2.0)
+	else:
+		lift = smoothstep(0.0, 1.0, (p - 0.68) / 0.32) * 0.2
+	var arm := lerpf(SLASH_ARM_CUT, SLASH_ARM_RAISED, lift)
+	_rig.set_arms(arm, -58.0 + 6.0 * lift)
+	_rig_sword.rotation_degrees = lerpf(SLASH_BLADE_CUT, SLASH_BLADE_RAISED, lift)
+	_rig.lean = lerpf(0.3, -0.12, lift)
+	_rig_sword.modulate = Color(1.0, 0.92, 0.65) if p >= 0.6 and p < 0.72 else Color.WHITE
 
 ## Soldiers spot the dragon → alarm (swarm sighting), plus contact DPS on the
 ## dragon. Burning status (catch_fire/_tick_burning) is inherited from BaseNPC.

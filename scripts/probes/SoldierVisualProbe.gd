@@ -49,9 +49,10 @@ func _goto(next: int) -> void:
 func _frames(n: int) -> bool:
 	return frames_in_state >= n
 
+## 2026-11-14 rig pass: any CanvasItem part counts (Polygon2D/Line2D/Node2D).
 func _has_rect(parent: Node, child_name: String) -> bool:
 	var n := parent.get_node_or_null(child_name)
-	return n is ColorRect
+	return n is CanvasItem
 
 func _physics_process(delta: float) -> void:
 	frames_in_state += 1
@@ -99,24 +100,27 @@ func _physics_process(delta: float) -> void:
 				_goto(S.REPORT)
 				return
 			var ok := true
-			for part: String in ["Legs", "Boots", "BootsFront", "Body",
-					"ChestPlate", "Belt", "TabardTail", "Head", "Eyes",
-					"Helmet", "HelmetRim", "HelmetCrest", "Shield",
-					"ShieldRimTop", "ShieldRimBottom", "ShieldBoss", "Spear"]:
+			if not (spr is HumanoidRig):
+				_fail("soldier Sprite is not a HumanoidRig")
+				ok = false
+			for part: String in ["LegBack", "LegFront", "ArmBack", "ArmFront",
+					"LegFront/Greave", "Torso/Body", "Torso/Tabard",
+					"Torso/Crest", "Torso/Belt", "Torso/Pauldron", "Head/Face",
+					"Head/Eyes", "Head/Helmet", "Head/HelmetRim",
+					"Head/NoseGuard", "Head/Plume", "ArmBack/Shield",
+					"ArmBack/Shield/ShieldFace", "ArmBack/Shield/Boss",
+					"ArmFront/Sword"]:
 				if not _has_rect(spr, part):
 					_fail("soldier missing part: %s" % part)
 					ok = false
-			var spear := spr.get_node_or_null("Spear") as ColorRect
-			if spear == null:
-				_fail("soldier Sprite/Spear missing — combat swing dead")
-				ok = false
-			elif not _has_rect(spear, "SpearTip"):
-				_fail("SpearTip not a child of Spear — tip won't sweep "
-					+ "with the swing")
+			var sword := spr.get_node_or_null("ArmFront/Sword") as Node2D
+			if sword == null or not _has_rect(sword, "Blade") \
+					or not _has_rect(sword, "Guard"):
+				_fail("soldier sword blade/guard missing — the slash cuts air")
 				ok = false
 			if ok:
-				_pass("soldier rugged part set complete (17 parts, "
-					+ "tip child of Spear)")
+				_pass("soldier rig complete (mail, crowned tabard, plumed "
+					+ "helm, heater shield, arming sword in the swing hand)")
 			# --- archer part set ---
 			var aspr := _archer.get_node_or_null("Sprite") as Node2D
 			if aspr == null:
@@ -124,41 +128,22 @@ func _physics_process(delta: float) -> void:
 				_goto(S.REPORT)
 				return
 			ok = true
-			for part: String in ["Legs", "Boots", "BootsFront", "Quiver",
-					"Body", "Belt", "BeltBuckle", "Head", "Eyes",
-					"Helmet", "HoodPoint", "Bow"]:
+			for part: String in ["LegBack", "LegFront", "ArmBack", "ArmFront",
+					"Torso/Body2", "Torso/Belt", "Torso/Quiver",
+					"Torso/Quiver/Arrow1", "Torso/Quiver/Arrow2", "Head/Hood",
+					"Head/Feather", "ArmFront/Bow", "ArmFront/Bow/BowLimbUp",
+					"ArmFront/Bow/BowLimbDown", "ArmFront/Bow/String",
+					"ArmFront/Bow/Nock"]:
 				if not _has_rect(aspr, part):
 					_fail("archer missing part: %s" % part)
 					ok = false
-			var quiver := aspr.get_node_or_null("Quiver") as ColorRect
-			if quiver == null or not _has_rect(quiver, "QuiverArrow1") \
-					or not _has_rect(quiver, "QuiverArrow2"):
-				_fail("archer quiver arrows missing")
+			var up := aspr.get_node_or_null("ArmFront/Bow/BowLimbUp") as Line2D
+			if up != null and absf(up.points[up.points.size() - 1].x) < 2.0:
+				_fail("bow limbs straight — no curve back toward the string")
 				ok = false
-			var bow := aspr.get_node_or_null("Bow") as ColorRect
-			if bow == null or not _has_rect(bow, "BowString"):
-				_fail("archer bow string missing")
-				ok = false
-			else:
-				# The bend (2026-11-11, user: "make the bow bend a little"):
-				# grip + two limbs angled away from the string.
-				var limb_up := bow.get_node_or_null("BowLimbUp") as ColorRect
-				var limb_down := bow.get_node_or_null("BowLimbDown") as ColorRect
-				if limb_up == null or limb_down == null:
-					_fail("archer bow limbs missing — bow is a straight plank")
-					ok = false
-				elif absf(limb_up.rotation) < 0.05 \
-						or absf(limb_down.rotation) < 0.05:
-					_fail("bow limbs straight (rot %.2f/%.2f rad — no bend)"
-						% [limb_up.rotation, limb_down.rotation])
-					ok = false
-				elif absf(limb_up.rotation + limb_down.rotation) > 0.01:
-					_fail("bow limbs not mirrored (rot %.2f/%.2f rad)"
-						% [limb_up.rotation, limb_down.rotation])
-					ok = false
 			if ok:
-				_pass("archer rugged part set complete (bent bow, arrows "
-					+ "in quiver, string)")
+				_pass("archer rig complete (hood + feather, quiver arrows, "
+					+ "curved longbow, string, nock)")
 			_goto(S.PARK_DRAGON)
 		S.PARK_DRAGON:
 			# Park the dragon INSIDE the soldier's attack range so the
@@ -169,22 +154,20 @@ func _physics_process(delta: float) -> void:
 			print("PROBE: dragon parked in the soldier's attack range")
 			_goto(S.WAIT_SWING)
 		S.WAIT_SWING:
-			# The swing oscillates the spear between -55deg and 25deg.
-			var spr := _soldier.get_node_or_null("Sprite") as Node2D
-			var spear := spr.get_node_or_null("Spear") as ColorRect
-			if spear == null:
-				_fail("spear vanished during the swing")
+			# The slash sweeps the sword arm between wind-up and cut.
+			var arm := _soldier.get_node_or_null("Sprite/ArmFront") as Node2D
+			if arm == null:
+				_fail("sword arm vanished during the swing")
 				_goto(S.REPORT)
 				return
-			if absf(spear.rotation_degrees - _rot_seen) > 3.0:
+			if absf(arm.rotation_degrees - _rot_seen) > 3.0 and frames_in_state > 2:
 				_swing_moved = true
-				_pass("combat swing drives the new spear (rotation %.1f°, "
-					% spear.rotation_degrees
-					+ "tip sweeps with it)")
+				_pass("combat slash drives the sword arm (%.1f°, blade "
+					% arm.rotation_degrees + "rides the hand)")
 				_goto(S.REPORT)
-			_rot_seen = spear.rotation_degrees
+			_rot_seen = arm.rotation_degrees
 			if _frames(300):
-				_fail("spear never moved — combat swing broken")
+				_fail("sword arm never moved — combat slash broken")
 				_goto(S.REPORT)
 		S.REPORT:
 			set_physics_process(false)

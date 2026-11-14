@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://b7y8c5x2k0m5p"]
+[gd_scene format=3 uid="uid://b7y8c5x2k0m5p"]
 
 [ext_resource type="Script" path="res://scripts/npcs/Farmer.gd" id="1_q0c4m"]
+[ext_resource type="Script" path="res://scripts/npcs/HumanoidRig.gd" id="rig_script"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(16, 32)
@@ -10,99 +11,264 @@ collision_layer = 4
 collision_mask = 49
 
 script = ExtResource("1_q0c4m")
+visual_scale = 0.8
 
 [node name="Sprite" type="Node2D" parent="."]
 position = Vector2(0, -23)
+script = ExtResource("rig_script")
 
-[node name="Body" type="ColorRect" parent="Sprite"]
-position = Vector2(-9, -12)
-size = Vector2(18, 21)
-color = Color(0.36, 0.62, 0.25, 1.0)
+[node name="LegBack" type="Node2D" parent="Sprite"]
+position = Vector2(-1.6, 7)
 
-[node name="StrapL" type="ColorRect" parent="Sprite"]
-position = Vector2(-7, -12)
-size = Vector2(3, 12)
-color = Color(0.28, 0.34, 0.5, 1.0)
+[node name="Pants" type="Polygon2D" parent="Sprite/LegBack"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.218, 0.312, 0.515, 1.000, 0.218, 0.312, 0.515, 1.000, 0.192, 0.274, 0.452, 1.000, 0.175, 0.250, 0.412, 1.000, 0.175, 0.250, 0.412, 1.000, 0.192, 0.274, 0.452, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-2.8, -1.5, 2.8, -1.5, 2.7, 7, 2.4, 12.4, -2.4, 12.4, -2.7, 7)
 
-[node name="StrapR" type="ColorRect" parent="Sprite"]
-position = Vector2(4, -12)
-size = Vector2(3, 12)
-color = Color(0.28, 0.34, 0.5, 1.0)
+[node name="Boot" type="Polygon2D" parent="Sprite/LegBack"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.395, 0.296, 0.216, 1.000, 0.395, 0.296, 0.216, 1.000, 0.347, 0.250, 0.172, 1.000, 0.317, 0.221, 0.144, 1.000, 0.262, 0.168, 0.094, 1.000, 0.262, 0.168, 0.094, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-2.9, 11.6, 2.9, 11.6, 3.6, 13.2, 5.6, 14.2, 5.9, 16, -3.1, 16)
 
-[node name="Bib" type="ColorRect" parent="Sprite"]
-position = Vector2(-5, -5)
-size = Vector2(10, 9)
-color = Color(0.28, 0.34, 0.5, 1.0)
+[node name="Sole" type="Polygon2D" parent="Sprite/LegBack"]
+color = Color(0.180, 0.116, 0.064, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-3.1, 15.1, 5.9, 15.1, 5.9, 16, -3.1, 16)
 
-[node name="BibPocket" type="ColorRect" parent="Sprite"]
-position = Vector2(-3, -3)
-size = Vector2(6, 4)
-color = Color(0.24, 0.29, 0.44, 1.0)
+[node name="ArmBack" type="Node2D" parent="Sprite"]
+position = Vector2(-1.2, -9)
 
-[node name="Waist" type="ColorRect" parent="Sprite"]
-position = Vector2(-9, 6)
-size = Vector2(18, 3)
-color = Color(0.24, 0.29, 0.44, 1.0)
+[node name="Sleeve" type="Polygon2D" parent="Sprite/ArmBack"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.684, 0.643, 0.519, 1.000, 0.684, 0.643, 0.519, 1.000, 0.615, 0.574, 0.453, 1.000, 0.570, 0.530, 0.411, 1.000, 0.570, 0.530, 0.411, 1.000, 0.615, 0.574, 0.453, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-2.5, -1.8, 2.5, -1.8, 2.3, 5.5, 2, 10.2, -2, 10.2, -2.3, 5.5)
 
-[node name="Legs" type="ColorRect" parent="Sprite"]
-position = Vector2(-8, 9)
-size = Vector2(6, 8)
-color = Color(0.28, 0.24, 0.2, 1.0)
+[node name="Hand" type="Polygon2D" parent="Sprite/ArmBack"]
+color = Color(0.741, 0.624, 0.499, 1.000)
+antialiased = true
+polygon = PackedVector2Array(2.4, 12, 1.98, 13.29, 0.88, 14.09, -0.48, 14.09, -1.58, 13.29, -2, 12, -1.58, 10.71, -0.48, 9.91, 0.88, 9.91, 1.98, 10.71)
 
-[node name="LegsFront" type="ColorRect" parent="Sprite"]
-position = Vector2(2, 9)
-size = Vector2(6, 8)
-color = Color(0.28, 0.24, 0.2, 1.0)
+[node name="Basket" type="Node2D" parent="Sprite/ArmBack"]
+position = Vector2(0.2, 13)
+visible = false
 
-[node name="Boots" type="ColorRect" parent="Sprite"]
-position = Vector2(-9, 17)
-size = Vector2(8, 6)
-color = Color(0.35, 0.24, 0.14, 1.0)
+[node name="Produce1" type="Polygon2D" parent="Sprite/ArmBack/Basket"]
+color = Color(0.480, 0.740, 0.320, 1.000)
+antialiased = true
+polygon = PackedVector2Array(0.4, -3.6, -0.06, -2.42, -1.26, -1.7, -2.74, -1.7, -3.94, -2.42, -4.4, -3.6, -3.94, -4.78, -2.74, -5.5, -1.26, -5.5, -0.06, -4.78)
 
-[node name="BootsFront" type="ColorRect" parent="Sprite"]
-position = Vector2(1, 17)
-size = Vector2(8, 6)
-color = Color(0.35, 0.24, 0.14, 1.0)
+[node name="Produce2" type="Polygon2D" parent="Sprite/ArmBack/Basket"]
+color = Color(0.900, 0.480, 0.160, 1.000)
+antialiased = true
+polygon = PackedVector2Array(4.1, -3.8, 3.7, -2.68, 2.65, -1.99, 1.35, -1.99, 0.3, -2.68, -0.1, -3.8, 0.3, -4.92, 1.35, -5.61, 2.65, -5.61, 3.7, -4.92)
 
-[node name="ArmSleeve" type="ColorRect" parent="Sprite"]
-position = Vector2(-13, -8)
-size = Vector2(5, 10)
-color = Color(0.36, 0.62, 0.25, 1.0)
+[node name="Produce3" type="Polygon2D" parent="Sprite/ArmBack/Basket"]
+color = Color(0.820, 0.220, 0.200, 1.000)
+antialiased = true
+polygon = PackedVector2Array(1.8, -4.6, 1.46, -3.66, 0.56, -3.08, -0.56, -3.08, -1.46, -3.66, -1.8, -4.6, -1.46, -5.54, -0.56, -6.12, 0.56, -6.12, 1.46, -5.54)
 
-[node name="Hand" type="ColorRect" parent="Sprite"]
-position = Vector2(-13, 2)
-size = Vector2(5, 4)
-color = Color(0.94, 0.82, 0.65, 1.0)
+[node name="Wicker" type="Polygon2D" parent="Sprite/ArmBack/Basket"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.840, 0.640, 0.340, 1.000, 0.840, 0.640, 0.340, 1.000, 0.600, 0.420, 0.200, 1.000, 0.600, 0.420, 0.200, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-5, -3, 5, -3, 4, 3, -4, 3)
 
-[node name="Head" type="ColorRect" parent="Sprite"]
-position = Vector2(-6, -24)
-size = Vector2(12, 12)
-color = Color(0.94, 0.82, 0.65, 1.0)
+[node name="WickerBand" type="Line2D" parent="Sprite/ArmBack/Basket"]
+points = PackedVector2Array(-4.6, 0, 4.6, 0)
+width = 0.6
+default_color = Color(0.520, 0.360, 0.180, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
 
-[node name="Eyes" type="ColorRect" parent="Sprite"]
-position = Vector2(-3, -19)
-size = Vector2(6, 2)
-color = Color(0.15, 0.12, 0.1, 1.0)
+[node name="BasketHandle" type="Line2D" parent="Sprite/ArmBack/Basket"]
+points = PackedVector2Array(-4, -3, -2, -7, 2, -7, 4, -3)
+width = 0.8
+default_color = Color(0.600, 0.420, 0.200, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
 
-[node name="Hair" type="ColorRect" parent="Sprite"]
-position = Vector2(-6, -27)
-size = Vector2(12, 4)
-color = Color(0.3, 0.2, 0.12, 1.0)
+[node name="Torso" type="Node2D" parent="Sprite"]
+position = Vector2(0, 7)
 
-[node name="HatCrown" type="ColorRect" parent="Sprite"]
-position = Vector2(-5, -32)
-size = Vector2(10, 6)
-color = Color(0.92, 0.79, 0.25, 1.0)
+[node name="Body" type="Polygon2D" parent="Sprite/Torso"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.877, 0.824, 0.666, 1.000, 0.877, 0.824, 0.666, 1.000, 0.842, 0.791, 0.635, 1.000, 0.686, 0.638, 0.497, 1.000, 0.671, 0.624, 0.484, 1.000, 0.671, 0.624, 0.484, 1.000, 0.842, 0.791, 0.635, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-5.2, -18, 5, -18, 6, -14.5, 6, 1.5, 5.7, 3, -6, 3, -6, -14.5)
 
-[node name="HatBand" type="ColorRect" parent="Sprite"]
-position = Vector2(-5, -28)
-size = Vector2(10, 2)
-color = Color(0.6, 0.3, 0.15, 1.0)
+[node name="Bib" type="Polygon2D" parent="Sprite/Torso"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.352, 0.460, 0.694, 1.000, 0.352, 0.460, 0.694, 1.000, 0.224, 0.320, 0.528, 1.000, 0.224, 0.320, 0.528, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-3.6, -12.4, 4.4, -12.4, 4.8, 1, -4, 1)
 
-[node name="Hat" type="ColorRect" parent="Sprite"]
-position = Vector2(-10, -27)
-size = Vector2(20, 3)
-color = Color(0.85, 0.72, 0.2, 1.0)
+[node name="BibPocket" type="Polygon2D" parent="Sprite/Torso"]
+color = Color(0.230, 0.328, 0.541, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-1.2, -10, 2.8, -10, 2.6, -6.6, -1, -6.6)
+
+[node name="StrapL" type="Polygon2D" parent="Sprite/Torso"]
+color = Color(0.280, 0.400, 0.660, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-5, -18, -3.4, -18, -2.6, -12.2, -3.8, -12.2)
+
+[node name="StrapR" type="Polygon2D" parent="Sprite/Torso"]
+color = Color(0.280, 0.400, 0.660, 1.000)
+antialiased = true
+polygon = PackedVector2Array(3, -18, 4.6, -18, 4.4, -12.2, 3.2, -12.2)
+
+[node name="Buttons" type="Polygon2D" parent="Sprite/Torso"]
+color = Color(0.860, 0.760, 0.400, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-2.4, -12, -2.7, -11.48, -3.3, -11.48, -3.6, -12, -3.3, -12.52, -2.7, -12.52)
+
+[node name="Waist" type="Polygon2D" parent="Sprite/Torso"]
+color = Color(0.252, 0.360, 0.594, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-6.2, 0, 6.2, 0, 6.2, 3, -6.2, 3)
+
+[node name="Patch" type="Polygon2D" parent="Sprite/Torso"]
+color = Color(0.700, 0.300, 0.240, 1.000)
+antialiased = true
+polygon = PackedVector2Array(2, 0.6, 4.6, 0.6, 4.6, 2.6, 2, 2.6)
+
+[node name="LegFront" type="Node2D" parent="Sprite"]
+position = Vector2(1.6, 7)
+
+[node name="Pants" type="Polygon2D" parent="Sprite/LegFront"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.280, 0.400, 0.660, 1.000, 0.280, 0.400, 0.660, 1.000, 0.246, 0.351, 0.579, 1.000, 0.224, 0.320, 0.528, 1.000, 0.224, 0.320, 0.528, 1.000, 0.246, 0.351, 0.579, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-2.8, -1.5, 2.8, -1.5, 2.7, 7, 2.4, 12.4, -2.4, 12.4, -2.7, 7)
+
+[node name="Boot" type="Polygon2D" parent="Sprite/LegFront"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.507, 0.380, 0.277, 1.000, 0.507, 0.380, 0.277, 1.000, 0.445, 0.320, 0.220, 1.000, 0.406, 0.283, 0.184, 1.000, 0.336, 0.216, 0.120, 1.000, 0.336, 0.216, 0.120, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-2.9, 11.6, 2.9, 11.6, 3.6, 13.2, 5.6, 14.2, 5.9, 16, -3.1, 16)
+
+[node name="Sole" type="Polygon2D" parent="Sprite/LegFront"]
+color = Color(0.231, 0.149, 0.083, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-3.1, 15.1, 5.9, 15.1, 5.9, 16, -3.1, 16)
+
+[node name="Head" type="Node2D" parent="Sprite"]
+position = Vector2(0.8, -11)
+
+[node name="Neck" type="Polygon2D" parent="Sprite/Head"]
+color = Color(0.820, 0.620, 0.480, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-1.6, -2.5, 2.2, -2.5, 2.2, 1, -1.6, 1)
+
+[node name="Face" type="Polygon2D" parent="Sprite/Head"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.912, 0.767, 0.638, 1.000, 0.897, 0.754, 0.637, 1.000, 0.885, 0.744, 0.637, 1.000, 0.877, 0.737, 0.636, 1.000, 0.874, 0.734, 0.636, 1.000, 0.877, 0.737, 0.636, 1.000, 0.885, 0.744, 0.637, 1.000, 0.897, 0.754, 0.637, 1.000, 0.912, 0.767, 0.638, 1.000, 0.927, 0.780, 0.639, 1.000, 0.939, 0.790, 0.639, 1.000, 0.947, 0.797, 0.640, 1.000, 0.950, 0.800, 0.640, 1.000, 0.947, 0.797, 0.640, 1.000, 0.939, 0.790, 0.639, 1.000, 0.927, 0.780, 0.639, 1.000)
+antialiased = true
+polygon = PackedVector2Array(6, -7.2, 5.62, -5.06, 4.54, -3.24, 2.91, -2.03, 1, -1.6, -0.91, -2.03, -2.54, -3.24, -3.62, -5.06, -4, -7.2, -3.62, -9.34, -2.54, -11.16, -0.91, -12.37, 1, -12.8, 2.91, -12.37, 4.54, -11.16, 5.62, -9.34)
+
+[node name="Nose" type="Polygon2D" parent="Sprite/Head"]
+color = Color(0.820, 0.620, 0.480, 1.000)
+antialiased = true
+polygon = PackedVector2Array(5.4, -7.6, 7.2, -5.6, 5.4, -5)
+
+[node name="Ear" type="Polygon2D" parent="Sprite/Head"]
+color = Color(0.820, 0.620, 0.480, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-0.3, -7, -0.68, -5.73, -1.6, -5.2, -2.52, -5.73, -2.9, -7, -2.52, -8.27, -1.6, -8.8, -0.68, -8.27)
+
+[node name="Eyes" type="Polygon2D" parent="Sprite/Head"]
+color = Color(0.120, 0.080, 0.070, 1.000)
+antialiased = true
+polygon = PackedVector2Array(4.4, -8, 4.17, -7.33, 3.6, -7.05, 3.03, -7.33, 2.8, -8, 3.03, -8.67, 3.6, -8.95, 4.17, -8.67)
+
+[node name="EyeGlint" type="Polygon2D" parent="Sprite/Head"]
+color = Color(1.000, 1.000, 1.000, 0.900)
+antialiased = true
+polygon = PackedVector2Array(4.13, -8.3, 3.99, -8.06, 3.71, -8.06, 3.57, -8.3, 3.71, -8.54, 3.99, -8.54)
+
+[node name="Hair" type="Polygon2D" parent="Sprite/Head"]
+color = Color(0.620, 0.320, 0.160, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-4, -8.2, -3.6, -11.4, 0, -12.6, 4.6, -11.8, 6, -10, 3.6, -10.4, 0, -10.2, -2.6, -6.4)
+
+[node name="Freckles" type="Polygon2D" parent="Sprite/Head"]
+color = Color(0.780, 0.480, 0.320, 1.000)
+antialiased = true
+polygon = PackedVector2Array(4.55, -6.2, 4.31, -5.87, 3.92, -5.99, 3.92, -6.41, 4.31, -6.53)
+
+[node name="Smile" type="Polygon2D" parent="Sprite/Head"]
+color = Color(0.620, 0.300, 0.260, 1.000)
+antialiased = true
+polygon = PackedVector2Array(3.4, -4.4, 5.6, -4.2, 5.2, -3.6, 3.8, -3.8)
+
+[node name="HatCrown" type="Polygon2D" parent="Sprite/Head"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.820, 0.660, 0.300, 1.000, 0.944, 0.816, 0.424, 1.000, 0.980, 0.860, 0.460, 1.000, 0.944, 0.816, 0.424, 1.000, 0.820, 0.660, 0.300, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-3.4, -11, -2.6, -15.2, 1, -16.4, 4.6, -15.2, 5.6, -11)
+
+[node name="HatBand" type="Polygon2D" parent="Sprite/Head"]
+color = Color(0.740, 0.200, 0.180, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-3.2, -12.6, 5.4, -12.6, 5.6, -11, -3.4, -11)
+
+[node name="Hat" type="Polygon2D" parent="Sprite/Head"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.920, 0.787, 0.400, 1.000, 0.980, 0.860, 0.460, 1.000, 0.980, 0.860, 0.460, 1.000, 0.900, 0.762, 0.380, 1.000, 0.800, 0.640, 0.280, 1.000, 0.800, 0.640, 0.280, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-7, -11.4, -3, -12, 5, -12, 9.6, -11.2, 10.2, -10.2, -7.6, -10.2)
+
+[node name="Straw" type="Line2D" parent="Sprite/Head"]
+points = PackedVector2Array(-6, -10.8, 9.4, -10.8)
+width = 0.4
+default_color = Color(0.740, 0.580, 0.240, 1.000)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+antialiased = true
+
+[node name="ArmFront" type="Node2D" parent="Sprite"]
+position = Vector2(1.2, -9)
+
+[node name="Sleeve" type="Polygon2D" parent="Sprite/ArmFront"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.877, 0.824, 0.666, 1.000, 0.877, 0.824, 0.666, 1.000, 0.788, 0.736, 0.581, 1.000, 0.731, 0.680, 0.527, 1.000, 0.731, 0.680, 0.527, 1.000, 0.788, 0.736, 0.581, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-2.5, -1.8, 2.5, -1.8, 2.3, 5.5, 2, 10.2, -2, 10.2, -2.3, 5.5)
+
+[node name="Hand" type="Polygon2D" parent="Sprite/ArmFront"]
+color = Color(0.950, 0.800, 0.640, 1.000)
+antialiased = true
+polygon = PackedVector2Array(2.4, 12, 1.98, 13.29, 0.88, 14.09, -0.48, 14.09, -1.58, 13.29, -2, 12, -1.58, 10.71, -0.48, 9.91, 0.88, 9.91, 1.98, 10.71)
+
+[node name="ArmSleeve" type="Polygon2D" parent="Sprite/ArmFront"]
+color = Color(0.774, 0.720, 0.558, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-2.6, -1.8, 2.6, -1.8, 2.6, 2.4, -2.6, 2.4)
+
+[node name="Hoe" type="Node2D" parent="Sprite/ArmFront"]
+position = Vector2(0.2, 12)
+rotation = 0.2
+
+[node name="HoeHandle" type="Polygon2D" parent="Sprite/ArmFront/Hoe"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.460, 0.320, 0.180, 1.000, 0.460, 0.320, 0.180, 1.000, 0.660, 0.480, 0.280, 1.000, 0.660, 0.480, 0.280, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-0.7, 4, 0.7, 4, 0.6, -20, -0.6, -20)
+
+[node name="HoeBlade" type="Polygon2D" parent="Sprite/ArmFront/Hoe"]
+color = Color(1.000, 1.000, 1.000, 1.000)
+vertex_colors = PackedColorArray(0.800, 0.820, 0.860, 1.000, 0.730, 0.750, 0.793, 1.000, 0.480, 0.500, 0.550, 1.000, 0.494, 0.514, 0.563, 1.000, 0.647, 0.667, 0.712, 1.000, 0.675, 0.695, 0.739, 1.000)
+antialiased = true
+polygon = PackedVector2Array(-0.4, -21.2, 5.4, -20.2, 6.4, -16.6, 4.6, -16.8, 4, -19, -0.4, -19.4)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("1")
+

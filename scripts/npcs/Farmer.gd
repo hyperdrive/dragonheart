@@ -88,6 +88,99 @@ func _physics_process(delta: float) -> void:
 		danger_radius = unloaded_danger_radius
 		flee_speed_multiplier = 1.0
 	super._physics_process(delta)
+	_animate_farming(delta)
+
+# --- farm work (2026-11-14 rig pass) -------------------------------------------
+
+## Field work: a two-handed hoe chop into the furrow — raise, bite, drag —
+## kicking up clods of soil. Pig tending: sweeping scatters of feed grain.
+## The produce basket rides the far arm whenever he carries food.
+const HOE_HZ := 1.3
+const FEED_HZ := 1.0
+var _work_phase := 0.0
+var _working := false
+var _kicked := false
+
+func _animate_farming(delta: float) -> void:
+	var rig := sprite as HumanoidRig
+	if rig == null:
+		return
+	var basket := get_node_or_null("Sprite/ArmBack/Basket") as Node2D
+	if basket != null:
+		basket.visible = food_carrying > 0 and is_alive
+	var hoe := get_node_or_null("Sprite/ArmFront/Hoe") as Node2D
+	var act := ""
+	if is_alive and _burning_left <= 0.0 and behavior_tree != null \
+			and behavior_tree.state == BehaviorTree.State.WORKING \
+			and behavior_tree.current_activity != null:
+		act = str(behavior_tree.current_activity.id)
+	if act == "tend_fields" and hoe != null:
+		_working = true
+		rig.arms_override = true
+		_work_phase = fmod(_work_phase + delta * HOE_HZ, 1.0)
+		_apply_hoe_pose(_work_phase, rig, hoe)
+		if _work_phase >= 0.62 and not _kicked:
+			_kicked = true
+			_spawn_bits(hoe.to_global(Vector2(4.0, -19.0)), Color(0.36, 0.24, 0.12), 5, 10.0)
+		elif _work_phase < 0.4:
+			_kicked = false
+	elif act == "tend_pigs":
+		_working = true
+		rig.arms_override = true
+		_work_phase = fmod(_work_phase + delta * FEED_HZ, 1.0)
+		var sweep := sin(_work_phase * TAU)
+		rig.set_arms(-50.0 + sweep * 30.0, 10.0)
+		rig.lean = 0.08
+		if hoe != null:
+			hoe.visible = false
+		if _work_phase >= 0.5 and not _kicked:
+			_kicked = true
+			var hand := rig.part("ArmFront")
+			if hand != null:
+				_spawn_bits(hand.to_global(Vector2(0.2, 12.0)), Color(0.92, 0.82, 0.42), 6, 14.0)
+		elif _work_phase < 0.25:
+			_kicked = false
+	elif _working:
+		_working = false
+		rig.arms_override = false
+		rig.lean = 0.0
+		if hoe != null:
+			hoe.visible = true
+			hoe.rotation_degrees = 11.5
+
+## Hoe cycle p ∈ [0,1): 0..0.5 raise, 0.5..0.62 chop, 0.62..1 drag back.
+func _apply_hoe_pose(p: float, rig: HumanoidRig, hoe: Node2D) -> void:
+	var lift: float
+	if p < 0.5:
+		lift = smoothstep(0.0, 1.0, p / 0.5)
+	elif p < 0.62:
+		lift = 1.0 - pow((p - 0.5) / 0.12, 2.0)
+	else:
+		lift = -0.15 * sin((p - 0.62) / 0.38 * PI)  # the drag through the soil
+	var arm := lerpf(-40.0, -150.0, lift)
+	rig.set_arms(arm, arm + 10.0)
+	hoe.rotation_degrees = lerpf(175.0, 140.0, maxf(lift, 0.0))
+	rig.lean = lerpf(0.26, -0.08, maxf(lift, 0.0))
+
+## Little flying bits (soil clods / feed grain) that arc and fade.
+func _spawn_bits(origin: Vector2, col: Color, n: int, spread: float) -> void:
+	if not is_inside_tree():
+		return
+	for i in n:
+		var bit := Polygon2D.new()
+		bit.polygon = PackedVector2Array([Vector2(-0.7, -0.6), Vector2(0.7, -0.6),
+			Vector2(0.8, 0.6), Vector2(-0.6, 0.7)])
+		bit.color = col
+		bit.z_index = 3
+		get_parent().add_child(bit)
+		bit.global_position = origin
+		var to := origin + Vector2(randf_range(-0.4, 1.0) * spread * float(facing),
+			randf_range(-1.0, -0.2) * spread)
+		var tw := bit.create_tween().set_parallel(true)
+		tw.tween_property(bit, "global_position", to + Vector2(0, spread * 0.8), 0.45) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_property(bit, "modulate:a", 0.0, 0.5)
+		tw.chain().tween_callback(bit.queue_free)
 
 # --- activity providers & completers --------------------------------------
 

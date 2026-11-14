@@ -130,7 +130,8 @@ var game_manager: GameManager
 @onready var far_wing_outer: Node2D = $Vis/Sprite/FarWingPivot/FarWingOuter
 @onready var tail_pivot: Node2D = $Vis/Sprite/TailPivot
 @onready var tail_tip_pivot: Node2D = $Vis/Sprite/TailPivot/TailTipPivot
-@onready var eye: Node2D = $Vis/Sprite/Eye
+@onready var eye: Node2D = $Vis/Sprite/NeckPivot/Eye
+@onready var neck_pivot: Node2D = $Vis/Sprite/NeckPivot
 @onready var near_wing_pivot: Node2D = $Vis/Sprite/NearWingPivot
 @onready var far_wing_pivot: Node2D = $Vis/Sprite/FarWingPivot
 ## Wyvern (2026-11-13): no forelegs — the strike talon rides the near wing's
@@ -1007,7 +1008,8 @@ func die() -> void:
 	_flight_left = 0.0
 	_flight_recharge_left = 0.0
 	_lift_current = 0.0
-	vis.position.y = 0.0
+	# Base lift, not 0 — zero sank the corpse 23px into the ground.
+	vis.position.y = -VIS_BASE_LIFT
 	vis.position.x = 0.0
 	_wing_blend = 0.0
 	_walk_amt = 0.0
@@ -1021,8 +1023,7 @@ func die() -> void:
 	(claw_pivot.get_node("Claw") as CanvasItem).modulate = Color.WHITE
 	shadow.scale = Vector2.ONE
 	shadow.modulate.a = 1.0
-	animation_player.play("death")
-	await animation_player.animation_finished
+	await _play_death()
 	# After the await the scene may already be torn down (double reload) or
 	# the node detached — the death CHAPTER must play while we are still in
 	# a live tree, so hand the run's end to the story system: GameManager
@@ -1034,7 +1035,110 @@ func die() -> void:
 	else:
 		get_tree().reload_current_scene()
 
-# Animations (idle, fire_breath, death) live in Dragon.tscn's AnimationPlayer
+# --- death (2026-11-14, user: "the dragon still has a really bad death
+# animation") -----------------------------------------------------------------
+
+## The fall of the wyvern, code-driven on the rig (the old track just slid
+## the sprite down and tilted it). One timeline, keyed at:
+##   0.00 standing
+##   0.14 REARS — head thrown back, wings flare wide, a last roar
+##   0.34 STAGGERS — the flare fails, knees give, the head drops
+##   0.62 COLLAPSES — belly to the earth, wings sprawl, neck slumps
+##   1.00 STILL — a final breath of smoke curls from the nostrils as the
+##        eye closes and the scales lose their fire.
+const DEATH_TIME := 2.8
+const _DK := [0.0, 0.14, 0.34, 0.62, 1.0]
+const _D_SPRITE_ROT := [0.0, -0.24, 0.06, 0.1, 0.1]
+const _D_SPRITE_Y := [0.0, -4.0, 2.0, 9.0, 10.0]
+const _D_NECK_ROT := [0.0, -0.45, 0.12, 0.52, 0.6]
+const _D_HIP_ROT := [0.0, -14.0, 22.0, 58.0, 62.0]
+const _D_HIP_SY := [1.0, 1.0, 0.85, 0.55, 0.5]
+const _D_TAIL := [0.0, -10.0, 6.0, 9.0, 10.0]
+const _D_TAIL_TIP := [0.0, -18.0, 12.0, 6.0, 4.0]
+const WING_FLARE := {"elev": 1.0, "sweep": -10.0, "fold": -8.0,
+	"chord": 1.05, "inner": 1.0, "tint": 0.0, "hand": 1.0}
+const WING_FAILING := {"elev": 0.35, "sweep": -48.0, "fold": 18.0,
+	"chord": 0.9, "inner": 0.9, "tint": 0.0, "hand": 1.0}
+const WING_DRAPED := {"elev": 0.9, "sweep": -96.0, "fold": -10.0,
+	"chord": 1.1, "inner": 1.0, "tint": 0.0, "hand": 1.0}  # sprawled open on the earth
+var _death_smoked := false
+
+func _play_death() -> void:
+	animation_player.stop()
+	_death_smoked = false
+	var tw := create_tween()
+	tw.tween_method(_death_pose, 0.0, 1.0, DEATH_TIME)
+	tw.tween_interval(0.7)
+	await tw.finished
+
+## Piecewise-smooth keyframe sample.
+func _dkf(vals: Array, t: float) -> float:
+	for i in range(_DK.size() - 1):
+		if t <= _DK[i + 1]:
+			var u: float = (t - _DK[i]) / (_DK[i + 1] - _DK[i])
+			return lerpf(vals[i], vals[i + 1], smoothstep(0.0, 1.0, u))
+	return vals[vals.size() - 1]
+
+func _death_pose(t: float) -> void:
+	sprite.rotation = _dkf(_D_SPRITE_ROT, t)
+	sprite.position.y = -5.0 + _dkf(_D_SPRITE_Y, t)
+	if neck_pivot != null:
+		neck_pivot.rotation = _dkf(_D_NECK_ROT, t)
+	for hip: Node2D in [near_hip, far_hip]:
+		hip.rotation_degrees = _dkf(_D_HIP_ROT, t)
+		hip.scale.y = _dkf(_D_HIP_SY, t)
+	tail_pivot.rotation_degrees = _dkf(_D_TAIL, t)
+	tail_tip_pivot.rotation_degrees = _dkf(_D_TAIL_TIP, t)
+	# Wings: ground stance → flare → failing → draped on the earth.
+	var pose: Dictionary
+	if t < _DK[1]:
+		pose = _blend_pose(WING_GROUND, WING_FLARE, smoothstep(0.0, 1.0, t / _DK[1]))
+	elif t < _DK[2]:
+		pose = _blend_pose(WING_FLARE, WING_FAILING, smoothstep(0.0, 1.0, (t - _DK[1]) / (_DK[2] - _DK[1])))
+	else:
+		pose = _blend_pose(WING_FAILING, WING_DRAPED, smoothstep(0.0, 1.0, minf((t - _DK[2]) / (_DK[3] - _DK[2]), 1.0)))
+	_apply_wing(near_wing_pivot, near_wing_outer, pose, NEAR_WING_SCALE)
+	var far_pose := pose.duplicate()
+	far_pose["sweep"] = pose["sweep"] + 8.0
+	_apply_wing(far_wing_pivot, far_wing_outer, far_pose, FAR_WING_SCALE)
+	# The eye closes, the fire leaves the scales, a last breath of smoke.
+	eye.scale.y = lerpf(1.0, 0.12, smoothstep(0.78, 0.9, t))
+	var dim := smoothstep(0.55, 1.0, t)
+	vis.modulate = Color(1, 1, 1).lerp(Color(0.66, 0.6, 0.62), dim)
+	if t >= 0.8 and not _death_smoked:
+		_death_smoked = true
+		_last_breath_smoke()
+
+func _last_breath_smoke() -> void:
+	if neck_pivot == null:
+		return
+	var nostril := neck_pivot.get_node_or_null("Nostril") as Polygon2D
+	if nostril == null:
+		return
+	# Nostril polygon is drawn around its own points; sample its first one.
+	var poly := nostril.polygon
+	var origin := nostril.to_global(poly[0] if poly.size() > 0 else Vector2.ZERO)
+	for i in 5:
+		var puff := Polygon2D.new()
+		var pts := PackedVector2Array()
+		for k in 10:
+			var a := TAU * float(k) / 10.0
+			pts.append(Vector2(cos(a), sin(a)) * 2.4)
+		puff.polygon = pts
+		puff.color = Color(0.55, 0.53, 0.56, 0.0)
+		puff.z_index = 5
+		get_parent().add_child(puff)
+		puff.global_position = origin
+		var drift := Vector2(randf_range(4.0, 10.0) * float(facing), randf_range(-22.0, -14.0))
+		var tw := puff.create_tween()
+		tw.tween_interval(float(i) * 0.12)
+		tw.tween_property(puff, "color:a", 0.6, 0.15)
+		tw.parallel().tween_property(puff, "global_position", origin + drift, 1.2)
+		tw.parallel().tween_property(puff, "scale", Vector2.ONE * randf_range(1.8, 2.6), 1.2)
+		tw.tween_property(puff, "color:a", 0.0, 0.5)
+		tw.tween_callback(puff.queue_free)
+
+# Animations (idle, fire_breath) live in Dragon.tscn's AnimationPlayer
 # library — do not recreate them in code.
 
 ## Loose resources grabbed straight off a mine (landing on the entrance) —

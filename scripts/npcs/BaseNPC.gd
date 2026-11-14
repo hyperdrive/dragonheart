@@ -80,9 +80,18 @@ var _fire_immune_left: float = 0.0
 
 @onready var sprite: Node2D = $Sprite
 
+## Body size (2026-11-14, user: "hero characters look larger but the rest
+## should be smaller"): commoners (farmer, miner, soldier, archer) run at
+## 0.8, heroes (King, wizard, adventurer) stay 1.0. Facing flips and the
+## flee squash multiply by it; the feet stay planted on the node origin.
+@export var visual_scale: float = 1.0
+
 func _ready() -> void:
 	# sync health — subclasses MUST set max_health before calling super._ready()
 	health = max_health
+	if sprite != null and visual_scale != 1.0:
+		sprite.position *= visual_scale   # feet offset shrinks with the body
+		sprite.scale = Vector2(float(facing) * visual_scale, visual_scale)
 	_sprite_home = sprite.position if sprite != null else Vector2.ZERO
 	home_position = global_position
 	town_position = global_position + Vector2(0, 200)
@@ -103,6 +112,7 @@ func _physics_process(delta: float) -> void:
 		if is_alive:
 			_animate_flee(delta)  # burning panic runs wobble too (user spec)
 			_animate_flames(delta)
+			_tick_rig(delta)
 		return
 	if _flames != null:
 		_flames_teardown()      # fire out (or dead): overlay goes with it
@@ -111,6 +121,13 @@ func _physics_process(delta: float) -> void:
 	if is_alive and behavior_tree != null:
 		behavior_tree.tick(delta)
 	_animate_flee(delta)
+	_tick_rig(delta)
+
+## Jointed rig (2026-11-14): NPCs whose Sprite is a HumanoidRig get a
+## velocity-driven walk cycle; legacy ColorRect sprites (King) skip it.
+func _tick_rig(delta: float) -> void:
+	if sprite is HumanoidRig:
+		(sprite as HumanoidRig).tick(delta, velocity, is_alive)
 
 # --- flee wobble (2026-11-09) -------------------------------------------------
 
@@ -132,12 +149,12 @@ func _animate_flee(delta: float) -> void:
 		sprite.position = _sprite_home + Vector2(0.0,
 			-absf(sin(_flee_phase)) * FLEE_HOP_PX)
 		sprite.rotation = sin(_flee_phase * 0.5) * FLEE_WOBBLE_RAD
-		sprite.scale.y = 1.0 - 0.12 * maxf(0.0, cos(_flee_phase))
+		sprite.scale.y = visual_scale * (1.0 - 0.12 * maxf(0.0, cos(_flee_phase)))
 	elif _flee_animating:
 		_flee_animating = false
 		sprite.rotation = 0.0
 		sprite.position = _sprite_home
-		sprite.scale.y = 1.0
+		sprite.scale.y = visual_scale
 
 # --- ablaze status -----------------------------------------------------------
 
@@ -308,7 +325,7 @@ func update_facing() -> void:
 ## about the container origin, so outlines/animations stay consistent.
 func _apply_facing() -> void:
 	if sprite != null:
-		sprite.scale.x = float(facing)
+		sprite.scale.x = float(facing) * visual_scale
 
 ## Set/clear the payload being carried. Emits carrying_changed so the
 ## GoldInterceptionSystem sees this NPC as a steal target.

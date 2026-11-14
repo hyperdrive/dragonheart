@@ -53,9 +53,11 @@ func _goto(next: int) -> void:
 func _frames(n: int) -> bool:
 	return frames_in_state >= n
 
+## 2026-11-14 rig pass: parts are Polygon2D/Line2D/Node2D on a jointed
+## HumanoidRig — any CanvasItem counts (paths may cross joints).
 func _has_rect(parent: Node, child_name: String) -> bool:
 	var n := parent.get_node_or_null(child_name)
-	return n is ColorRect
+	return n is CanvasItem
 
 func _physics_process(delta: float) -> void:
 	frames_in_state += 1
@@ -92,57 +94,57 @@ func _physics_process(delta: float) -> void:
 		S.CHECK:
 			var ok := true
 			var fspr := _farmer.get_node_or_null("Sprite") as Node2D
-			if fspr == null:
-				_fail("farmer Sprite container missing")
+			if not (fspr is HumanoidRig):
+				_fail("farmer Sprite is not a HumanoidRig")
 				ok = false
 			else:
-				for part: String in ["Body", "StrapL", "StrapR", "Bib",
-						"BibPocket", "Waist", "Legs", "LegsFront", "Boots",
-						"BootsFront", "ArmSleeve", "Hand", "Head", "Eyes",
-						"Hair", "HatCrown", "HatBand", "Hat"]:
+				for part: String in ["LegBack", "LegFront", "ArmBack", "ArmFront",
+						"Torso/Body", "Torso/Bib", "Torso/BibPocket", "Torso/StrapL",
+						"Torso/StrapR", "Torso/Waist", "Head/Face", "Head/Eyes",
+						"Head/Hair", "Head/HatCrown", "Head/HatBand", "Head/Hat",
+						"ArmFront/Hand", "ArmFront/Hoe/HoeBlade", "ArmBack/Basket"]:
 					if not _has_rect(fspr, part):
 						_fail("farmer missing part: %s" % part)
 						ok = false
 			if ok:
-				_pass("farmer detailed part set complete (18 parts: "
-					+ "overalls, straw hat, bare hand)")
+				_pass("farmer rig complete (jointed limbs, overalls, straw "
+					+ "hat, hoe, produce basket)")
 			var mspr := _miner.get_node_or_null("Sprite") as Node2D
-			if mspr == null:
-				_fail("miner Sprite container missing")
+			if not (mspr is HumanoidRig):
+				_fail("miner Sprite is not a HumanoidRig")
 				ok = false
 			else:
-				for part: String in ["Body", "Strap", "Belt", "Buckle",
-						"Legs", "LegsFront", "Boots", "BootsFront", "Head",
-						"Eyes", "Beard", "Helmet", "HelmetBrim", "Lamp",
-						"Pick"]:
+				for part: String in ["LegBack", "LegFront", "ArmBack", "ArmFront",
+						"Torso/Body", "Torso/Strap", "Torso/Belt", "Torso/Buckle",
+						"Torso/Apron", "Head/Face", "Head/Eyes", "Head/Beard",
+						"Head/Helmet", "Head/HelmetBrim", "Head/Lamp",
+						"ArmFront/Pick", "ArmFront/Pick/Handle"]:
 					if not _has_rect(mspr, part):
 						_fail("miner missing part: %s" % part)
 						ok = false
-				var pick := mspr.get_node_or_null("Pick") as ColorRect
-				if pick != null \
-						and not _has_rect(pick, "PickHead"):
+				var pick := mspr.get_node_or_null("ArmFront/Pick") as Node2D
+				var head := mspr.get_node_or_null("ArmFront/Pick/PickHead") as Polygon2D
+				if pick == null or head == null:
 					_fail("miner pick head missing — swing loses its steel")
 					ok = false
-				elif pick != null:
-					# The steel head crowns the TOP of the handle (the
-					# sweeping end of the bottom-pivot swing) — it sat at
-					# the bottom when the swing was inverted.
-					var head := pick.get_node("PickHead") as ColorRect
-					if head.position.y >= 0.0:
-						_fail("pick head sits at the handle bottom "
-							+ "(y=%.1f) — must crown the top" % head.position.y)
+				else:
+					# The steel head crowns the far end of the handle (pick
+					# local -y) — the grip end sits at the Pick pivot.
+					var max_y := -INF
+					for v: Vector2 in head.polygon:
+						max_y = maxf(max_y, v.y + head.position.y)
+					if max_y >= -10.0:
+						_fail("pick head is not at the far end of the "
+							+ "handle (max y=%.1f)" % max_y)
 						ok = false
-				# The swing pivots at the BOTTOM edge (grip fixed, head
-				# sweeps) — was pivoted at the top, inverting the swing.
-				var probe_swing: Vector2 = pick.pivot_offset
-				if absf(probe_swing.y - (pick.size.y - 2.0)) > 0.5 \
-						or absf(probe_swing.x - pick.size.x * 0.5) > 0.5:
-					_fail("pick pivot %.1f,%.1f is not bottom-center"
-						% [probe_swing.x, probe_swing.y])
-					ok = false
+					# The grip pivot rides the hand.
+					var hand := mspr.get_node_or_null("ArmFront/Hand") as Polygon2D
+					if hand != null and pick.position.distance_to(Vector2(0.2, 12.0)) > 1.0:
+						_fail("pick pivot %s is not at the hand" % pick.position)
+						ok = false
 			if ok:
-				_pass("miner detailed part set complete (16 parts: gear "
-					+ "strap, belt, beard, steel pick head)")
+				_pass("miner rig complete (gear strap, apron, beard, lamp "
+					+ "helmet, steel pick head at the far end)")
 			_goto(S.CHECK_CART)
 		S.CHECK_CART:
 			var cart := _miner.get_node_or_null("Cart") as Node2D
@@ -152,17 +154,18 @@ func _physics_process(delta: float) -> void:
 				return
 			var ok := true
 			for part: String in ["Handle", "Bed", "BedSeam1", "BedSeam2",
-					"RailTop", "RailPostL", "RailPostR", "GoldChunkL",
-					"GoldChunkR", "GoldSparkle", "Wheel", "Wheel2"]:
+					"RailTop", "RailPostL", "RailPostR",
+					"Load/GoldPile/GoldChunkL", "Load/GoldPile/GoldChunkR",
+					"Load/GoldPile/GoldSparkle", "Wheel", "Wheel2"]:
 				if not _has_rect(cart, part):
 					_fail("cart missing part: %s" % part)
 					ok = false
-			var wheel := cart.get_node_or_null("Wheel") as ColorRect
+			var wheel := cart.get_node_or_null("Wheel") as Node2D
 			if wheel != null and (not _has_rect(wheel, "WheelRim")
 					or not _has_rect(wheel, "WheelHub")):
 				_fail("cart wheels lack rim/hub detail")
 				ok = false
-			if cart.get_node_or_null("GoldPile") == null:
+			if cart.get_node_or_null("Load/GoldPile") == null:
 				_fail("cart gold pile missing")
 				ok = false
 			if ok:
