@@ -26,9 +26,10 @@ const STRIDE_PX := 30.0
 const LEG_SWING_DEG := 30.0
 const ARM_SWING_DEG := 26.0
 const BOB_PX := 1.3
-## Hip-to-sole length: a leg swung by θ lifts its foot by LEG_LEN·(1−cos θ),
-## so the body drops by that much to keep the soles on the ground.
-const LEG_LEN := 16.0
+## Hip-to-sole length: a leg swung by θ lifts its foot by leg_len·(1−cos θ),
+## so the body drops by that much to keep the soles on the ground. Short
+## folk (goblins) set their own.
+@export var leg_len := 16.0
 
 ## Arms: when true the rig leaves ArmFront/ArmBack rotations alone.
 var arms_override := false
@@ -70,7 +71,7 @@ func tick(delta: float, velocity: Vector2, alive: bool = true) -> void:
 	# Legs: opposite swing; the swinging leg shortens a touch (knee lift).
 	_set_leg("LegFront", s * LEG_SWING_DEG * w, maxf(0.0, s) * w)
 	_set_leg("LegBack", -s * LEG_SWING_DEG * w, maxf(0.0, -s) * w)
-	var drop := LEG_LEN * (1.0 - cos(deg_to_rad(absf(s) * LEG_SWING_DEG * w)))
+	var drop := leg_len * (1.0 - cos(deg_to_rad(absf(s) * LEG_SWING_DEG * w)))
 	for leg_name: String in ["LegFront", "LegBack"]:
 		var leg := part(leg_name)
 		if leg != null:

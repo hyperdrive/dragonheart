@@ -139,10 +139,58 @@ func _physics_process(delta: float) -> void:
 	if is_instance_valid(behavior_tree) and behavior_tree.is_inside_tree():
 		super._physics_process(delta)
 		_contact_damage(delta)
+		_animate_goblin(delta)
 
 	# Always check for Dragon proximity (not dependent on behavior tree)
 	_check_dragon_encounter()
 
+
+# --- the look (2026-11-14, user: "Mean green and evil. But short") -------------
+
+## Always hunched and skulking; the loot sack shows while carrying (gold
+## glints gold, a gem fee glints blue); in plunder mode he jabs his spear
+## at the dragon in quick vicious thrusts.
+const STAB_HZ := 2.6
+var _stab_phase := 0.0
+var _stabbing := false
+
+func _animate_goblin(delta: float) -> void:
+	var rig := sprite as HumanoidRig
+	if rig == null or not is_alive:
+		return
+	var sack := get_node_or_null("Sprite/ArmBack/LootSack") as Node2D
+	if sack != null:
+		sack.visible = payload_amount > 0
+		var glint := sack.get_node_or_null("SackGlint") as Polygon2D
+		if glint != null:
+			glint.color = Color(0.4, 0.8, 1.0) if payload_res_type == "gems" else Color(1.0, 0.84, 0.28)
+	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var stab := _plunder_mode and _burning_left <= 0.0 and dragon != null \
+		and is_instance_valid(dragon) \
+		and global_position.distance_to(dragon.global_position) <= attack_range + 12.0
+	var spear := get_node_or_null("Sprite/ArmFront/Spear") as Node2D
+	if stab and spear != null:
+		_stabbing = true
+		var want := 1 if dragon.global_position.x >= global_position.x else -1
+		if want != facing:
+			facing = want
+			_apply_facing()
+		rig.arms_override = true
+		_stab_phase = fmod(_stab_phase + delta * STAB_HZ, 1.0)
+		# cock back, then a fast jab forward, then recover
+		var jab := smoothstep(0.0, 1.0, _stab_phase / 0.35) if _stab_phase < 0.35 \
+			else 1.0 - smoothstep(0.0, 1.0, (_stab_phase - 0.35) / 0.65)
+		var arm := lerpf(-40.0, -92.0, jab)
+		rig.set_arms(arm, -20.0)
+		spear.rotation_degrees = 90.0 - arm   # spear level, pointed at the foe
+		rig.lean = lerpf(0.1, 0.38, jab)
+	else:
+		if _stabbing:
+			_stabbing = false
+			rig.arms_override = false
+			if spear != null:
+				spear.rotation_degrees = 11.5
+		rig.lean = 0.14   # the permanent skulking hunch
 
 # --- service handling ---------------------------------------------------------
 
