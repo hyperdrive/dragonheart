@@ -39,3 +39,10 @@
 # and scenes/test is ignored)
 /scripts/test_*.gd
 /scripts/test_*.gd.uid
+
+# Quarantined local debug tooling (was ignored at its old paths; see
+# _quarantine/README.md)
+/_quarantine/root/
+/_quarantine/scenes/test/
+/_quarantine/scripts/test_input.gd*
+/_quarantine/root-assets/
