@@ -21,7 +21,7 @@ heatmap.
 - Some goals were unreachable by construction: a goblin home anchored at
   x = −950 (the boundary wall sits at ±960), a soldier patrol point inside
   an obstacle.
-- 4 game-minutes of town life, dragon away (two random worlds): **1361 /
+- 16 game-minutes of town life (the survey ran 14 400 physics frames at time_scale 4 — first reported as "4 minutes", corrected 2026-11-15), dragon away (two random worlds): **1361 /
   1515 stalled NPC-seconds while MOVING, 354 / 375 watchdog interventions,
   62 / 59 teleports or aborted trips.**
 
@@ -40,7 +40,7 @@ heatmap.
 | Safety net | `_check_stuck`: first stall → replan from where we stand; second → the old raycast sidestep; the StuckMonitor's rescue is now a **short hop** (~56 px along the route toward the goal, onto grid-walkable ground, as a 0.35 s slide), up to 4 per trip before the trip is abandoned | User: the old rescue (teleport next to the goal) was "a little over the top — just teleport a few steps towards the goal" | it never fires for a long time → remove |
 | Miner slowdown | `BaseNPC._move_speed()` hook; Miner returns 0.9× while loaded | The old Miner `_waypoint_update` copy of the seek was dead code — the 2026-11-10 "10 % slower with gold" spec never applied | — |
 
-## Result (after, same 4-minute survey, two random worlds)
+## Result (after, same 16-game-minute survey, two random worlds)
 
 **432 / 210 stalled NPC-seconds (−70 % / −86 %), 75 / 36 watchdog
 interventions, 10 / 5 teleports or aborts.** Most of the remainder is

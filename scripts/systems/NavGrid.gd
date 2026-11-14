@@ -4,7 +4,7 @@ class_name NavGrid
 
 ## Walkable-area grid + A* (2026-11-14, user: "overlaying with a virtual
 ## gridmesh and doing A*"). Replaces "walk straight at it and sidestep once
-## stuck" with real routes — measured before: in four minutes of town life
+## stuck" with real routes — measured before: in 16 game-minutes of town life
 ## NPCs spent 1361 s stalled and the StuckMonitor stepped in 354 times.
 ##
 ## The world is cut into CELL-px squares. A cell is SOLID when an NPC body
