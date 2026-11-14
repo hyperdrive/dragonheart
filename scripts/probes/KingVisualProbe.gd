@@ -65,9 +65,10 @@ func _find_king() -> King:
 			return king
 	return null
 
+## 2026-11-14 rig pass: any CanvasItem part counts (Polygon2D/Line2D/Node2D).
 func _has_rect(parent: Node, child_name: String) -> bool:
 	var n := parent.get_node_or_null(child_name)
-	return n is ColorRect
+	return n is CanvasItem
 
 ## Keep the test subject alive through two full storms: top the dragon's
 ## health back up every frame and remember the low-water mark, so the
@@ -121,35 +122,36 @@ func _physics_process(delta: float) -> void:
 				_goto(S.REPORT)
 				return
 			var ok := true
-			for part: String in ["Cape", "CapeTrim", "Greaves", "BootL",
-					"BootR", "Body", "BodyTrim", "Emblem", "EmblemCore",
-					"Belt", "BeltBuckle", "PauldronBack", "PauldronBackTrim",
-					"PauldronFront", "PauldronFrontTrim", "Head", "Eyes",
-					"Beard", "Crown", "CrownPointL", "CrownPointC",
-					"CrownPointR", "CrownJewel", "Sword"]:
+			if not (spr is HumanoidRig):
+				_fail("King Sprite is not a HumanoidRig")
+				ok = false
+			for part: String in ["Cape/CapeCloth", "Cape/CapeTrim", "Cape/CapeCollar",
+					"LegBack/Greave", "LegFront/Sabaton", "Torso/Cuirass",
+					"Torso/CuirassTrim", "Torso/Sunburst", "Torso/SunCore",
+					"Torso/Tabard", "Torso/Belt", "Torso/BeltBuckle",
+					"Torso/RuneSeam1", "ArmBack/Pauldron", "ArmFront/Pauldron",
+					"ArmFront/Gauntlet", "Head/Helm", "Head/Visor", "Head/VisorGlow",
+					"Head/Beard", "Head/Crown", "Head/CrownPoint1", "Head/CrownPoint2",
+					"Head/CrownPoint3", "Head/CrownJewel", "Head/Plume"]:
 				if not _has_rect(spr, part):
 					_fail("King missing heroic part: %s" % part)
 					ok = false
-			# The magic sword must be a swingable composite: the container
-			# resolves as Sprite/Sword (combat-swing lookup) and carries the
-			# blade parts as children.
-			var sword := spr.get_node_or_null("Sword") as ColorRect
+			# The magic sword must be a swingable composite riding the sword
+			# hand (combat-swing lookup Sprite/ArmFront/Sword), blade parts
+			# and spectral flame as children.
+			var sword := spr.get_node_or_null("ArmFront/Sword") as Node2D
 			if sword == null:
-				_fail("King Sprite/Sword missing — combat swing dead")
+				_fail("King Sprite/ArmFront/Sword missing — combat swing dead")
 				ok = false
 			else:
-				for part: String in ["SwordBlade", "SwordRune", "SwordGuard",
-						"SwordGrip", "SwordPommel"]:
+				for part: String in ["Blade", "Rune1", "Rune4", "Guard",
+						"Grip", "Pommel", "BladeFlame", "BladeFlameCore"]:
 					if not _has_rect(sword, part):
 						_fail("King sword missing blade part: %s" % part)
 						ok = false
-				if sword.color.a > 0.05:
-					_fail("sword container not transparent — blade would "
-						+ "double-draw under the children")
-					ok = false
 			if ok:
-				_pass("King heroic part set complete (24 parts, magic "
-					+ "sword composite)")
+				_pass("King heroic part set complete (blazing plate, crowned "
+					+ "great helm, ermine cape, flaming runeblade)")
 			_goto(S.PARK_DRAGON)
 		S.PARK_DRAGON:
 			# Freeze the King so he can't close into contact range, and park

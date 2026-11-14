@@ -70,6 +70,68 @@ func _physics_process(delta: float) -> void:
 	_tick_storm_charges(delta)
 	_try_storm(delta)
 	super._physics_process(delta)
+	_animate_regalia(delta)
+
+# --- blazing armour & the runeblade (2026-11-14 rig pass) ------------------------
+
+## Two-handed: the off hand rides the grip through every slash.
+func _apply_slash_pose(p: float) -> void:
+	super._apply_slash_pose(p)
+	if _rig != null:
+		var front := _rig.part("ArmFront")
+		var back := _rig.part("ArmBack")
+		if front != null and back != null:
+			back.rotation = front.rotation + deg_to_rad(6.0)
+
+var _regalia_t := 0.0
+
+## The living details: the runeblade's spectral flame flickers (roaring
+## up mid-swing and during a storm), runes + ember seams + visor pulse,
+## the cape sways with his stride, and the storm call raises the blade.
+func _animate_regalia(delta: float) -> void:
+	if _rig == null or not is_alive:
+		return
+	_regalia_t += delta
+	var t := _regalia_t
+	var fury := 1.0 if _casting_storm else (0.6 if _swing_animating else 0.0)
+	var flame := get_node_or_null("Sprite/ArmFront/Sword/BladeFlame") as Node2D
+	if flame != null:
+		flame.scale = Vector2(1.0 + 0.12 * sin(t * 17.0) + 0.5 * fury,
+			1.0 + 0.08 * sin(t * 11.0 + 1.3) + 0.35 * fury)
+		flame.modulate.a = 0.75 + 0.25 * sin(t * 23.0)
+	var core := get_node_or_null("Sprite/ArmFront/Sword/BladeFlameCore") as Node2D
+	if core != null:
+		core.modulate.a = 0.7 + 0.3 * sin(t * 19.0 + 0.7) + 0.3 * fury
+	var rune_glow := 0.75 + 0.25 * sin(t * 4.0)
+	for i in range(1, 5):
+		var rune := get_node_or_null("Sprite/ArmFront/Sword/Rune%d" % i) as CanvasItem
+		if rune != null:
+			rune.modulate = Color(1, 1, 1).lerp(Color(1.6, 1.8, 2.0), rune_glow * (0.4 + fury))
+	var ember := 0.7 + 0.3 * sin(t * 3.1)
+	for path: String in ["Sprite/Torso/RuneSeam1", "Sprite/Torso/RuneSeam2",
+			"Sprite/Torso/SunCoreGlow", "Sprite/Head/VisorGlow"]:
+		var n := get_node_or_null(path) as CanvasItem
+		if n != null:
+			n.modulate.a = ember
+	var cape := get_node_or_null("Sprite/Cape") as Node2D
+	if cape != null:
+		var walk := velocity.length() > 6.0
+		cape.rotation = deg_to_rad(4.0 * sin(t * 1.4)) \
+			+ (deg_to_rad(10.0 + 4.0 * sin(_rig.walk_phase() * 2.0)) if walk else 0.0)
+	# Storm call: both hands drive the blade straight up into the sky.
+	if _casting_storm:
+		_rig.arms_override = true
+		_rig.set_arms(-178.0, -172.0)
+		_rig.lean = -0.12
+		var sword := get_node_or_null("Sprite/ArmFront/Sword") as Node2D
+		if sword != null:
+			sword.rotation_degrees = 180.0
+	elif not _swing_animating and _rig.arms_override:
+		_rig.arms_override = false
+		_rig.lean = 0.0
+		var rest := get_node_or_null("Sprite/ArmFront/Sword") as Node2D
+		if rest != null:
+			rest.rotation_degrees = SWORD_REST_DEG
 
 ## Recharge spent storm charges one at a time on the recharge timer.
 func _tick_storm_charges(delta: float) -> void:
@@ -169,12 +231,20 @@ func _spawn_cloud_sword() -> void:
 	sword.position = pos + Vector2(0, -140)  # starts high — lightning fall
 	sword.rotation_degrees = randf_range(-14.0, 14.0)
 	add_child(sword)
-	# Blade points DOWN toward the ground (stabbed in); hilt above.
-	_sword_rect(sword, -2.0, 6.0, 4.0, 24.0, Color(0.78, 0.84, 0.95))  # blade
-	_sword_rect(sword, -2.0, 6.0, 1.2, 24.0, Color(0.9, 0.94, 1.0))    # edge
-	_sword_rect(sword, -5.0, 2.0, 10.0, 4.0, Color(0.8, 0.64, 0.2))    # guard
-	_sword_rect(sword, -1.5, -8.0, 3.0, 10.0, Color(0.3, 0.22, 0.15))  # grip
-	_sword_rect(sword, -2.5, -11.0, 5.0, 4.0, Color(0.8, 0.64, 0.2))   # pommel
+	# A spectral greatsword (2026-11-14): pale-blue ghost-steel wreathed in
+	# glow, blade DOWN (stabbed into the earth), hilt above.
+	_spectral_poly(sword, [Vector2(-5, 2), Vector2(5, 2), Vector2(4, 34), Vector2(0, 42), Vector2(-4, 34)],
+		Color(0.55, 0.80, 1.0, 0.28))                                       # glow
+	_spectral_poly(sword, [Vector2(-2, 6), Vector2(2, 6), Vector2(1.8, 28), Vector2(0, 33), Vector2(-1.8, 28)],
+		Color(0.84, 0.92, 1.0, 0.9))                                        # blade
+	_spectral_poly(sword, [Vector2(-0.5, 8), Vector2(0.5, 8), Vector2(0.5, 27), Vector2(-0.5, 27)],
+		Color(0.55, 0.85, 1.0))                                             # rune line
+	_spectral_poly(sword, [Vector2(-6, 2), Vector2(6, 2), Vector2(5, 5.4), Vector2(-5, 5.4)],
+		Color(0.96, 0.78, 0.30))                                            # guard
+	_spectral_poly(sword, [Vector2(-1.2, -8), Vector2(1.2, -8), Vector2(1.2, 2), Vector2(-1.2, 2)],
+		Color(0.30, 0.20, 0.14))                                            # grip
+	_spectral_poly(sword, [Vector2(-2.2, -11), Vector2(2.2, -11), Vector2(2.2, -7.6), Vector2(-2.2, -7.6)],
+		Color(0.96, 0.78, 0.30))                                            # pommel
 	# Lightning drop: slam into place in ~70ms, stick, fade like a spark.
 	var fall := create_tween()
 	fall.tween_property(sword, "position:y", pos.y, 0.07) \
@@ -183,15 +253,13 @@ func _spawn_cloud_sword() -> void:
 	fall.tween_property(sword, "modulate:a", 0.0, 0.3)
 	fall.tween_callback(sword.queue_free)
 
-## One flat ColorRect in the world-art style (see also Dragon._rider_rect).
-func _sword_rect(parent: Node2D, x: float, y: float, w: float, h: float,
-		col: Color) -> void:
-	var rect := ColorRect.new()
-	rect.position = Vector2(x, y)
-	rect.size = Vector2(w, h)
-	rect.color = col
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(rect)
+## One antialiased polygon of a spectral storm sword.
+func _spectral_poly(parent: Node2D, pts: Array, col: Color) -> void:
+	var poly := Polygon2D.new()
+	poly.polygon = PackedVector2Array(pts)
+	poly.color = col
+	poly.antialiased = true
+	parent.add_child(poly)
 
 func die() -> void:
 	# Three respawns after the first defeat (user spec 2026-11-09-king-lives):
