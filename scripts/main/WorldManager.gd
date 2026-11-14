@@ -1395,27 +1395,47 @@ func on_king_defeated() -> bool:
 @export var wizard_upgrade_threshold: int = 4
 @export var wizard_visit_threshold: int = 3     # "more than 3" → 4+
 @export var wizard_stash_trigger: int = 20
+## True once he has TURNED (kept under its old name: probes read it).
 var wizard_spawned: bool = false
+## The tower's master, kindly until provoked (2026-11-14 story arc).
+var tower_wizard: Wizard = null
+
+## Spawn the kind wizard at his doorstep (once, as soon as the world runs).
+func _ensure_tower_wizard() -> void:
+	if tower_wizard != null or wizard_spawned:
+		return
+	var wizard := entity_scenes["wizard"].instantiate() as Wizard
+	wizard.start_kind = true
+	var anchor := tower_position + Vector2(60, -40)
+	wizard.global_position = anchor
+	add_child(wizard)
+	(wizard as BaseNPC).home_position = anchor
+	tower_wizard = wizard
+	entity_spawned.emit("wizard", wizard.global_position)
 
 func _try_spawn_wizard() -> void:
 	# Bug fix (2026-11-11, user: "the wizard never appears" after the King's
-	# defeat): no run_finished gate — the backstabber emerges whenever his
+	# defeat): no run_finished gate — the backstabber turns whenever his
 	# provocation lines are crossed, victory or not.
 	if wizard_spawned or game_manager == null:
 		return
+	_ensure_tower_wizard()
+	var burned: bool = tower_wizard != null and is_instance_valid(tower_wizard) \
+		and not tower_wizard.is_kind()
 	var bought_enough: bool = game_manager.upgrade_purchases >= wizard_upgrade_threshold \
 		and game_manager.tower_visits > wizard_visit_threshold
 	var greedy: bool = int(game_manager.stash["gold"]) >= wizard_stash_trigger
-	if not (bought_enough or greedy):
+	if not (bought_enough or greedy or burned):
 		return
 	wizard_spawned = true
-	var wizard := entity_scenes["wizard"].instantiate() as Wizard
-	var spawn_anchor := tower_position + Vector2(60, -40)
-	wizard.global_position = spawn_anchor
-	add_child(wizard)
-	(wizard as BaseNPC).home_position = spawn_anchor
-	entity_spawned.emit("wizard", wizard.global_position)
-	print("The wizard emerges from his tower — he has seen enough of your robberies!")
+	if tower_wizard == null or not is_instance_valid(tower_wizard):
+		return
+	tower_wizard.turned.connect(_on_wizard_turned, CONNECT_ONE_SHOT)
+	tower_wizard.turn_evil()   # no-op if the dragon's fire already turned him
+
+## The fall is complete: now the story names him.
+func _on_wizard_turned() -> void:
+	print("The wizard has turned — he hunts the dragon's heart!")
 	if game_manager != null:
 		game_manager.notify_story("wizard_emerge")
 

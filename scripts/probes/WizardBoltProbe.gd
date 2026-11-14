@@ -110,15 +110,18 @@ func _physics_process(delta: float) -> void:
 				return
 			_pass("bolt is SEGMENTED: %d vertices across %d segments"
 				% [pts.size(), pts.size() - 1])
-			# Endpoint pinning: first vertex at the wizard, last near the
+			# Endpoint pinning: first vertex at the wizard's staff orb
+			# (2026-11-14: bolts leave the orb, not his feet), last near the
 			# dragon (the dragon may have drifted a few px since the cast).
-			var wizard := _wizard.global_position
+			# Compared against where the orb WAS at the cast (it keeps
+			# swinging after), recorded by the wizard.
+			var wizard: Vector2 = _wizard.last_bolt_origin
 			var dragon := (gm.dragon as Dragon).global_position
-			if pts[0].distance_to(wizard) > 4.0:
+			if pts[0].distance_to(wizard) > 1.0:
 				_fail("bolt start is not pinned to the wizard (off by "
 					+ "%.1f)" % pts[0].distance_to(wizard))
 			else:
-				_pass("bolt start pinned to the wizard")
+				_pass("bolt start pinned to the wizard's staff orb")
 			var end_drift := pts[pts.size() - 1].distance_to(dragon)
 			if end_drift > 30.0:
 				_fail("bolt end is nowhere near the dragon (off by "

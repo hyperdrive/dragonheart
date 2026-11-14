@@ -247,7 +247,7 @@ const STORIES := {
 		"title": "The Tower Reveals Its Master",
 		"image": "res://assets/story/story_wizard.svg",
 		"tint": Color(0.2, 0.14, 0.3),
-		"text": "The shop door SLAMS open and out steps your so-tolerant, so-cheap merchant — the treacherous evil overlord himself. \"You flawless FOOL,\" he weeps with laughter, robes snapping like storm banners. \"I sold you flame, shield and speed… never at 8g did I say CHEAPLY! I AM the wizard — betrayer of nine courts, tyrant of ten shadows — and tonight your hoard is my inventory!\"",
+		"text": "The kindly old man who sold you flame and shield sets down his ledger. Bows his head. And when he lifts it, his eyes are burning. \"Every scale you bought, I counted. Every flame, I measured,\" he purrs, as his robes bleed to night and the empty locket on his chest begins to glow. \"Gold? Trinkets. I was only ever fattening you up for the one treasure in this realm worth the wait — your HEART, wyrm. Hold still.\"",
 		"choices": [
 			"Squint: \"So the claw upgrade was CHARITY?\"",
 			"Snarl a river of fire into his billing ledger.",
