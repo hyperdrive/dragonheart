@@ -22,16 +22,15 @@ class_name Damage
 ##                reserved for terrain hazards.
 ##
 ## Per-actor multipliers: BaseNPC.damage_taken = {Damage.Type.X: 0.5, …}
-## (missing = 1.0). The dragon's claws deal CLAW damage per hit; their old
-## instant "maul" survives as a bonus chance on ordinary soldiers/goblins
-## (BaseNPC.can_be_mauled) — tough foes only ever take the claw damage.
+## (missing = 1.0). The dragon's claws deal Dragon.claw_damage per strike
+## (CLAW at the start, Brute Force raises it) — no kill lottery any more.
 
 enum Type { WEAPON, DRAGON_FIRE, MAGIC, ENVIRONMENT }
 
 ## Total fire damage of one ignition (spread over the burn).
 const FIRE_PER_BURN := 60
-## One dragon claw strike (E).
-const CLAW := 16
+## One dragon claw strike (E) before any Brute Force: two per soldier.
+const CLAW := 25
 
 static func type_name(t: Type) -> String:
 	return ["weapon", "dragon fire", "magic", "environment"][t]

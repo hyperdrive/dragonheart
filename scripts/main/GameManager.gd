@@ -73,6 +73,7 @@ const DRAGON_DEATH_KINDS := {
 	"archer": "dragon_death_archer",
 	"king": "dragon_death_king",
 	"wizard": "dragon_death_wizard",
+	"dragon_slayer": "dragon_death_slayer",
 }
 var dragon_death_served: bool = false   # one death chapter per run
 var _pending_death_reload: bool = false
@@ -666,7 +667,7 @@ func purchase_upgrade(kind: String) -> bool:
 	if kind == "shield" and int(dragon_ref.get("shield_points")) > 0:
 		return false
 	# Brute Force is capped — refuse BEFORE taking payment (decision record).
-	if kind == "brute" and not bool(dragon_ref.call("can_add_strike")):
+	if kind == "brute" and not bool(dragon_ref.call("can_add_claw_damage")):
 		return false
 	# Rider training requires a trainable sacrifice
 	if kind == "rider_train" and not _trainable_sacrifice:
@@ -688,7 +689,7 @@ func purchase_upgrade(kind: String) -> bool:
 		"range":
 			dragon_ref.call("increase_flame_range", 20.0)
 		"brute":
-			dragon_ref.call("add_strike_chance", 0.05)
+			dragon_ref.call("buy_brute_force")
 		"flight":
 			dragon_ref.call("extend_flight", 3.0)
 		"rider_train":

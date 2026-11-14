@@ -389,6 +389,13 @@ func _ready() -> void:
 	_purchase_timer.timeout.connect(_try_buy_soldiers)
 	add_child(_purchase_timer)
 
+	# The dragon slayer rides in at random intervals (2026-11-14).
+	_slayer_timer = Timer.new()
+	_slayer_timer.one_shot = true
+	_slayer_timer.timeout.connect(_on_slayer_timer)
+	add_child(_slayer_timer)
+	_slayer_timer.start(randf_range(slayer_first_min_s, slayer_first_max_s))
+
 
 # --- StuckMonitor (2026-11-09) ------------------------------------------------
 
@@ -1292,8 +1299,11 @@ func _start_goblin_raid() -> void:
 	_raid_timer.wait_time = 30.0
 	_raid_timer.one_shot = true
 	_raid_timer.timeout.connect(_end_goblin_raid)
-	_raid_timer.start()
+	_raid_timer.timeout.connect(_raid_timer.queue_free)
+	# add_child BEFORE start (2026-11-14 fix): a Timer outside the tree
+	# refuses to start, so raids never ended — goblins stayed hostile.
 	add_child(_raid_timer)
+	_raid_timer.start()
 
 
 func _end_goblin_raid() -> void:
@@ -1568,6 +1578,57 @@ func spawn_hag_nest() -> void:
 	for fir_node: Node in get_tree().get_nodes_in_group("fir_trees"):
 		area = area.expand((fir_node as Node2D).global_position)
 	_refresh_nav_area(area.grow(40.0))
+
+# --- the dragon slayer (2026-11-14) -------------------------------------------
+
+## User: "a new NPC that appears randomly like the adventurer". One at a
+## time: the first rides in after a few minutes, then another some minutes
+## after each one falls (or while none is out). He enters from the map
+## edge farthest from the dragon, on walkable ground. Not while the dragon
+## hides as the farm girl (no dragon to hunt), nor after the run is over.
+@export_group("Dragon slayer")
+@export var slayer_first_min_s: float = 150.0
+@export var slayer_first_max_s: float = 270.0
+@export var slayer_again_min_s: float = 120.0
+@export var slayer_again_max_s: float = 240.0
+const DRAGON_SLAYER_SCENE := preload("res://scenes/npcs/DragonSlayer.tscn")
+var _slayer_timer: Timer
+
+func _on_slayer_timer() -> void:
+	_slayer_timer.start(randf_range(slayer_again_min_s, slayer_again_max_s))
+	if game_manager != null and game_manager.run_finished:
+		return
+	if not get_tree().get_nodes_in_group("dragon_slayer").is_empty() or _dragon_hidden():
+		return
+	spawn_dragon_slayer()
+
+func spawn_dragon_slayer() -> DragonSlayer:
+	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var from := dragon.global_position if dragon != null else Vector2.ZERO
+	var half := world_size * 0.5 - Vector2(WORLD_MARGIN, WORLD_MARGIN)
+	var best := Vector2.ZERO
+	var best_d := -1.0
+	for i in 12:
+		var edge := Vector2(randf_range(-half.x, half.x), randf_range(-half.y, half.y))
+		if randf() < 0.5:
+			edge.x = half.x * signf(randf() - 0.5)
+		else:
+			edge.y = half.y * signf(randf() - 0.5)
+		if nav_grid != null and nav_grid.is_built:
+			edge = nav_grid.nearest_walkable(edge)
+		var d := edge.distance_to(from)
+		if d > best_d:
+			best_d = d
+			best = edge
+	var slayer := DRAGON_SLAYER_SCENE.instantiate() as DragonSlayer
+	slayer.global_position = best
+	add_child(slayer)
+	slayer.home_position = best
+	entity_spawned.emit("dragon_slayer", best)
+	print("A dragon slayer rides into the realm — white horse, crimson plume, a lance like a church spire.")
+	if game_manager != null:
+		game_manager.call("_hud_message", "A dragon slayer rides into the realm! Fire won't touch him — use your claws.", 5.0)
+	return slayer
 
 # --- walkable-area grid (2026-11-14) -------------------------------------------
 

@@ -6,7 +6,7 @@ class_name Hag
 ## hag. For now she fights hard like the King but with her claws"). The
 ## wizard's quest places her nest west of the dragon's mountain when the
 ## King rides out. She guards her territory: inside TERRITORY_RADIUS of her
-## nest she hunts the dragon with King-grade stats (200 HP, 50 contact
+## nest she hunts the dragon with King-grade stats (245 HP, 50 contact
 ## DPS, fire cloak); otherwise she prowls her fen. No storm, no rally, no
 ## town alarms — she is nobody's soldier.
 ##
@@ -20,8 +20,7 @@ const TERRITORY_RADIUS := 420.0
 const SWIPE_HZ := 2.0
 
 ## Toughness (2026-11-14, user: "at least two fires and five claw hits"):
-## 200 HP = two burns (2 × 60 dragon fire) + five claw strikes (5 × 16).
-## Her claws can't be MAULED away like a common soldier's life.
+## 245 HP = two burns (2 × 60 dragon fire) + five base claw strikes (5 × 25).
 
 ## A Thousand and One Cuts (user: "a cloud of claws that inflict 50p of
 ## damage, with an init charge of 0.5s and a recharge of 5s"): she marks
@@ -47,7 +46,7 @@ var _clawing := false
 func _ready() -> void:
 	# Configure before super._ready() — it syncs health from max_health.
 	npc_type = "hag"
-	max_health = 200
+	max_health = 245
 	speed = 62.0
 	attack_damage = 50.0       # King-grade contact DPS, delivered by claws
 	attack_range = 70.0
@@ -84,9 +83,6 @@ func take_damage(amount: int, type: Damage.Type = Damage.Type.WEAPON,
 		source: String = "") -> void:
 	super.take_damage(amount, type, source)
 	unmask()
-
-func can_be_mauled() -> bool:
-	return false
 
 ## Tea time: the dragon came to her door, so the old lady is back —
 ## whatever happened outside. She waits on her doorstep.

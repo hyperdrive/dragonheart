@@ -305,6 +305,13 @@ const STORIES := {
 		"text": "The lightning was never a duel. It was a harvest. Ambrose kneels beside you in the smoke, rolls up his sleeves, and opens your chest with a silver knife while the ember in it is still beating. \"Warm,\" he murmurs. \"It must be taken warm.\" The voices scream as he lifts the heart out — a hundred years of murdered fire, cupped in an old man's hands — and then they do not scream at all. He sets it in the locket. It fits perfectly. It always would have.",
 		"choices": ["Curse him with your last breath.", "Reach for your heart. Too late.", "Let the voices go. Let them rest."],
 	},
+	"dragon_death_slayer": {
+		"title": "The Sun on the Lance",
+		"image": "res://assets/story/story_dragon_fall.svg",
+		"tint": Color(0.34, 0.14, 0.10),
+		"text": "He came at a gallop with Osric's sun on his shield, and he did not sing. That was the worst of it. The lance took you under the wing, where the scales are thin — he knew where. Of course he knew. Somebody has been teaching that place to the knights of this realm for four generations. He dismounts, lifts his visor, and looks at you for a long moment, the way a man looks at a job finished. Then he wipes the lance clean on the grass and rides home to be a legend.",
+		"choices": ["Curse the sun on his shield.", "Remember his face. Remember it.", "Let the lance be the last thing you feel."],
+	},
 	"dragon_death": {
 		"title": "The Hoard Goes Cold",
 		"image": "res://assets/story/story_dragon_fall.svg",

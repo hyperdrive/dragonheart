@@ -277,7 +277,7 @@ func _physics_process(delta: float) -> void:
 ## valid target wins:
 ##   • pen with stock in its reach → eat one animal
 ##   • farmer/miner within strike_reach → deliberate strike-kill
-##   • ordinary soldier within strike_reach → chance kill (recharge-gated)
+##   • fighter (soldier, goblin, hag, slayer) in reach → claw damage
 ## Eating stays full-health-refused with chip flashes (see
 ## 2026-11-08-manual-eat-wizard-menu); townsfolk kills pay +5 health and
 ## STEAL the payload before death. Flyover interception is steal-only.
@@ -286,11 +286,18 @@ func _physics_process(delta: float) -> void:
 @export var strike_reach: float = 100.0
 ## Health restored per deliberate E-kill (townsfolk only).
 @export var kill_health_gain: int = 5
-## Soldier strike: chance kill lottery (Brute Force raises by 5% each buy),
-## with a short recharge (first Speed buy drops 0.5 → 0.2 permanently).
-@export var soldier_strike_chance: float = 0.15
+## Claws on fighters (2026-11-14, user: "no chance but rather damage now
+## that we have a HP system"): every strike lands for claw_damage WEAPON
+## damage — 25 = two strikes per 50 HP soldier, three per dragon slayer.
+## Brute Force adds BRUTE_STEP per buy up to CLAW_DAMAGE_MAX (one strike
+## per soldier). Recharge 0.5 s; the first Speed buy shortens it to
+## FAST_STRIKE_RECHARGE for good (was 0.2 when strikes were a lottery —
+## with sure hits that would be 250 damage a second).
+@export var claw_damage: int = Damage.CLAW
 @export var strike_recharge: float = 0.5
-const STRIKE_CHANCE_CAP := 0.35
+const CLAW_DAMAGE_MAX := 50
+const BRUTE_STEP := 7
+const FAST_STRIKE_RECHARGE := 0.3
 var _strike_cooldown: float = 0.0
 
 signal strike_missed
@@ -365,7 +372,7 @@ func _soldier_in_strike_reach() -> BaseNPC:
 		return null
 	var best: BaseNPC = null
 	var best_dist := INF
-	for group: String in ["soldiers", "goblins", "hag"]:
+	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			var npc := node as BaseNPC
 			if npc == null or not npc.is_alive or npc.is_in_group("king"):
@@ -379,21 +386,14 @@ func _soldier_in_strike_reach() -> BaseNPC:
 				best = npc
 	return best
 
-## Claw strike on a fighter (2026-11-14 damage model): every swipe that
-## lands deals Damage.CLAW as WEAPON damage; on ordinary soldiers and
-## goblins the old kill lottery rides along as a MAUL bonus (Brute Force
-## raises it). Tough foes (can_be_mauled() == false) only take the claws.
-## The recharge is spent FIRST either way.
+## Claw strike on a fighter: spends the recharge, then rakes for
+## claw_damage (WEAPON). Townsfolk are not fighters — E kills them outright
+## and steals their payload (_strike_kill).
 func _strike_soldier(soldier: BaseNPC) -> void:
 	_strike_cooldown = strike_recharge
 	_play_claw_swing()
-	if soldier.can_be_mauled() and randf() < soldier_strike_chance:
-		soldier.kill_by_dragon()
-		print("Dragon MAULED the %s! (%d%% maul chance)" % [soldier.npc_type,
-			int(soldier_strike_chance * 100.0)])
-		return
-	soldier.take_damage(Damage.CLAW, Damage.Type.WEAPON, "dragon")
-	print("Dragon's claws rake the %s for %d." % [soldier.npc_type, Damage.CLAW])
+	soldier.take_damage(claw_damage, Damage.Type.WEAPON, "dragon")
+	print("Dragon's claws rake the %s for %d." % [soldier.npc_type, claw_damage])
 
 ## Deliberate kill: steal payload BEFORE death so an E-killed loaded miner
 ## banks the cart into the claws; +5 health after regardless.
@@ -997,21 +997,31 @@ func activate_speed_boost() -> void:
 ## First Speed purchase EVER unlocks the fast strike cadence permanently
 ## (decision 2026-11-08-soldier-strike); later buys are a no-op here.
 func unlock_fast_strike() -> void:
-	if strike_recharge <= 0.2:
+	if strike_recharge <= FAST_STRIKE_RECHARGE:
 		return
-	strike_recharge = 0.2
-	print("Dragon strikes flow faster now (0.2s recharge)!")
+	strike_recharge = FAST_STRIKE_RECHARGE
+	print("Dragon strikes flow faster now (%.1fs recharge)!" % strike_recharge)
 
-## Brute Force purchase: raise the soldier kill lottery (+5% per buy).
+## Brute Force purchase: heavier claws (+BRUTE_STEP per buy, capped).
 ## Returns false while capped — the caller must refuse payment then.
-func can_add_strike() -> bool:
-	return soldier_strike_chance < STRIKE_CHANCE_CAP
+func can_add_claw_damage() -> bool:
+	return claw_damage < CLAW_DAMAGE_MAX
 
-func add_strike_chance(add: float) -> bool:
-	if not can_add_strike():
+## What one more Brute Force would make the claws (the shop's label).
+## Callers ask the instance — naming the Dragon class from UI scripts
+## (WizardMenu) closed a load cycle that handed Archer an EMPTY Arrow scene.
+func claw_damage_after_brute() -> int:
+	return mini(claw_damage + BRUTE_STEP, CLAW_DAMAGE_MAX)
+
+## Brute Force purchase: one BRUTE_STEP heavier.
+func buy_brute_force() -> bool:
+	return add_claw_damage(BRUTE_STEP)
+
+func add_claw_damage(add: int) -> bool:
+	if not can_add_claw_damage():
 		return false
-	soldier_strike_chance = minf(soldier_strike_chance + add, STRIKE_CHANCE_CAP)
-	print("Dragon strike chance now %d%%!" % int(soldier_strike_chance * 100.0))
+	claw_damage = mini(claw_damage + add, CLAW_DAMAGE_MAX)
+	print("Dragon claws now rake for %d!" % claw_damage)
 	return true
 
 ## Effective move speed in _physics_process — the flight lane replaces the
@@ -1278,7 +1288,7 @@ func _rider_shoot_at_enemies(delta: float) -> void:
 	# so the old scan found zero targets and never fired).
 	var nearest_enemy: Node2D = null
 	var nearest_dist: float = INF
-	for group: String in ["soldiers", "goblins", "hag"]:
+	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			var npc := node as BaseNPC
 			if npc == null or not npc.is_alive or npc.is_in_group("king"):

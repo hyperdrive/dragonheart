@@ -138,6 +138,8 @@ func _physics_process(delta: float) -> void:
 func _tick_rig(delta: float) -> void:
 	if sprite is HumanoidRig:
 		(sprite as HumanoidRig).tick(delta, velocity, is_alive)
+	elif sprite != null and sprite.has_method("tick"):
+		sprite.call("tick", delta, velocity, is_alive)   # e.g. the slayer's SlayerRig
 
 # --- flee wobble (2026-11-09) -------------------------------------------------
 
@@ -321,10 +323,6 @@ func take_damage(amount: int, type: Damage.Type = Damage.Type.WEAPON,
 func _on_damaged(_dealt: int, _type: Damage.Type, _source: String) -> void:
 	pass
 
-## Can the dragon's claw MAUL this one outright (the strike's bonus
-## chance)? Ordinary soldiers and goblins yes; tough foes take claw damage.
-func can_be_mauled() -> bool:
-	return true
 
 func die() -> void:
 	is_alive = false

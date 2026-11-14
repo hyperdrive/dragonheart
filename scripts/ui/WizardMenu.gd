@@ -13,10 +13,10 @@ const OPTIONS: Array = [
 	{"kind": "flame_1", "label": "+1 Flame (%s)", "desc": "More flames carried: capacity +1, arrives loaded."},
 	{"kind": "flame_2", "label": "+2 Flames (%s)", "desc": "Even bigger flame pool: capacity +2, arrives loaded."},
 	{"kind": "shield", "label": "Shield 40 (%s)", "desc": "Absorbs 40 damage, then gone. Cannot restack while one is active."},
-	{"kind": "speed", "label": "Speed Boost (%s)", "desc": "Fast wings for 6s (x1.6). Also unlocks the 0.2s strike recharge."},
+	{"kind": "speed", "label": "Speed Boost (%s)", "desc": "Fast wings for 6s (x1.6). Also quickens your claws for good (0.3s recharge)."},
 	{"kind": "range", "label": "Longer Flame (%s)", "desc": "Breath reaches +20px further. Permanent."},
 	{"kind": "flight", "label": "Longer Flight (%s)", "desc": "Q flight bursts last +3s longer. Permanent."},
-	{"kind": "brute", "label": "Brute Force +5%% (%s)", "desc": "Soldier E-strike kill odds +5%. Repeatable, capped at 35%."},
+	{"kind": "brute", "label": "Brute Force (%s)", "desc": "Heavier claws: +7 claw damage. Repeatable, up to 50 (one strike per soldier)."},
 	{"kind": "rider_train", "label": "Train Dragon Rider (%s)", "desc": "Train the sacrifice as a dragon rider. Costs 10g. Enables rider combat."},
 ]
 
@@ -92,11 +92,11 @@ func _refresh() -> void:
 			button.text = "Shield 40 — already active (%s)" % price_text
 			button.disabled = true
 		elif option["kind"] == "brute" and dragon_ref != null:
-			var chance: float = float(dragon_ref.get("soldier_strike_chance"))
-			var capped: bool = not bool(dragon_ref.call("can_add_strike"))
-			button.text = "Brute Force — %d%% kill odds (%s)" % [chance * 100.0, price_text]
+			var claw: int = int(dragon_ref.get("claw_damage"))
+			var capped: bool = not bool(dragon_ref.call("can_add_claw_damage"))
+			button.text = "Brute Force — claws %d → %d (%s)" % [claw, int(dragon_ref.call("claw_damage_after_brute")), price_text]
 			if capped:
-				button.text = "Brute Force — %d%% kill odds (MAXED)" % [chance * 100.0]
+				button.text = "Brute Force — claws %d (MAXED)" % claw
 			button.disabled = not affordable or capped
 		else:
 			button.text = option["label"] % price_text
