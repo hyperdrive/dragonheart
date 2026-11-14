@@ -212,11 +212,3 @@ A tragic end? Not quite.
 The land prospers, peace endures, and for a hundred years no new monsters are born.
 
 ---
-
-*Dragonheart — Where the hero is the monster.*</parameter>
-</function>
-</tool_call>
-<tool_call>
-<function=shell>
-<parameter=command>
-cd /home/thek/Development/godot/dragonheart && git add README.md && git commit -m "docs: add README with game introduction\n\n- RTS survival with RPG elements\n- Play as the dragon, not the hero\n- Upgrade from unreliable wizard\n- Fire farmers' fields to trigger sacrifice mechanic\n- King boss with 3 lives\n- Early concept status noted\n\nIncludes overview, gameplay loop, unique mechanics, and controls.\"\ngit log --oneline -1 && git push origin main 2>&1"
