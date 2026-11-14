@@ -55,7 +55,7 @@ func _animate_archery(delta: float) -> void:
 	var bow := get_node_or_null("Sprite/ArmFront/Bow") as Node2D
 	if bow == null:
 		return
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	var dragon_dying: Variant = dragon.get("_dying") if dragon != null else null
 	var aiming := is_alive and _burning_left <= 0.0 and dragon != null \
 		and is_instance_valid(dragon) and dragon_dying != null and not bool(dragon_dying) \
@@ -118,7 +118,7 @@ func _tick_ranged_fire(delta: float) -> void:
 	if _ranged_recharge > 0.0:
 		_ranged_recharge -= delta
 		return
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return
 	var dragon_dying: Variant = dragon.get("_dying")
@@ -145,7 +145,7 @@ func _pick_dragon_target() -> Vector2:
 	var target := super._pick_dragon_target()
 	if target == BehaviorTree.TARGET_NONE:
 		return target
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null:
 		return target
 	if global_position.distance_to(dragon.global_position) > arrow_range:

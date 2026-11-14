@@ -15,6 +15,8 @@ signal flame_charges_changed(charges: int, max_charges: int)
 signal eat_refused(what: String)
 signal shield_changed(points: int)
 signal rider_upgraded
+## The dragon changed shape (T, once the fen hag's tea taught her how).
+signal form_changed(human: bool)
 
 @export_group("Controls")
 @export var walk_speed: float = 150.0
@@ -146,8 +148,12 @@ var game_manager: GameManager
 @onready var interception_system: GoldInterceptionSystem = $GoldInterceptionSystem
 
 
+## Groups: "dragon" = the player, always (HUD, camera, doors, the shop);
+## "dragon_threat" = what antagonists hunt, fear and shoot at — the dragon
+## leaves it while wearing the farm girl, who is invisible to them all.
 func _ready() -> void:
 	add_to_group("dragon")
+	add_to_group("dragon_threat")
 	
 	var goblin_count := 0
 	for goblin in get_tree().get_nodes_in_group("goblins"):
@@ -191,7 +197,7 @@ func _physics_process(delta: float) -> void:
 		_speed_boost_left -= delta
 	if _strike_cooldown > 0.0:
 		_strike_cooldown = maxf(_strike_cooldown - delta, 0.0)
-	if is_firing and Input.is_action_pressed("fire") and flame_charges >= 1.0:
+	if is_firing and Input.is_action_pressed("fire") and flame_charges >= 1.0 and not human_form:
 		# Pulse: 0.8 s per charge, max 3 pulses (2.4 s total breath duration)
 		if _fire_pulse_count < 3:
 			_fire_pulse_timer += delta
@@ -239,6 +245,9 @@ func _physics_process(delta: float) -> void:
 
 	_tick_flight_visual(delta)
 	_tick_claw_visual(delta)
+	if human_form and _human_rig != null:
+		_human_rig.tick(delta, velocity)
+		_check_accosted()
 
 	# While the breath window is open, flammable actors/fields in the cone
 	# catch fire.
@@ -287,8 +296,13 @@ var _strike_cooldown: float = 0.0
 signal strike_missed
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("eat") and not _dying:
+	if event.is_action_pressed("eat") and not _dying and not human_form:
 		_try_context_action()
+	var key := event as InputEventKey
+	if key != null and key.pressed and not key.echo and key.physical_keycode == KEY_T \
+			and can_shapeshift and not _dying and game_manager != null:
+		game_manager.request_shapeshift()
+		get_viewport().set_input_as_handled()
 
 func _try_context_action() -> void:
 	var pen := _nearest_edible_pen()
@@ -351,7 +365,7 @@ func _soldier_in_strike_reach() -> BaseNPC:
 		return null
 	var best: BaseNPC = null
 	var best_dist := INF
-	for group: String in ["soldiers", "goblins"]:
+	for group: String in ["soldiers", "goblins", "hag"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			var npc := node as BaseNPC
 			if npc == null or not npc.is_alive or npc.is_in_group("king"):
@@ -365,18 +379,21 @@ func _soldier_in_strike_reach() -> BaseNPC:
 				best = npc
 	return best
 
-## Soldier strike: spends the recharge FIRST, then rolls the kill lottery.
-## A miss flashes the threat chip via strike_missed (decision record).
+## Claw strike on a fighter (2026-11-14 damage model): every swipe that
+## lands deals Damage.CLAW as WEAPON damage; on ordinary soldiers and
+## goblins the old kill lottery rides along as a MAUL bonus (Brute Force
+## raises it). Tough foes (can_be_mauled() == false) only take the claws.
+## The recharge is spent FIRST either way.
 func _strike_soldier(soldier: BaseNPC) -> void:
 	_strike_cooldown = strike_recharge
 	_play_claw_swing()
-	var odds := int(soldier_strike_chance * 100.0)
-	if randf() >= soldier_strike_chance:
-		strike_missed.emit()
-		print("Dragon's claw swipes past the %s! (%d%% odds)" % [soldier.npc_type, odds])
+	if soldier.can_be_mauled() and randf() < soldier_strike_chance:
+		soldier.kill_by_dragon()
+		print("Dragon MAULED the %s! (%d%% maul chance)" % [soldier.npc_type,
+			int(soldier_strike_chance * 100.0)])
 		return
-	soldier.kill_by_dragon()
-	print("Dragon mauled the %s! (%d%% odds paid off)" % [soldier.npc_type, odds])
+	soldier.take_damage(Damage.CLAW, Damage.Type.WEAPON, "dragon")
+	print("Dragon's claws rake the %s for %d." % [soldier.npc_type, Damage.CLAW])
 
 ## Deliberate kill: steal payload BEFORE death so an E-killed loaded miner
 ## banks the cart into the claws; +5 health after regardless.
@@ -447,6 +464,8 @@ func _eat_meal_from(pen: AnimalPen) -> void:
 # scripts/characters/Dragon.gd
 func _apply_facing() -> void:
 	sprite.scale.x = float(facing)
+	if _human != null:
+		_human.scale.x = 1.4 * float(facing)
 	fire_area.position.x = 63.0 * float(facing)   # mouth tip (Sprite-space ~64)
 	fire_collision.position.x = 27.0 * float(facing)  # adjust hitbox offset too
 	flame.scale.x = float(facing)
@@ -469,7 +488,7 @@ func _fire_origin() -> Vector2:
 ## (2026-11-14 user: "fire should kill all the actors, but the wizard who
 ## survives two blasts" — Wizard.catch_fire counts the blasts).
 const FLAMMABLE_GROUPS: Array[String] = ["farmers", "miners", "soldiers",
-	"goblins", "king", "wizard", "adventurers", "fields"]
+	"goblins", "king", "wizard", "adventurers", "hag", "fields"]
 
 func _ignite_flammables() -> void:
 	var facing_vec := Vector2(float(facing), 0.0)
@@ -504,6 +523,10 @@ func _process(delta: float) -> void:
 	if _dying:
 		return
 	if interception_system == null or game_manager == null:
+		return
+	if human_form:
+		_scoop_loose_loot()   # a girl can still pick up a dropped coin
+		_deliver_carried_loot()
 		return
 	var opportunities := interception_system.check_interception_opportunities(global_position)
 	if opportunities.size() > 0:
@@ -567,7 +590,7 @@ func carried_total() -> int:
 ## While the fire key is held and charges are available, the animation cycles,
 ## spending 1 charge per 0.8 s pulse.
 func fire_breath() -> void:
-	if _dying or is_firing or fire_cooldown > 0.0:
+	if _dying or is_firing or fire_cooldown > 0.0 or human_form:
 		return
 	if flame_charges < 1.0:
 		print("Dragon: flame spent — eat a pig (+1) or a cow (+2) to recharge!")
@@ -589,16 +612,18 @@ func fire_breath() -> void:
 	if animation_player.has_animation("idle"):
 		animation_player.play("idle")
 
-func take_damage(amount: int, bypass_shield: bool = false,
-		killer: String = "") -> void:
-	if _dying:
-		return
+## Typed damage (Damage.gd): scales turn only WEAPON blows; the wizard's
+## shield absorbs every type unless bypassed.
+func take_damage(amount: int, type: Damage.Type = Damage.Type.WEAPON,
+		killer: String = "", bypass_shield: bool = false) -> void:
+	if _dying or human_form:
+		return   # the farm girl is untouchable (user: "invincibility mode")
 	# Who came for the dragon's last hoard? The death chapter names the
 	# slayer (2026-11-09 user: "take into account which NPC killed it").
 	if killer != "":
 		_last_killer = killer
 	var damage_reduction := 0
-	if game_manager != null:
+	if game_manager != null and type == Damage.Type.WEAPON:
 		damage_reduction = (game_manager.scales_level - 1) * 2
 	var incoming := maxi(1, amount - damage_reduction)
 	# Wizard shield pool absorbs first (and is lost with use, decision record).
@@ -622,6 +647,8 @@ func take_damage(amount: int, bypass_shield: bool = false,
 ## lakes block the grounded dragon again) — otherwise the dragon would
 ## touch down INSIDE a lake shape and be trapped by it.
 func _try_flight() -> void:
+	if human_form:
+		return   # no wings on a farm girl
 	if _dying:
 		return
 	if _flying:
@@ -703,7 +730,8 @@ func _tick_flight_visual(delta: float) -> void:
 	_pose_limbs(delta)
 	# Shadow stays on the ground under the lifted Vis, shrinking + fading.
 	shadow.position.y = _shadow_ground_y + _lift_current - bob * 0.4
-	shadow.scale = Vector2(1.0 - lift_ratio * 0.28, 1.0 - lift_ratio * 0.1)
+	shadow.scale = Vector2(1.0 - lift_ratio * 0.28, 1.0 - lift_ratio * 0.1) \
+		* (Vector2(0.32, 0.8) if human_form else Vector2.ONE)
 	shadow.modulate.a = 1.0 - lift_ratio * 0.5
 	_tick_idle_life(delta)
 	_emit_flight_chip()
@@ -989,8 +1017,77 @@ func add_strike_chance(add: float) -> bool:
 ## Effective move speed in _physics_process — the flight lane replaces the
 ## old single `speed` (walking slowed, flying fast); boost stacks on both.
 func effective_speed() -> float:
+	if human_form:
+		return human_speed
 	var base := fly_speed if _flying else walk_speed
 	return base * (speed_boost_multiplier if _speed_boost_left > 0.0 else 1.0)
+
+# --- the human shape (2026-11-14, the fen hag's tea) ----------------------------
+
+## Mother Grisla's tea teaches the dragon to wear a human shape: a farm girl
+## with ember eyes. T switches between the two (GameManager tells each
+## change as a story). The girl is INVINCIBLE — nothing in the realm hurts
+## a farm girl it doesn't know is a dragon — but she cannot breathe fire,
+## fly, eat, strike or rob a payload; she walks, and carries what she finds.
+const HUMAN_FORM_SCENE := preload("res://scenes/characters/FarmGirl.tscn")
+@export var human_speed: float = 115.0
+var can_shapeshift := false
+var human_form := false
+var _human: Node2D = null
+var _human_rig: HumanoidRig = null
+
+## Bumping into the King's men as the girl (2026-11-14): they ignore her
+## until she walks INTO one — then rough hands, and the dragon tears back
+## out of her (GameManager tells it and switches the form).
+const ACCOST_RANGE := 26.0
+const ACCOSTERS := ["soldier", "archer", "king"]
+
+func _check_accosted() -> void:
+	if game_manager == null or game_manager.story_open:
+		return
+	# The King in reach outranks his guards: his chapter wins.
+	var by := ""
+	for group: String in ["soldiers", "king"]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			var npc := node as BaseNPC
+			if npc == null or not npc.is_alive or not npc.npc_type in ACCOSTERS:
+				continue
+			if global_position.distance_to(npc.global_position) <= ACCOST_RANGE:
+				if npc.npc_type == "king" or by == "":
+					by = npc.npc_type
+	if by != "":
+		game_manager.notify_girl_accosted(by)
+
+func set_human_form(on: bool) -> bool:
+	if on == human_form or _dying:
+		return false
+	if on and _flying:
+		if _over_water():
+			return false   # a girl would drown here — refuse the change
+		land_flight()
+	if _human == null:
+		_human = HUMAN_FORM_SCENE.instantiate() as Node2D
+		_human.name = "HumanForm"
+		_human.position = Vector2(0.0, _shadow_ground_y)
+		_human.scale = Vector2(1.4, 1.4)
+		$Vis.add_child(_human)
+		_human_rig = _human.get_node("Sprite") as HumanoidRig
+	human_form = on
+	if on:
+		remove_from_group("dragon_threat")
+	else:
+		add_to_group("dragon_threat")
+	if on and is_firing:
+		is_firing = false
+		flame.visible = false
+		fire_area.monitoring = false
+	sprite.visible = not on
+	_human.visible = on
+	shadow.scale = Vector2(0.32, 0.8) if on else Vector2.ONE
+	shadow.position.x = 0.0 if on else 8.0   # under her feet, not the dragon's belly
+	form_changed.emit(on)
+	print("Dragon: %s" % ("a farm girl now" if on else "a dragon again"))
+	return true
 
 func die() -> void:
 	# Re-entry guard: several attacks can land during the death animation;
@@ -1181,7 +1278,7 @@ func _rider_shoot_at_enemies(delta: float) -> void:
 	# so the old scan found zero targets and never fired).
 	var nearest_enemy: Node2D = null
 	var nearest_dist: float = INF
-	for group: String in ["soldiers", "goblins"]:
+	for group: String in ["soldiers", "goblins", "hag"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			var npc := node as BaseNPC
 			if npc == null or not npc.is_alive or npc.is_in_group("king"):

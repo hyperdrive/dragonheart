@@ -28,10 +28,17 @@ signal carrying_changed(res_type: String, amount: int)
 
 @export_group("Ablaze")
 ## All NPC actors catch fire from dragon flame (User spec 2026-11-08):
-## abandon orders, run in random bursts, burn, and die when the fire burns out.
+## abandon orders, run in random bursts and burn. Since the damage model
+## (2026-11-14, scripts/systems/Damage.gd) the burn is plain DRAGON_FIRE
+## damage — burn_damage in total over burn_duration — so a 50–60 HP
+## commoner still dies to one burn, while tougher folk survive it, pat out
+## the embers and get back to work.
 @export var is_flammable: bool = true
-@export var burn_damage: float = 10.0
+@export var burn_damage: float = Damage.FIRE_PER_BURN
 @export var burn_duration: float = 3.0
+## Damage multipliers by type: {Damage.Type.MAGIC: 0.5}. Missing = 1.0.
+var damage_taken: Dictionary = {}
+var _burn_dealt: int = 0
 
 var health: int = max_health
 var is_alive: bool = true
@@ -107,6 +114,11 @@ func _physics_process(delta: float) -> void:
 		# home (fallback ZERO = map centre, still walkable) and continue.
 		global_position = home_position
 		velocity = Vector2.ZERO
+	# The cloak counts down from ignition, the burn included (documented
+	# rule: "burn 3s inside the 5s window, sober 2s" — it used to start
+	# only after the burn, stretching the cloak to 8s).
+	if _fire_immune_left > 0.0:
+		_fire_immune_left = maxf(0.0, _fire_immune_left - delta)
 	if _burning_left > 0.0:
 		_tick_burning(delta)
 		if is_alive:
@@ -116,8 +128,6 @@ func _physics_process(delta: float) -> void:
 		return
 	if _flames != null:
 		_flames_teardown()      # fire out (or dead): overlay goes with it
-	if _fire_immune_left > 0.0:
-		_fire_immune_left = maxf(0.0, _fire_immune_left - delta)
 	if is_alive and behavior_tree != null:
 		behavior_tree.tick(delta)
 	_animate_flee(delta)
@@ -168,6 +178,7 @@ func catch_fire() -> void:
 	_burning_left = burn_duration
 	_burn_move_timer = 0.0
 	_burn_debt = 0.0
+	_burn_dealt = 0
 	# grant the cloak NOW so its countdown covers the burn itself
 	if fire_immunity_seconds > 0.0:
 		_fire_immune_left = fire_immunity_seconds
@@ -200,11 +211,12 @@ func _tick_burning(delta: float) -> void:
 	velocity = _burn_direction * _burn_speed()
 	update_facing()
 	move_and_slide()
-	_burn_debt += burn_damage * delta
+	_burn_debt += burn_damage * delta / burn_duration
 	var whole := int(_burn_debt)
 	if whole > 0:
 		_burn_debt -= float(whole)
-		take_damage(whole)
+		_burn_dealt += whole
+		take_damage(whole, Damage.Type.DRAGON_FIRE, "dragon")
 
 # --- flame overlay (2026-11-09) -------------------------------------------------
 
@@ -264,20 +276,55 @@ func _flames_teardown() -> void:
 	if _flames != null and is_instance_valid(_flames):
 		_flames.queue_free()
 	_flames = null
-	if _burning_left <= 0.0:
-		die()
+	if not is_alive or _burning_left > 0.0:
+		return
+	# The burn is over: the last of its damage lands (frame rounding), and
+	# a survivor pats out the embers and goes back to work.
+	var rest := int(burn_damage) - _burn_dealt
+	if rest > 0:
+		_burn_dealt += rest
+		take_damage(rest, Damage.Type.DRAGON_FIRE, "dragon")
+	if not is_alive:
+		return
+	if sprite != null:
+		create_tween().tween_property(sprite, "modulate", Color.WHITE, 0.8)
+	if behavior_tree != null:
+		behavior_tree.revive()
+	_on_burn_survived()
+
+## Hook: a burn ran out and this actor lived through it.
+func _on_burn_survived() -> void:
+	pass
 
 ## Panic pace — subclasses may flail faster.
 func _burn_speed() -> float:
 	return speed * 1.4
 
-func take_damage(amount: int) -> void:
+## The one way to hurt an NPC (Damage.gd): typed, scaled by damage_taken,
+## fatal at 0 HP. `source` names the attacker ("dragon", "rider", …).
+func take_damage(amount: int, type: Damage.Type = Damage.Type.WEAPON,
+		source: String = "") -> void:
 	if not is_alive:
 		return
-	health -= amount
-	print(npc_type, " took ", amount, " damage, health: ", health)
+	var dealt := Damage.scaled(amount, float(damage_taken.get(type, 1.0)))
+	if dealt <= 0:
+		return
+	health -= dealt
+	print("%s took %d %s damage%s, health: %d" % [npc_type, dealt,
+		Damage.type_name(type), (" from " + source) if source != "" else "", health])
+	_on_damaged(dealt, type, source)
 	if health <= 0:
+		_burning_left = 0.0   # a body stops running once the fire has killed it
 		die()
+
+## Hook: after HP was lost (still alive or about to die).
+func _on_damaged(_dealt: int, _type: Damage.Type, _source: String) -> void:
+	pass
+
+## Can the dragon's claw MAUL this one outright (the strike's bonus
+## chance)? Ordinary soldiers and goblins yes; tough foes take claw damage.
+func can_be_mauled() -> bool:
+	return true
 
 func die() -> void:
 	is_alive = false

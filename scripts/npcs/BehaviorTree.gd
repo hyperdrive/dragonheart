@@ -137,6 +137,12 @@ func kill() -> void:
 	_set_state(State.DEAD)
 	current_activity = null
 
+## Back to work after a survived burn (the tree is stopped while ablaze).
+func revive() -> void:
+	if state == State.DEAD:
+		current_activity = null
+		_set_state(State.IDLE)
+
 ## Cancel the in-progress activity without reward (e.g. burnt field, steal damage).
 func interrupt_current_activity() -> void:
 	if current_activity != null and state != State.FLEEING:
@@ -203,7 +209,7 @@ func _tick_danger() -> void:
 	# claws spill the payload as before (Miner._check_dragon_drop).
 	if npc._handoff_stretch():
 		return
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null:
 		return
 	if npc.global_position.distance_to(dragon.global_position) < npc.danger_radius:
@@ -217,7 +223,7 @@ func _start_flee(dragon_position: Vector2) -> void:
 	fled_from_dragon.emit(dragon_position)
 
 func _tick_fleeing() -> void:
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon != null:
 		var dist := npc.global_position.distance_to(dragon.global_position)
 		if dist < npc.danger_radius:

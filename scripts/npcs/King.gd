@@ -43,7 +43,9 @@ var game_manager: GameManager
 func _ready() -> void:
 	# Configure before super._ready() — it syncs health from max_health.
 	npc_type = "king"
-	max_health = 200
+	# Damage model (2026-11-14): burnout no longer kills outright, so HP
+	# decides — 120 = two burns (2 × 60) per life. He used to fall to ONE.
+	max_health = 120
 	speed = 60.0
 	# Magic sword (2026-11-09): contact DPS is the main threat — 5x the
 	# soldier's 10/s so a botched contact costs real dragon skin.
@@ -152,7 +154,7 @@ func _tick_storm_charges(delta: float) -> void:
 func _try_storm(delta: float) -> void:
 	if _casting_storm or _storm_charges <= 0 or not is_alive:
 		return
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return
 	var dragon_dying: Variant = dragon.get("_dying")
@@ -196,14 +198,14 @@ func _perform_special_attack() -> void:
 		_casting_storm = false
 		return
 	# The strike lands the moment the storm breaks.
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon != null and is_instance_valid(dragon) \
 			and global_position.distance_to(dragon.global_position) \
 				< special_attack_radius \
 			and dragon.has_method("take_damage"):
 		var dragon_dying: Variant = dragon.get("_dying")
 		if dragon_dying == null or not bool(dragon_dying):
-			dragon.take_damage(int(attack_damage * 1.5), false, "king")
+			dragon.take_damage(int(attack_damage * 1.5), Damage.Type.MAGIC, "king")
 	# Rain the swords: 30ms between falls = the lightning strobe.
 	for i in cloud_sword_count:
 		_spawn_cloud_sword()

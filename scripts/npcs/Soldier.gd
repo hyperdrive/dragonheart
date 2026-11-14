@@ -126,7 +126,7 @@ func _attack_ready() -> bool:
 ## BOLD soldiers hunt too (morale) — across the WHOLE MAP (user escalation
 ## 2026-11-09: "attack the dragon when they are bold").
 func _pick_dragon_target() -> Vector2:
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return BehaviorTree.TARGET_NONE
 	var reach := aggro_range
@@ -139,7 +139,7 @@ func _pick_dragon_target() -> Vector2:
 ## Chase gate: bold → chase until contact (morale re-checked per pick);
 ## non-bold running an old leg stops when the dragon is beyond aggro_range.
 func _dragon_in_chase_range() -> bool:
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return false
 	if _swarm_released() or _is_bold():
@@ -218,7 +218,7 @@ func _resolve_weapon() -> void:
 ## Who this fighter is swinging at right now (null = nobody in reach).
 ## Soldiers fight the dragon; the adventurer also cuts down goblins.
 func _combat_target() -> Node2D:
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon != null and is_instance_valid(dragon) \
 			and global_position.distance_to(dragon.global_position) <= attack_range:
 		return dragon
@@ -293,25 +293,70 @@ func _apply_slash_pose(p: float) -> void:
 ## dragon. Burning status (catch_fire/_tick_burning) is inherited from BaseNPC.
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
+	if _retiring:
+		_tick_retire(delta)
+		return
 	_contact_damage(delta)
 	_animate_combat(delta)
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon != null and is_instance_valid(dragon) \
 			and global_position.distance_to(dragon.global_position) < aggro_range:
 		var world := _world_manager()
 		if world != null:
 			world.report_dragon_sighting(dragon.global_position)
 
+# --- retirement (2026-11-14) ---------------------------------------------------
+
+## With no dragon in sight (the dragon walks as a farm girl) the King sends
+## soldiers home one by one (WorldManager._tick_retirements). A retiree
+## leaves the "soldiers" roll at once, marches back to the city and is
+## gone — it is not a death: no reward, no respawn.
+const RETIRE_TIMEOUT := 14.0
+var _retiring := false
+var _retire_to := Vector2.ZERO
+var _retire_left := 0.0
+
+func is_retiring() -> bool:
+	return _retiring
+
+func retire(to: Vector2) -> void:
+	if _retiring or not is_alive:
+		return
+	_retiring = true
+	_retire_to = to
+	_retire_left = RETIRE_TIMEOUT
+	remove_from_group("soldiers")
+	if behavior_tree != null:
+		behavior_tree.kill()
+	print("A %s is sent home from the field." % npc_type)
+
+func _tick_retire(delta: float) -> void:
+	if not is_alive or _burning_left > 0.0:
+		return
+	_retire_left -= delta
+	if move_towards(_retire_to) or _retire_left <= 0.0:
+		_retiring = false   # one exit only
+		is_alive = false
+		velocity = Vector2.ZERO
+		var tw := create_tween()
+		tw.tween_property(self, "modulate:a", 0.0, 0.8)
+		tw.tween_callback(queue_free)
+
 # --- combat: contact DPS (ablaze lives in BaseNPC) ----------------------------
 
 ## 10 DPS while the hitbox collides with the dragon or goblins
 ## (integer-chunked debt).
+## Who the dragon's death chapter names if this blow is the last (the
+## King's, the archer's… unknown slayers get the generic chapter).
+func _killer_key() -> String:
+	return npc_type
+
 func _contact_damage(delta: float) -> void:
 	if _burning_left > 0.0 or not is_alive:
 		return
 	
 	# Attack dragon
-	var dragon := get_tree().get_first_node_in_group("dragon") as CharacterBody2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as CharacterBody2D
 	if dragon != null and is_instance_valid(dragon):
 		var dragon_dying: Variant = dragon.get("_dying")
 		if dragon_dying == null or bool(dragon_dying):
@@ -322,7 +367,7 @@ func _contact_damage(delta: float) -> void:
 		var whole := int(_contact_debt)
 		if whole > 0:
 			_contact_debt -= float(whole)
-			dragon.take_damage(whole, false, "soldier")
+			dragon.take_damage(whole, Damage.Type.WEAPON, _killer_key())
 	
 	# Attack goblins
 	if _contact_debt <= 0.0:
@@ -341,9 +386,9 @@ func _contact_damage(delta: float) -> void:
 				goblin.take_damage(whole)
 				break
 
-func take_damage(amount: int) -> void:
-	# Soldiers take fire/dragon damage; routed into the base class.
-	super.take_damage(amount)
+func take_damage(amount: int, type: Damage.Type = Damage.Type.WEAPON,
+		source: String = "") -> void:
+	super.take_damage(amount, type, source)
 
 func die() -> void:
 	defeated.emit(reward_gold)

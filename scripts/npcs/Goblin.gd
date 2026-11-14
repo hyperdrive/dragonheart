@@ -164,7 +164,7 @@ func _animate_goblin(delta: float) -> void:
 		var glint := sack.get_node_or_null("SackGlint") as Polygon2D
 		if glint != null:
 			glint.color = Color(0.4, 0.8, 1.0) if payload_res_type == "gems" else Color(1.0, 0.84, 0.28)
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	var stab := _plunder_mode and _burning_left <= 0.0 and dragon != null \
 		and is_instance_valid(dragon) \
 		and global_position.distance_to(dragon.global_position) <= attack_range + 12.0
@@ -235,10 +235,10 @@ func _contact_damage(delta: float) -> void:
 		if hurtbox != null:
 			var overlap := hurtbox.get_overlapping_bodies() as Array[Node2D]
 			for body in overlap:
-				if body.is_in_group("dragon"):
+				if body.is_in_group("dragon_threat"):
 					if _contact_debt <= 0.0:
 						var damage := int(1 + randf() * 2)
-						body.take_damage(damage)
+						body.take_damage(damage, Damage.Type.WEAPON, "goblin")
 						_contact_debt = 0.5  # Cooldown between contact hits
 
 
@@ -393,7 +393,7 @@ func _check_dragon_encounter() -> void:
 	if _encounter_done or service_state != ServiceState.UNINITIALIZED:
 		return
 	
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return
 	

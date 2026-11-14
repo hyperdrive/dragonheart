@@ -79,6 +79,9 @@ func turn_evil() -> void:
 		return
 	phase = Phase.TURNING
 	_turn_t = 0.0
+	var gm := get_tree().get_first_node_in_group("game_manager") as GameManager
+	if gm != null:
+		gm.bar_wizard_tower()   # antagonised: the shop is off limits from now on
 	velocity = Vector2.ZERO
 	print("The old wizard bows his head… and something in him breaks.")
 
@@ -230,7 +233,7 @@ func catch_fire() -> void:
 		turn_evil()   # you burned the old man — now he shows his true face
 	if _blasts_taken <= WARDED_BLASTS:
 		print("The wizard's wards drink the flames! (%d/%d)" % [_blasts_taken, WARDED_BLASTS])
-		take_damage(WARD_SINGE_DAMAGE)
+		take_damage(WARD_SINGE_DAMAGE, Damage.Type.DRAGON_FIRE, "dragon")
 		if sprite != null and is_alive:
 			sprite.modulate = Color(1.0, 0.55, 0.3)
 			var tw := create_tween()
@@ -305,7 +308,7 @@ func bolt_origin() -> Vector2:
 func _tick_lightning(delta: float) -> void:
 	if _lightning_left > 0.0:
 		return
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return
 	var dragon_dying: Variant = dragon.get("_dying")
@@ -316,7 +319,7 @@ func _tick_lightning(delta: float) -> void:
 	_lightning_left = LIGHTNING_RECHARGE
 	_cast_left = 0.25
 	# Dragon's shield absorbs some lightning damage before the shield is consumed.
-	dragon.take_damage(LIGHTNING_DAMAGE, false, "wizard")
+	dragon.take_damage(LIGHTNING_DAMAGE, Damage.Type.MAGIC, "wizard")
 	_spawn_bolt(dragon.global_position)
 
 ## Electric bolt visual (2026-11-11, user: "his attack is just a straight
@@ -400,7 +403,7 @@ func _pick_dragon_target() -> Vector2:
 	return hunt.global_position
 
 func _dragon_huntable() -> Node2D:
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return null
 	var dragon_dying: Variant = dragon.get("_dying")

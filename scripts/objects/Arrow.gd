@@ -50,7 +50,7 @@ func _physics_process(delta: float) -> void:
 
 ## Stock behaviour: hit the DRAGON.
 func _check_dragon_hit() -> void:
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return
 	var dragon_dying: Variant = dragon.get("_dying")
@@ -58,7 +58,7 @@ func _check_dragon_hit() -> void:
 		return
 	if global_position.distance_to(dragon.global_position) <= HIT_RADIUS:
 		_hit = true
-		dragon.take_damage(ARROW_DAMAGE, false, "archer")
+		dragon.take_damage(ARROW_DAMAGE, Damage.Type.WEAPON, "archer")
 		queue_free()
 
 ## Rider behaviour: hit the nearest live soldier/goblin in the blast radius.
@@ -70,6 +70,6 @@ func _check_rider_hit() -> void:
 				continue
 			if global_position.distance_to(npc.global_position) <= HIT_RADIUS:
 				_hit = true
-				npc.take_damage(RIDER_ARROW_DAMAGE)
+				npc.take_damage(RIDER_ARROW_DAMAGE, Damage.Type.WEAPON, "rider")
 				queue_free()
 				return

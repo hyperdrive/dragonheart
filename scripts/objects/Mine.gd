@@ -85,21 +85,21 @@ func collect_resources() -> Dictionary:
 	return {"gold": collected_gold, "gems": collected_gems}
 
 func _on_body_entered(body):
-	if body.is_in_group("dragon") and is_active:
+	if body.is_in_group("dragon_threat") and is_active:
 		var resources = collect_resources()
 		if body.has_method("collect_resources"):
 			body.collect_resources(resources)
 
 func _on_gold_area_entered(area):
 	# Handle when dragon collects gold
-	if area.is_in_group("dragon") and is_active:
+	if area.is_in_group("dragon_threat") and is_active:
 		var resources = collect_resources()
 		if area.get_parent().has_method("collect_resources"):
 			area.get_parent().collect_resources(resources)
 
 func _on_gem_area_entered(area):
 	# Handle when dragon collects gems
-	if area.is_in_group("dragon") and is_active:
+	if area.is_in_group("dragon_threat") and is_active:
 		var resources = collect_resources()
 		if area.get_parent().has_method("collect_resources"):
 			area.get_parent().collect_resources(resources)

@@ -120,7 +120,7 @@ func notify_peasant_burn() -> void:
 	_open_story_now(story_kind)
 
 ## Open the shared popup for one kind and pause the world beneath it.
-func _open_story_now(kind: String) -> void:
+func _open_story_now(kind: String, note: String = "") -> void:
 	story_open = true
 	print("GameManager: Opening story '%s'" % kind)
 	if story_popup == null:
@@ -131,7 +131,7 @@ func _open_story_now(kind: String) -> void:
 		story_popup.story_choice_made.connect(_on_story_choice)
 		add_child(story_popup)
 	print("GameManager: Calling story_popup.open()...")
-	story_popup.call("open", kind)
+	story_popup.call("open", kind, note)
 	get_tree().paused = true
 
 ## Public entry for the sacrifice encounter (Sacrifice.gd): opens the popup
@@ -148,58 +148,70 @@ func _on_story_choice(kind: String, choice_index: int) -> void:
 	ttrpg_choices[kind] = choice_index
 	story_choice_made.emit(kind, choice_index)
 	print("TTRPG — '%s' answered: choice %d" % [kind, choice_index + 1])
+	_apply_story_effects(kind, choice_index)
 	# Sacrifice answers route through HERE (bug fix 2026-11-11): the old
 	# Sacrifice.gd connected sacrifice_choice_made only when IT created the
 	# popup — but the popup already exists (field_burn created it), so the
 	# signal fired into the void and the rider option never unlocked.
 	if kind.begins_with("sacrifice_"):
 		_on_sacrifice_choice(kind, choice_index)
+	elif kind.begins_with("intro_") or kind.begins_with("hag_"):
+		_on_chapter_choice(kind, choice_index)
 	# Goblin-encounter answers are handled by WorldManager (it connects
 	# story_choice_made). The answer is tribal once-per-run, so GameManager
 	# must NOT pick goblins — get_first_node_in_group would strand the rest.
 
 ## Sacrifice dialogues (2026-11-14). Every captive is a named personality
-## (Sacrifice.gd picks one). Approach "sacrifice_<p>" offers
-## 0 Bring to lair · 1 Eat! · 2 Leave. The first two open TWO more
-## dialogues (…_lair_2/_lair_3 or …_eat_2/_eat_3 — the captive tries to
-## wriggle out of it, except the defiant one who demands to be eaten);
-## the action happens when the third is answered.
+## (Sacrifice.gd picks one). EVERY board of the negotiation offers the same
+## three answers (user 2026-11-14: "always have options to either eat or
+## train or leave. The dialogue changes but not the options"):
+##   0 Train as rider · 1 Eat! · 2 Leave
+## Answering the board's own path again walks it on (approach → _2 → _3 →
+## the deed); switching path makes the captive plead the OTHER case from
+## its stage 2. Leave always ends it. The deed opens a closing report.
 const SACRIFICE_PERSONALITIES: Array[String] = ["defiant", "courageous",
 	"cunning", "devout", "brute", "thief", "renegade"]
+const SACRIFICE_PATHS: Array[String] = ["lair", "eat"]   # by choice index
 ## The next dialogue to open once the current popup closes (stages chain
-## through _on_story_closed so the popup's own close doesn't eat them).
+## through _on_story_closed so the popup's own close doesn't eat them),
+## plus an optional closing paragraph appended to its text.
 var _pending_story_kind: String = ""
+var _pending_story_note: String = ""
 
 func _on_sacrifice_choice(kind: String, choice_index: int) -> void:
-	var rest := kind.trim_prefix("sacrifice_")
-	var parts := rest.split("_")
+	var parts := kind.trim_prefix("sacrifice_").split("_")
 	var personality := parts[0]
-	if parts.size() == 1:
-		# the approach
-		match choice_index:
-			0:
-				_pending_story_kind = "sacrifice_%s_lair_2" % personality
-			1:
-				_pending_story_kind = "sacrifice_%s_eat_2" % personality
-			_:
-				print("GameManager: the dragon leaves %s at the stake" % personality)
-				_release_sacrifice()
-		return
-	var path := parts[1]          # "lair" | "eat" | "outcome"
+	var path := parts[1] if parts.size() > 1 else ""   # "" = the approach
 	if path == "outcome":
 		return                    # the closing report: nothing more to do
-	var stage := int(parts[2])    # 2 | 3
-	if stage < 3:
-		_pending_story_kind = "sacrifice_%s_%s_%d" % [personality, path, stage + 1]
+	if choice_index >= SACRIFICE_PATHS.size():
+		print("GameManager: the dragon leaves %s at the stake" % personality)
+		_release_sacrifice()
 		return
-	# The action, then a plain report of what just happened (2026-11-14
-	# fix: "you flew her to the lair" / the flame bonus, if any).
-	if path == "lair":
+	var want := SACRIFICE_PATHS[choice_index]
+	var stage := int(parts[2]) if path == want else 1
+	if stage < 3:
+		_pending_story_kind = "sacrifice_%s_%s_%d" % [personality, want, stage + 1]
+		return
+	# The deed, then a plain report of what just happened.
+	var who := _sacrifice_name(personality)
+	if want == "lair":
 		train_sacrifice_as_rider(personality)
+		_pending_story_note = ("%s waits in your lair — but the wizard is dead, and no one is left to train a rider." % who) \
+			if wizard_dead else \
+			("%s waits in your lair, among the gold. The wizard can train %s as your dragon rider: visit his tower and choose \"Train Dragon Rider\" (10g)." % [who, "him" if personality in ["brute", "thief", "renegade"] else "her"])
 		_pending_story_kind = "sacrifice_%s_outcome_lair" % personality
-	elif eat_sacrifice(personality) > 0:
+	else:
+		var gain := eat_sacrifice(personality)
+		_pending_story_note = ("Your fire grows: +%d flame capacity." % gain) if gain > 0 \
+			else "The meal sits heavy, but no new flame kindles."
 		_pending_story_kind = "sacrifice_%s_outcome_eat" % personality
 	_release_sacrifice()
+
+## "Brannagh Thornwick — The Defiant" → "Brannagh Thornwick".
+func _sacrifice_name(personality: String) -> String:
+	var story: Dictionary = StoryPopup.STORIES.get("sacrifice_" + personality, {})
+	return str(story.get("title", "The captive")).get_slice(" — ", 0)
 
 ## The pole is done: eaten, carried off to the lair, or spared.
 func _release_sacrifice() -> void:
@@ -254,6 +266,34 @@ func next_sacrifice_personality() -> String:
 		_recent_sacrifices.pop_front()
 	return next
 
+# --- story-choice effects (2026-11-14) -------------------------------------------
+
+## Run memory set by story effects ({"flag": "spared_child"}) — later story
+## branches read it.
+var story_flags: Dictionary = {}
+
+## Look up the answer's effects in StoryPopup.STORIES and apply them
+## (StoryEffects documents the keys); the dragon hears what changed.
+func _apply_story_effects(kind: String, choice_index: int) -> void:
+	var story: Dictionary = StoryPopup.STORIES.get(kind, {})
+	var effects: Array = story.get("effects", [])
+	if choice_index >= effects.size() or not effects[choice_index] is Dictionary:
+		return
+	var report := StoryEffects.apply(effects[choice_index], self)
+	if report.is_empty():
+		return
+	print("GameManager: story effects — %s" % ", ".join(report))
+	if hud != null and hud.has_method("show_message"):
+		hud.call("show_message", " · ".join(report), 4.0)
+
+## A story effect asked for a follow-up chapter: it opens as soon as the
+## current one closes (same chaining as the sacrifice stages).
+func queue_followup_story(kind: String) -> void:
+	if _pending_story_kind == "":
+		_pending_story_kind = kind
+	else:
+		story_queue.append(kind)
+
 ## Show epic story when rider is upgraded
 func _on_rider_upgraded() -> void:
 	print("GameManager: Rider upgraded, showing epic story")
@@ -266,8 +306,10 @@ func _on_story_closed() -> void:
 	if _pending_story_kind != "":
 		# the next sacrifice dialogue: stay paused, reopen right away
 		var next := _pending_story_kind
+		var note := _pending_story_note
 		_pending_story_kind = ""
-		_open_story_now(next)
+		_pending_story_note = ""
+		_open_story_now(next, note)
 		return
 	story_open = false
 	get_tree().paused = false
@@ -335,6 +377,171 @@ func _ready() -> void:
 		dragon.rider_upgraded.connect(_on_rider_upgraded)
 	emit_signal("gold_changed", treasury["gold"])
 	emit_signal("food_changed", food)
+	_start_intro.call_deferred()
+
+# --- the opening chapter (2026-11-14) -------------------------------------------
+
+## True once the run is being PLAYED (Main is the running scene). Probe
+## scenes embed Main as a child — they skip the intro and the hag quest so
+## nothing pauses under them.
+var story_mode := false
+## The player let the old wizard die in the ruins: his tower stays sealed.
+var wizard_dead := false
+
+func _start_intro() -> void:
+	if get_tree().current_scene != self:
+		return
+	story_mode = true
+	_open_story_now("intro_awakening")
+
+## Intro + hag-quest answers (routed from _on_story_choice).
+func _on_chapter_choice(kind: String, choice_index: int) -> void:
+	match kind:
+		"intro_awakening":
+			_pending_story_kind = "intro_memories"
+		"intro_memories":
+			_pending_story_kind = "intro_wizard"
+		"intro_wizard":
+			if choice_index == 0:
+				_pending_story_kind = "intro_wizard_saved"
+			else:
+				_seal_wizard_tower()
+				_pending_story_kind = "intro_wizard_dead"
+		"hag_quest":
+			if world_manager != null and world_manager.has_method("spawn_hag_nest"):
+				world_manager.call("spawn_hag_nest")
+		# --- the hag's house, she lives: tea with a sweet old lady ---
+		"hag_tea":
+			if choice_index == 0:
+				_pending_story_kind = "hag_tea_change"
+		"hag_tea_change":
+			# the first change: the tea teaches the human shape
+			var d := dragon as Dragon
+			if d != null:
+				d.can_shapeshift = true
+				d.set_human_form(true)
+			_pending_story_kind = "hag_tea_warning"
+		"hag_tea_warning":
+			story_flags["hag_tea_done"] = true
+			_pending_story_kind = "hag_spared" if choice_index == 0 else "hag_unmasked"
+		"hag_spared":
+			var wm := world_manager as WorldManager
+			if wm != null:
+				if wm.hag_alive():
+					wm.fen_hag.befriend()
+				wm.force_wizard_turn()
+			_hud_message("Ambrose Fairweather waits in his tower. Press T to wake the dragon.", 6.0)
+		"hag_unmasked":
+			var wm := world_manager as WorldManager
+			if wm != null and wm.hag_alive():
+				wm.fen_hag.unmask()
+			_hud_message("Mother Grisla attacks! Press T to wake the dragon.", 6.0)
+		# --- the hag's house, she is dead: the book of Lorindel ---
+		"hag_house_ruin", "hag_house_book":
+			if choice_index == 0:
+				_pending_story_kind = "hag_book_lorindel"
+		"hag_book_lorindel":
+			_pending_story_kind = "hag_book_lorindel_2"
+		"hag_book_lorindel_2":
+			story_flags["lorindel_read"] = true
+
+# --- the hag's house + the human shape (2026-11-14) ------------------------------
+
+## The dragon walked up to Mother Grisla's door (HagNest's trigger).
+func notify_hag_house() -> void:
+	if story_open or get_tree().paused or not story_mode:
+		return
+	var wm := world_manager as WorldManager
+	if wm == null:
+		return
+	if wm.hag_alive():
+		var hag := wm.fen_hag
+		if not story_flags.has("hag_tea_done"):
+			# Whatever happened outside, across her threshold she is the
+			# sweet old lady again (user: "If the hag isn't defeated an old
+			# woman encounter starts").
+			hag.play_old_lady()
+			_open_story_now("hag_tea")
+		elif hag.hostile:
+			_hud_message("Mother Grisla bars her door — claws first, tea never.")
+		else:
+			_hud_message("The old woman waves from her window. The kettle is on.")
+	elif story_flags.has("lorindel_read"):
+		_hud_message("Only cold ashes and the hag's empty chair remain.")
+	else:
+		_open_story_now("hag_house_book" if story_flags.has("hag_house_seen") else "hag_house_ruin")
+		story_flags["hag_house_seen"] = true
+
+## T: change shape — and every change is told (three tellings each way,
+## taken in turn so the change never reads the same twice running).
+const SHAPESHIFT_TELLINGS := 3
+var _shapeshift_count := {"human": 0, "dragon": 0}
+
+func request_shapeshift() -> void:
+	var d := dragon as Dragon
+	if d == null or story_open or get_tree().paused:
+		return
+	var to_human := not d.human_form
+	if not d.set_human_form(to_human):
+		_hud_message("Not over open water — a girl would drown here.")
+		return
+	var way := "human" if to_human else "dragon"
+	var n: int = _shapeshift_count[way] % SHAPESHIFT_TELLINGS + 1
+	_shapeshift_count[way] += 1
+	_open_story_now("shapeshift_%s_%d" % [way, n])
+
+## The girl walked into the King's men and they took her for easy prey:
+## the dragon comes back out (its own chapter replaces the usual T telling)
+## and the fight resumes the moment the popup closes.
+const ACCOST_SOLDIER_TELLINGS := 2
+var _accost_count := 0
+
+func notify_girl_accosted(by: String) -> void:
+	var d := dragon as Dragon
+	if d == null or not d.human_form or story_open or get_tree().paused:
+		return
+	if not d.set_human_form(false):
+		return
+	var kind := "girl_accosted_king"
+	if by != "king":
+		kind = "girl_accosted_soldier_%d" % (_accost_count % ACCOST_SOLDIER_TELLINGS + 1)
+		_accost_count += 1
+	_open_story_now(kind)
+
+func _hud_message(text: String, duration: float = 4.0) -> void:
+	if hud != null and hud.has_method("show_message"):
+		hud.call("show_message", text, duration)
+
+## Antagonised (2026-11-14, user: "if the wizard is antagonised for some
+## reason then the wizard tower must be off limits"): he has turned — by
+## his own provocation lines, by the dragon's fire, or by the hag's
+## warning — or he already lies dead after turning. No more shopping.
+var tower_barred := false
+
+func wizard_hostile() -> bool:
+	var wm := world_manager as WorldManager
+	if wm == null:
+		return false
+	if wm.wizard_spawned:
+		return true
+	return wm.tower_wizard != null and is_instance_valid(wm.tower_wizard) \
+		and not wm.tower_wizard.is_kind()
+
+## The tower goes dark and violet-warded the moment he turns (idempotent).
+func bar_wizard_tower() -> void:
+	if tower_barred or wizard_dead:
+		return
+	tower_barred = true
+	for tower: Node in get_tree().get_nodes_in_group("wizard_tower"):
+		(tower as CanvasItem).modulate = Color(0.48, 0.38, 0.62)
+	print("GameManager: the wizard has turned — his tower is barred")
+
+## The old man died in the ash: the tower door seals for the whole run.
+func _seal_wizard_tower() -> void:
+	wizard_dead = true
+	for tower: Node in get_tree().get_nodes_in_group("wizard_tower"):
+		(tower as CanvasItem).modulate = Color(0.42, 0.42, 0.48)
+	print("GameManager: the wizard is dead — his tower is sealed")
 
 func _process(delta: float) -> void:
 	update_camera_position()
@@ -504,6 +711,13 @@ func purchase_upgrade(kind: String) -> bool:
 ## stops to work"): NO run_finished gate — the shop stays open in
 ## post-victory play; the wizard never lost his love of gold.
 func open_wizard_menu() -> void:
+	if wizard_dead:
+		_hud_message("The wizard is dead. His tower is sealed.", 3.0)
+		return
+	if wizard_hostile():
+		bar_wizard_tower()
+		_hud_message("The tower door is barred and warded. Ambrose is your enemy now.", 3.0)
+		return
 	if wizard_menu == null:
 		wizard_menu = WIZARD_MENU_SCENE.instantiate()
 		wizard_menu.process_mode = Node.PROCESS_MODE_ALWAYS

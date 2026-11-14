@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/hag_nest.svg" id="1_nest_tex"]
+[ext_resource type="Script" path="res://scripts/props/HagNest.gd" id="2_nest_script"]
+
+[sub_resource type="ConvexPolygonShape2D" id="1_nest_shape"]
+points = PackedVector2Array(-80, 4, -74, -14, -50, -28, 0, -32, 50, -28, 74, -14, 80, 4, 40, 8, -40, 8)
+
+[node name="HagNest" type="StaticBody2D" groups=["hag_nest"]]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("2_nest_script")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+position = Vector2(0, -83)
+scale = Vector2(0.6, 0.6)
+texture = ExtResource("1_nest_tex")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1_nest_shape")

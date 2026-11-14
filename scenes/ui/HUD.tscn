@@ -115,7 +115,7 @@ theme_override_font_sizes/font_size = 17
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 2
-text = "Press U for Upgrades"
+text = "Fly into the wizard's tower to buy upgrades"
 
 [node name="Minimap" type="Panel" parent="."]
 layout_mode = 1

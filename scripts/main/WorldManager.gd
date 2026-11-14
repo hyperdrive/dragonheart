@@ -1120,7 +1120,8 @@ func handle_goblin_death_loot(goblin_position: Vector2) -> void:
 ##         everyone hunts the dragon.
 
 func _on_swarm_tick() -> void:
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	# "dragon_threat": the farm girl is no threat — the city never rallies on her.
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return
 	var dragon_dist := dragon.global_position.distance_to(city_position)
@@ -1184,8 +1185,8 @@ func _on_escalation_tick() -> void:
 	# user: "soldiers should always be coming") — the King fights a living
 	# army, and _escalation_soldier_spawned's spawn_king() call is already
 	# a no-op while one is out.
-	if game_manager == null:
-		return
+	if game_manager == null or _dragon_hidden():
+		return   # no dragon in sight: the King recruits nobody
 	spawn_entity(_next_recruit_type(), 1, rally_point, 90.0)
 	_escalation_soldier_spawned()
 
@@ -1285,8 +1286,8 @@ func _try_buy_soldiers() -> void:
 	# always be coming, especially if there are treasure in the treasury"):
 	# the town keeps buying through the boss battle, so the King fights a
 	# constantly refreshed army instead of a frozen 15.
-	if game_manager == null or game_manager.run_finished:
-		return
+	if game_manager == null or game_manager.run_finished or _dragon_hidden():
+		return   # the treasury keeps its coin until there is a dragon to fight
 	# NOTE: no gem reserve for the goblin trade anymore (2026-11-10): the
 	# exchange moved to the dragon's STASH — the town's gems keep converting
 	# to soldiers exactly as the 2026-11-09 user spec.
@@ -1355,6 +1356,12 @@ func _materialize_king() -> void:
 	if game_manager != null:
 		game_manager.notify_story(story_kind)
 		game_manager.start_boss_battle(king)
+		# The wizard's errand (2026-11-14): with the King on the march, a
+		# living, still-kind Ambrose sends the dragon after the fen hag.
+		if game_manager.story_mode and not game_manager.wizard_dead \
+				and tower_wizard != null and is_instance_valid(tower_wizard) \
+				and tower_wizard.is_kind():
+			game_manager.notify_story("hag_quest")
 	entity_spawned.emit("king", king.global_position)
 	_set_swarm_state(SwarmState.ATTACK)
 
@@ -1404,6 +1411,8 @@ var tower_wizard: Wizard = null
 func _ensure_tower_wizard() -> void:
 	if tower_wizard != null or wizard_spawned:
 		return
+	if game_manager != null and game_manager.wizard_dead:
+		return   # he died in the ruins (opening chapter) — no wizard this run
 	var wizard := entity_scenes["wizard"].instantiate() as Wizard
 	wizard.start_kind = true
 	var anchor := tower_position + Vector2(60, -40)
@@ -1417,7 +1426,7 @@ func _try_spawn_wizard() -> void:
 	# Bug fix (2026-11-11, user: "the wizard never appears" after the King's
 	# defeat): no run_finished gate — the backstabber turns whenever his
 	# provocation lines are crossed, victory or not.
-	if wizard_spawned or game_manager == null:
+	if wizard_spawned or game_manager == null or game_manager.wizard_dead:
 		return
 	_ensure_tower_wizard()
 	var burned: bool = tower_wizard != null and is_instance_valid(tower_wizard) \
@@ -1439,11 +1448,131 @@ func _on_wizard_turned() -> void:
 	if game_manager != null:
 		game_manager.notify_story("wizard_emerge")
 
+# --- the hag's nest (2026-11-14) ----------------------------------------------
+
+const HAG_NEST_SCENE := preload("res://scenes/props/HagNest.tscn")
+const FIR_TREE_SCENE := preload("res://scenes/props/FirTree.tscn")
+const HAG_SCENE := preload("res://scenes/npcs/Hag.tscn")
+var hag_nest_spawned := false
+## Mother Grisla herself (null until the quest; freed after her death).
+var fen_hag: Hag = null
+
+func hag_alive() -> bool:
+	return fen_hag != null and is_instance_valid(fen_hag) and fen_hag.is_alive
+
+## The hag's warning over tea (2026-11-14): the dragon goes after the
+## wizard NOW — the same fall as his provocation lines, just sooner.
+func force_wizard_turn() -> bool:
+	_ensure_tower_wizard()
+	if tower_wizard == null or not is_instance_valid(tower_wizard) or not tower_wizard.is_alive:
+		return false
+	if not wizard_spawned:
+		wizard_spawned = true
+		tower_wizard.turned.connect(_on_wizard_turned, CONNECT_ONE_SHOT)
+	tower_wizard.turn_evil()   # no-op if he already fell
+	return true
+
+## West of the dragon's mountain, a stand of firs, then the fen hut — and
+## Mother Grisla prowling her doorstep.
+func spawn_hag_nest() -> void:
+	if hag_nest_spawned:
+		return
+	hag_nest_spawned = true
+	# Due west first; when the map edge is too close (the lair often sits
+	# near it), swing north-west / south-west until the fen lies a real
+	# walk away from the mountain, with room for the firs in between.
+	# Crowded maps: widen the search (every 30°, three distances) and only
+	# then accept the nearest clear spot — never drop it onto the rock.
+	var nest_pos := Vector2.INF
+	var angles: Array[float] = [180.0, 150.0, 210.0, 120.0, 240.0, 90.0, 270.0, 60.0, 300.0, 30.0, 330.0, 0.0]
+	for dist: float in [340.0, 440.0, 260.0]:
+		for deg: float in angles:
+			var dir := Vector2.RIGHT.rotated(deg_to_rad(deg))
+			var anchor := _clamp_to_interior(lair_position + dir * dist, 95.0)
+			if anchor.distance_to(lair_position) < 240.0:
+				continue
+			var spot := _terrain_free_position(anchor, 95.0)
+			if spot != Vector2.INF and spot.distance_to(lair_position) >= 240.0:
+				nest_pos = spot
+				break
+		if nest_pos != Vector2.INF:
+			break
+	if nest_pos == Vector2.INF:
+		nest_pos = _terrain_free_position(
+			_clamp_to_interior(lair_position + Vector2(-340.0, 160.0), 95.0), 95.0, [], 90.0, true)
+	if nest_pos == Vector2.INF:
+		nest_pos = _clamp_to_interior(lair_position + Vector2(-340.0, 160.0), 95.0)
+	var nest := HAG_NEST_SCENE.instantiate() as Node2D
+	nest.global_position = nest_pos
+	add_child(nest)
+	register_footprint(nest_pos, 95.0)
+	entity_spawned.emit("terrain", nest_pos)
+	# A few firs in the gap between the mountain and the fen.
+	for i in 5:
+		var t := 0.32 + 0.09 * float(i)
+		var spot := lair_position.lerp(nest_pos, t) + Vector2(
+			_rng.randf_range(-12.0, 12.0), _rng.randf_range(-70.0, 70.0))
+		var free := _terrain_free_position(spot, 16.0)
+		if free == Vector2.INF:
+			continue
+		var fir := FIR_TREE_SCENE.instantiate() as Node2D
+		fir.global_position = free
+		add_child(fir)
+		register_footprint(free, 16.0)
+	var hag := HAG_SCENE.instantiate() as Hag
+	hag.nest_position = nest_pos + Vector2(0.0, 40.0)
+	hag.global_position = hag.nest_position
+	add_child(hag)
+	(hag as BaseNPC).home_position = hag.nest_position
+	fen_hag = hag
+	entity_spawned.emit("hag", hag.global_position)
+	print("WorldManager: the Hag's Nest rises in the fen at %s" % nest_pos)
+
 # --- signal handlers: NPC → GameManager (the hub) ---------------------------
 
 func _process(delta: float) -> void:
 	_tick_respawn_queue(delta)
 	_try_spawn_wizard()
+	_tick_retirements(delta)
+
+# --- stand-down while the dragon hides (2026-11-14) ------------------------------
+
+## User: "the King retires one soldier every 5s because there's no dragon
+## threat. To a minimum of 4 soldiers." Runs only while the dragon wears
+## the farm girl; the clock restarts whenever she turns back.
+const RETIRE_EVERY := 5.0
+const RETIRE_FLOOR := 4
+var _retire_clock := 0.0
+
+## The dragon walks as the farm girl: to the realm there is no dragon.
+## Recruiting and soldier purchases pause too, or the stand-down would be
+## refilled as fast as it drains.
+func _dragon_hidden() -> bool:
+	var dragon := get_tree().get_first_node_in_group("dragon") as Dragon
+	return dragon != null and dragon.human_form
+
+func _tick_retirements(delta: float) -> void:
+	var dragon := get_tree().get_first_node_in_group("dragon") as Dragon
+	if dragon == null or not dragon.human_form:
+		_retire_clock = 0.0
+		return
+	_retire_clock += delta
+	if _retire_clock < RETIRE_EVERY:
+		return
+	_retire_clock = 0.0
+	var on_duty: Array[Soldier] = []
+	for node: Node in get_tree().get_nodes_in_group("soldiers"):
+		var s := node as Soldier
+		# plain soldiers only: the King, archers, heroes and hags never retire
+		if s != null and s.is_alive and s.npc_type == "soldier" and not s.is_retiring():
+			on_duty.append(s)
+	if on_duty.size() <= RETIRE_FLOOR:
+		return
+	var retiree: Soldier = on_duty.pick_random()
+	retiree.retire(city_position)
+	if game_manager != null:
+		game_manager.call("_hud_message",
+			"No dragon in sight — the King sends a soldier home (%d left)." % (on_duty.size() - 1), 3.0)
 
 func _on_food_delivered(amount: int) -> void:
 	if game_manager != null:

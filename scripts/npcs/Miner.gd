@@ -135,7 +135,7 @@ func _spawn_strike_debris() -> void:
 func _check_dragon_drop() -> void:
 	if payload_amount <= 0 or not is_alive:
 		return
-	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return
 	if global_position.distance_to(dragon.global_position) <= drop_radius:
@@ -241,7 +241,7 @@ func _handoff_stretch() -> bool:
 	if act == null or str(act.id) != "deliver":
 		return false
 	# the claws rule still wins: below drop_radius the cart dumps anyway
-	var dragon: Node2D = get_tree().get_first_node_in_group("dragon")
+	var dragon: Node2D = get_tree().get_first_node_in_group("dragon_threat")
 	if dragon != null and is_instance_valid(dragon):
 		return global_position.distance_to(dragon.global_position) > drop_radius
 	return true

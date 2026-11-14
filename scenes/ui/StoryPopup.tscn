@@ -1,7 +1,7 @@
-[gd_scene load_steps=9 format=3 uid="uid://st9rypopup04"]
+[gd_scene format=3 uid="uid://suarypopup04"]
 
-[ext_resource type="Script" path="res://scripts/ui/StoryPopup.gd" id="1_story_script"]
-[ext_resource type="Font" path="res://assets/fonts/Metamorphous-Regular.ttf" id="2_story_font"]
+[ext_resource type="Script" uid="uid://dywkdytc6ckc5" path="res://scripts/ui/StoryPopup.gd" id="1_story_script"]
+[ext_resource type="FontFile" uid="uid://d44rjtl41xel" path="res://assets/fonts/Metamorphous-Regular.ttf" id="2_story_font"]
 
 [sub_resource type="StyleBoxFlat" id="panel_style"]
 content_margin_left = 36.0
@@ -46,19 +46,6 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[sub_resource type="StyleBoxFlat" id="btn_hover"]
-content_margin_left = 18.0
-content_margin_top = 10.0
-content_margin_right = 18.0
-content_margin_bottom = 10.0
-bg_color = Color(0.31, 0.24, 0.17, 1)
-border_width_bottom = 2
-border_color = Color(0.6, 0.45, 0.25, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
 [sub_resource type="StyleBoxFlat" id="btn_pressed"]
 content_margin_left = 18.0
 content_margin_top = 10.0
@@ -72,137 +59,143 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
+[sub_resource type="StyleBoxFlat" id="btn_hover"]
+content_margin_left = 18.0
+content_margin_top = 10.0
+content_margin_right = 18.0
+content_margin_bottom = 10.0
+bg_color = Color(0.31, 0.24, 0.17, 1)
+border_width_bottom = 2
+border_color = Color(0.6, 0.45, 0.25, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
 [sub_resource type="StyleBoxEmpty" id="btn_focus"]
 
-[node name="StoryPopup" type="CanvasLayer"]
-layer = 12
+[node name="StoryPopup" type="CanvasLayer" unique_id=1519077544]
 process_mode = 3
+layer = 12
 script = ExtResource("1_story_script")
 
-[node name="Dim" type="ColorRect" parent="."]
+[node name="Dim" type="ColorRect" parent="." unique_id=1140422228]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0, 0, 0, 0.5)
 
-[node name="Center" type="CenterContainer" parent="."]
+[node name="Center" type="CenterContainer" parent="." unique_id=888483696]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="Panel" type="PanelContainer" parent="Center"]
+[node name="Panel" type="PanelContainer" parent="Center" unique_id=2102246097]
 custom_minimum_size = Vector2(720, 560)
+layout_mode = 2
 theme_override_styles/panel = SubResource("panel_style")
 
-[node name="VBox" type="VBoxContainer" parent="Center/Panel"]
+[node name="VBox" type="VBoxContainer" parent="Center/Panel" unique_id=1079746375]
+layout_mode = 2
 theme_override_constants/separation = 18
 
-[node name="Title" type="Label" parent="Center/Panel/VBox"]
-theme_override_font_sizes/font_size = 30
-theme_override_fonts/font = ExtResource("2_story_font")
+[node name="Title" type="Label" parent="Center/Panel/VBox" unique_id=713971127]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.98, 0.94, 0.88, 1)
-theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.8)
-theme_override_font_sizes/outline_size = 5
+theme_override_fonts/font = ExtResource("2_story_font")
+theme_override_font_sizes/font_size = 30
 autowrap_mode = 1
 
-[node name="ImageBox" type="PanelContainer" parent="Center/Panel/VBox"]
+[node name="ImageBox" type="PanelContainer" parent="Center/Panel/VBox" unique_id=659351229]
 custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
 theme_override_styles/panel = SubResource("image_frame")
 
-[node name="ImageBg" type="ColorRect" parent="Center/Panel/VBox/ImageBox"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+[node name="ImageBg" type="ColorRect" parent="Center/Panel/VBox/ImageBox" unique_id=1321650652]
+layout_mode = 2
 color = Color(0.25, 0.18, 0.12, 0.9)
 
-[node name="ImageRect" type="TextureRect" parent="Center/Panel/VBox/ImageBox"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+[node name="ImageRect" type="TextureRect" parent="Center/Panel/VBox/ImageBox" unique_id=1436625749]
+layout_mode = 2
 expand_mode = 1
 stretch_mode = 6
 
-[node name="StoryText" type="Label" parent="Center/Panel/VBox"]
+[node name="StoryText" type="Label" parent="Center/Panel/VBox" unique_id=1313029581]
 custom_minimum_size = Vector2(0, 170)
-autowrap_mode = 3
-theme_override_font_sizes/font_size = 23
-theme_override_fonts/font = ExtResource("2_story_font")
+layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.91, 0.85, 1)
-theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.7)
-theme_override_font_sizes/outline_size = 4
+theme_override_fonts/font = ExtResource("2_story_font")
+theme_override_font_sizes/font_size = 23
+autowrap_mode = 3
 
-[node name="Choices" type="VBoxContainer" parent="Center/Panel/VBox"]
+[node name="Choices" type="VBoxContainer" parent="Center/Panel/VBox" unique_id=568627764]
+layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Choice1" type="Button" parent="Center/Panel/VBox/Choices"]
+[node name="Choice1" type="Button" parent="Center/Panel/VBox/Choices" unique_id=178278183]
 custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
 focus_mode = 0
-theme_override_font_sizes/font_size = 21
-theme_override_fonts/font = ExtResource("2_story_font")
 theme_override_colors/font_color = Color(0.95, 0.91, 0.85, 1)
-theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
 theme_override_colors/font_pressed_color = Color(1, 0.97, 0.9, 1)
-theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.6)
-theme_override_font_sizes/outline_size = 3
+theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
+theme_override_fonts/font = ExtResource("2_story_font")
+theme_override_font_sizes/font_size = 21
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/focus = SubResource("btn_focus")
 text = "1.  Answer"
 
-[node name="Choice2" type="Button" parent="Center/Panel/VBox/Choices"]
+[node name="Choice2" type="Button" parent="Center/Panel/VBox/Choices" unique_id=2035650619]
 custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
 focus_mode = 0
-theme_override_font_sizes/font_size = 21
-theme_override_fonts/font = ExtResource("2_story_font")
 theme_override_colors/font_color = Color(0.95, 0.91, 0.85, 1)
-theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
 theme_override_colors/font_pressed_color = Color(1, 0.97, 0.9, 1)
-theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.6)
-theme_override_font_sizes/outline_size = 3
+theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
+theme_override_fonts/font = ExtResource("2_story_font")
+theme_override_font_sizes/font_size = 21
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/focus = SubResource("btn_focus")
 text = "2.  Answer"
 
-[node name="Choice3" type="Button" parent="Center/Panel/VBox/Choices"]
+[node name="Choice3" type="Button" parent="Center/Panel/VBox/Choices" unique_id=1062550196]
 custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
 focus_mode = 0
-theme_override_font_sizes/font_size = 21
-theme_override_fonts/font = ExtResource("2_story_font")
 theme_override_colors/font_color = Color(0.95, 0.91, 0.85, 1)
-theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
 theme_override_colors/font_pressed_color = Color(1, 0.97, 0.9, 1)
-theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.6)
-theme_override_font_sizes/outline_size = 3
+theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
+theme_override_fonts/font = ExtResource("2_story_font")
+theme_override_font_sizes/font_size = 21
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/focus = SubResource("btn_focus")
 text = "3.  Answer"
 
-[node name="Choice4" type="Button" parent="Center/Panel/VBox/Choices"]
+[node name="Choice4" type="Button" parent="Center/Panel/VBox/Choices" unique_id=1937858544]
 custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
 focus_mode = 0
-theme_override_font_sizes/font_size = 21
-theme_override_fonts/font = ExtResource("2_story_font")
 theme_override_colors/font_color = Color(0.95, 0.91, 0.85, 1)
-theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
 theme_override_colors/font_pressed_color = Color(1, 0.97, 0.9, 1)
-theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.6)
-theme_override_font_sizes/outline_size = 3
+theme_override_colors/font_hover_color = Color(1, 0.97, 0.9, 1)
+theme_override_fonts/font = ExtResource("2_story_font")
+theme_override_font_sizes/font_size = 21
 theme_override_styles/normal = SubResource("btn_normal")
-theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/pressed = SubResource("btn_pressed")
+theme_override_styles/hover = SubResource("btn_hover")
 theme_override_styles/focus = SubResource("btn_focus")
 text = "4.  Answer"
 
-[node name="Hint" type="Label" parent="Center/Panel/VBox"]
-text = "Pick an answer (1-4 • ESC for the last line)"
-theme_override_font_sizes/font_size = 18
-theme_override_fonts/font = ExtResource("2_story_font")
+[node name="Hint" type="Label" parent="Center/Panel/VBox" unique_id=1992400455]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.72, 0.68, 0.62, 1)
-theme_override_colors/outline_color = Color(0.2, 0.1, 0.05, 0.5)
-theme_override_font_sizes/outline_size = 3
+theme_override_fonts/font = ExtResource("2_story_font")
+theme_override_font_sizes/font_size = 18
+text = "Pick an answer (1-4 • ESC for the last line)"
 horizontal_alignment = 1
