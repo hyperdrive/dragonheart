@@ -337,26 +337,97 @@ func die() -> void:
 	if is_instance_valid(self):
 		queue_free()
 
-## Steering-seek movement toward a world-space target. When a detour waypoint
-## is set (BehaviorTree stuck-detection), it is consumed first and cleared on
-## arrival. Returns true when the TARGET is reached (arrival threshold 12px).
+## Walk toward a world-space target along a planned route (NavGrid A*,
+## 2026-11-14 — was a straight seek that only sidestepped after stalling).
+## A detour waypoint from the stuck watchdog still wins while it is set.
+## Returns true when the TARGET is reached (arrival threshold 12px) — or,
+## for a target inside scenery, its nearest walkable spot.
 func move_towards(target: Vector2) -> bool:
 	if not is_alive:
 		return true
-	if global_position.distance_to(target) <= 12.0:
+	if global_position.distance_to(target) <= ARRIVE_PX or _arrived_at_snapped(target):
 		velocity = Vector2.ZERO
 		_waypoint = Vector2.INF
 		return true
-	# Detour hop: steer to the waypoint until we stand on it.
+	steer_to(target, _move_speed())
+	return false
+
+## Movement speed for purposeful trips (subclasses: loaded miners slow).
+func _move_speed() -> float:
+	return speed
+
+# --- route following -----------------------------------------------------------
+
+const ARRIVE_PX := 12.0
+const NODE_REACHED_PX := 10.0
+## Replan when the goal moved this far (chasing a moving target)…
+const REPLAN_MOVE_PX := 24.0
+## …but at most this often per NPC (A* is cheap, not free).
+const REPLAN_MIN_S := 0.25
+## After "no route at all", wait this long before asking again.
+const NO_ROUTE_RETRY_S := 1.0
+
+var _route := PackedVector2Array()
+var _route_i := 0
+var _route_goal := Vector2.INF
+var _route_age := 0.0
+var _nav_world: WorldManager = null
+
+func _nav() -> NavGrid:
+	if _nav_world == null or not is_instance_valid(_nav_world):
+		_nav_world = get_tree().get_first_node_in_group("world_manager") as WorldManager
+	if _nav_world == null or _nav_world.nav_grid == null or not _nav_world.nav_grid.is_built:
+		return null
+	return _nav_world.nav_grid
+
+## Forget the route: the next step plans afresh from where we stand (the
+## stuck watchdog calls this — a stall is first answered with a new plan).
+func invalidate_route() -> void:
+	_route = PackedVector2Array()
+	_route_goal = Vector2.INF
+
+## One movement step toward `target` at `move_speed`, following the route.
+func steer_to(target: Vector2, move_speed: float) -> void:
+	var aim := target
 	if _waypoint != Vector2.INF:
+		# Watchdog detour hop: walk it, then plan again from there.
 		if global_position.distance_to(_waypoint) <= 16.0:
-			_waypoint = Vector2.INF  # cleared it — resume the real target
+			_waypoint = Vector2.INF
+			invalidate_route()
 		else:
-			target = _waypoint
-	velocity = (target - global_position).normalized() * speed
+			aim = _waypoint
+	if _waypoint == Vector2.INF:
+		var nav := _nav()
+		if nav != null:
+			_route_age += get_physics_process_delta_time()
+			var stale := _route_goal == Vector2.INF \
+				or (target.distance_to(_route_goal) > REPLAN_MOVE_PX and _route_age >= REPLAN_MIN_S)
+			if stale and _route_age >= 0.0:
+				_route = nav.route(global_position, target)
+				_route_i = 0
+				_route_goal = target
+				_route_age = 0.0 if not _route.is_empty() else -NO_ROUTE_RETRY_S
+			while _route_i < _route.size() - 1 \
+					and global_position.distance_to(_route[_route_i]) <= NODE_REACHED_PX:
+				_route_i += 1
+			if not _route.is_empty():
+				aim = _route[_route_i]
+				# Last leg: home in on the live target when it is standable
+				# (a chased target drifts between replans).
+				if _route_i == _route.size() - 1 and nav.is_walkable(target):
+					aim = target
+	velocity = (aim - global_position).normalized() * move_speed
 	update_facing()
 	move_and_slide()
-	return false
+
+## Target inside scenery: standing on the route's (snapped) end counts.
+func _arrived_at_snapped(target: Vector2) -> bool:
+	if _route.is_empty() or _route_goal.distance_to(target) > 1.0:
+		return false
+	var nav := _nav()
+	if nav == null or nav.is_walkable(target):
+		return false
+	return global_position.distance_to(_route[_route.size() - 1]) <= ARRIVE_PX
 
 ## Track last horizontal travel direction: 1 right, -1 left. Zero x keeps the
 ## current facing. Call sites: move_towards (aim walk), BehaviorTree fleeing.

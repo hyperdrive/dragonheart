@@ -218,7 +218,7 @@ func _tick_danger() -> void:
 
 func _start_flee(dragon_position: Vector2) -> void:
 	var away := (npc.global_position - dragon_position).normalized()
-	npc.flee_target = npc.global_position + away * npc.safe_radius
+	npc.flee_target = _walkable(npc.global_position + away * npc.safe_radius)
 	_set_state(State.FLEEING)
 	fled_from_dragon.emit(dragon_position)
 
@@ -236,18 +236,11 @@ func _tick_fleeing() -> void:
 			var world: Variant = _cached_world()
 			if world != null:
 				target = world.clamp_into_playfield(target, 12.0)
-			npc.flee_target = target
-	var flee_speed := npc.speed * npc.flee_speed_multiplier
-	# Detour hop takes precedence over the raw escape vector.
-	var flee_direction_target := npc.flee_target
-	if npc._waypoint != Vector2.INF:
-		if npc.global_position.distance_to(npc._waypoint) <= 16.0:
-			npc._waypoint = Vector2.INF
-		else:
-			flee_direction_target = npc._waypoint
-	npc.velocity = (flee_direction_target - npc.global_position).normalized() * flee_speed
-	npc.update_facing()
-	npc.move_and_slide()
+			# Escape onto open ground: a straight "away" may point into a lake.
+			npc.flee_target = _walkable(target)
+	# The escape runs the same route follower as any trip (it plans around
+	# scenery and honours a watchdog detour hop).
+	npc.steer_to(npc.flee_target, npc.speed * npc.flee_speed_multiplier)
 	_check_stuck()
 	if npc.global_position.distance_to(npc.flee_target) < ARRIVAL_DISTANCE:
 		npc.velocity = Vector2.ZERO
@@ -286,11 +279,18 @@ func _check_stuck() -> void:
 	if npc.global_position.distance_to(_last_stuck_pos) > STUCK_MOVE_EPS:
 		_last_stuck_pos = npc.global_position
 		_stuck_window = 0.0
+		_replanned = false
 		return
 	if _stuck_window < STUCK_WINDOW:
 		return
 	_stuck_window = 0.0
 	_last_stuck_pos = npc.global_position
+	# First answer to a stall: plan a fresh route from where we stand. Only
+	# if that stalls too does the old raycast sidestep take over.
+	if not _replanned and _nav_ready():
+		_replanned = true
+		npc.invalidate_route()
+		return
 	_place_detour()
 
 ## Ray into scenery (layer 1) toward the current goal; set a waypoint at the
@@ -303,7 +303,20 @@ const RAY_SPREAD := 26.0  # perpendicular ray spacing (shadow width)
 
 var _detour_flip: int = 1
 
+var _replanned := false
+
+func _nav_ready() -> bool:
+	var world := _cached_world() as WorldManager
+	return world != null and world.nav_grid != null and world.nav_grid.is_built
+
+## The nearest spot a body can stand on (p itself when it is walkable).
+func _walkable(p: Vector2) -> Vector2:
+	if not _nav_ready():
+		return p
+	return (_cached_world() as WorldManager).nav_grid.nearest_walkable(p)
+
 func _place_detour() -> void:
+	npc.invalidate_route()
 	var goal := npc.flee_target if state == State.FLEEING \
 		else (current_activity.target if current_activity != null else Vector2.INF)
 	if goal == Vector2.INF or npc.global_position.distance_to(goal) < 40.0:
@@ -426,7 +439,9 @@ func _pick_activity() -> void:
 	for activity in ready_list:
 		var target: Variant = activity.target_provider.call()
 		if typeof(target) == TYPE_VECTOR2 and target != TARGET_NONE:
-			activity.target = target
+			# A goal inside a rock or beyond the walls can never be reached:
+			# snap it to the nearest walkable spot (NavGrid) at pick time.
+			activity.target = _walkable(target)
 			current_activity = activity
 			_set_state(State.MOVING)
 			return

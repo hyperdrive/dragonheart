@@ -329,6 +329,7 @@ func _ready() -> void:
 		goblin_mountain_position, FOOTPRINT_RADIUS["mountain"])
 	tower_position = _clamp_to_interior(tower_position, FOOTPRINT_RADIUS["tower"])
 	generate_world()
+	_build_nav_grid()
 	# Connect to field_burnt signal AFTER generation (fields are created in generate_world)
 	for field_node in get_tree().get_nodes_in_group("fields"):
 		var field := field_node as Field
@@ -492,10 +493,17 @@ func _remediate_stuck(npc: BaseNPC, record: Dictionary, now: int) -> void:
 		record["last_progress_ms"] = now  # the detour earns its own window
 		print("StuckMonitor: %s not moving — forced detour" % npc.name)
 
-## The rescue: teleport next to the CURRENT activity target (clamped to the
-## interior band, ±35px jitter) so the trip can complete naturally. On the
-## 3rd rescue for the SAME activity — or a non-finite target — abort the
-## trip instead (claim released, tree re-picks something else).
+## The rescue (2026-11-14, user: "the teleport is a little over the top —
+## just teleport a few steps towards the goal"): a short HOP of about three
+## body-lengths along the NPC's planned route toward its goal, onto ground
+## the walkable grid vouches for, as a quick slide rather than a pop. The
+## trip then simply carries on from there. After RESCUE_MAX_HOPS hops for
+## the SAME activity — or a non-finite target, or no spot ahead at all —
+## the trip is abandoned instead (claim released, tree re-picks).
+const RESCUE_HOP_PX := 56.0
+const RESCUE_SLIDE_S := 0.35
+const RESCUE_MAX_HOPS := 4
+
 func _rescue_npc(npc: BaseNPC, record: Dictionary, reason: String, now: int) -> void:
 	var rescues := int(record.get("rescues", 0)) + 1
 	record["rescues"] = rescues
@@ -506,30 +514,58 @@ func _rescue_npc(npc: BaseNPC, record: Dictionary, reason: String, now: int) -> 
 		record["last_progress_ms"] = now
 		record["activity_start_ms"] = now
 		record["hold_fired"] = false
-	if activity == null or rescues > 2 or not (activity.target as Vector2).is_finite():
+	if activity == null or rescues > RESCUE_MAX_HOPS \
+			or not (activity.target as Vector2).is_finite():
 		bt.force_repick()
 		restart_clock.call()
 		print("StuckMonitor: %s abandoned stuck %s trip (%s, rescue #%d)" % [
 			npc.name, npc.npc_type, reason, rescues])
 		return
-	var goal: Vector2 = activity.target
-	var offset := Vector2(randf_range(-35.0, 35.0), randf_range(-35.0, 35.0))
-	# 2026-11-09 fix: the teleport spot must be TERRAIN-CLEAR — a rescue that
-	# drops an NPC inside a city wall recreates the wedge it was healing.
-	var spot := _terrain_free_position(goal + offset, 30.0, [], 90.0, true)
+	var spot := _rescue_hop_spot(npc.global_position, activity.target)
 	if spot == Vector2.INF:
-		# Nowhere safe near the goal: the target is effectively unreachable —
-		# abort the trip instead (fresh re-pick beats a wall-drop).
 		bt.force_repick()
 		restart_clock.call()
-		print("StuckMonitor: %s aborted %s trip — rescue spot blocked (%s #%d)" % [
+		print("StuckMonitor: %s aborted %s trip — no ground ahead (%s #%d)" % [
 			npc.name, npc.npc_type, reason, rescues])
 		return
-	npc.global_position = spot
+	npc._waypoint = Vector2.INF
+	npc.invalidate_route()
 	npc.velocity = Vector2.ZERO
+	var slide := npc.create_tween()
+	slide.tween_property(npc, "global_position", spot, RESCUE_SLIDE_S) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	restart_clock.call()
-	print("StuckMonitor: %s teleported near its %s goal %s (%s, rescue #%d)" % [
-		npc.name, npc.npc_type, str(npc.global_position), reason, rescues])
+	record["pos"] = spot   # judge progress from where the hop lands
+	print("StuckMonitor: %s hopped %d px toward its %s goal (%s, rescue #%d)" % [
+		npc.name, int(npc.global_position.distance_to(spot)), npc.npc_type, reason, rescues])
+
+## A walkable spot ~RESCUE_HOP_PX ahead along the route to `goal` (straight
+## toward it when there is no grid/route). INF when nothing walkable is
+## meaningfully ahead.
+func _rescue_hop_spot(from: Vector2, goal: Vector2) -> Vector2:
+	var ahead := Vector2.INF
+	if nav_grid != null and nav_grid.is_built:
+		var pts := PackedVector2Array([from])
+		pts.append_array(nav_grid.route(from, goal))
+		var left := RESCUE_HOP_PX
+		for k in range(1, pts.size()):
+			var leg := pts[k - 1].distance_to(pts[k])
+			if leg >= left:
+				ahead = pts[k - 1].move_toward(pts[k], left)
+				break
+			left -= leg
+			ahead = pts[k]
+		if ahead == Vector2.INF:
+			ahead = from.move_toward(goal, RESCUE_HOP_PX)
+		ahead = nav_grid.nearest_walkable(ahead, 6)
+		if not nav_grid.is_walkable(ahead):
+			return Vector2.INF
+	else:
+		ahead = _terrain_free_position(from.move_toward(goal, RESCUE_HOP_PX),
+			20.0, [], 60.0, true)
+	if ahead == Vector2.INF or ahead.distance_to(from) < 12.0:
+		return Vector2.INF
+	return ahead
 
 
 # --- world generation --------------------------------------------------------
@@ -1527,6 +1563,39 @@ func spawn_hag_nest() -> void:
 	fen_hag = hag
 	entity_spawned.emit("hag", hag.global_position)
 	print("WorldManager: the Hag's Nest rises in the fen at %s" % nest_pos)
+	# New scenery: re-test the grid cells under the nest and its firs.
+	var area := Rect2(nest_pos, Vector2.ZERO).grow(120.0)
+	for fir_node: Node in get_tree().get_nodes_in_group("fir_trees"):
+		area = area.expand((fir_node as Node2D).global_position)
+	_refresh_nav_area(area.grow(40.0))
+
+# --- walkable-area grid (2026-11-14) -------------------------------------------
+
+## NPC route planning (NavGrid): built once the generated scenery's bodies
+## are in the physics space (one physics frame after generation); until
+## then NPCs walk straight as before.
+var nav_grid: NavGrid = null
+
+func _build_nav_grid() -> void:
+	await get_tree().physics_frame
+	var grid := NavGrid.new()
+	var t0 := Time.get_ticks_usec()
+	grid.build(self, world_size)
+	nav_grid = grid
+	var solid := 0
+	for y in grid.size.y:
+		for x in grid.size.x:
+			if grid.astar.is_point_solid(Vector2i(x, y)):
+				solid += 1
+	print("WorldManager: walkable grid %dx%d built in %.1f ms (%d%% blocked)" % [
+		grid.size.x, grid.size.y, (Time.get_ticks_usec() - t0) / 1000.0,
+		100 * solid / maxi(1, grid.size.x * grid.size.y)])
+
+## Scenery appeared after generation: re-test those cells next physics frame.
+func _refresh_nav_area(area: Rect2) -> void:
+	await get_tree().physics_frame
+	if nav_grid != null:
+		nav_grid.refresh_area(area)
 
 # --- signal handlers: NPC → GameManager (the hub) ---------------------------
 

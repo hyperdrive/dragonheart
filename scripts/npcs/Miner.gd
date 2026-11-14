@@ -250,23 +250,11 @@ func _handoff_stretch() -> bool:
 func _mine_still_available() -> bool:
 	return mining_cooldown <= 0.0
 
-## 10% slowdown while returning with gold (user spec 2026-11-10).
-func _waypoint_update(delta: float) -> bool:
-	if global_position == _waypoint:
-		_waypoint = Vector2.INF
-		return true
-	var target := _waypoint
-	if _waypoint != Vector2.INF:
-		if global_position.distance_to(_waypoint) <= 16.0:
-			_waypoint = Vector2.INF
-		else:
-			target = _waypoint
-	# Miner override: 10% slowdown while returning with gold.
-	var effective_speed := _get_effective_speed()
-	velocity = (target - global_position).normalized() * effective_speed
-	update_facing()
-	move_and_slide()
-	return false
+## 10% slowdown while returning with gold (user spec 2026-11-10). The old
+## _waypoint_update copy of the seek was never called, so the slowdown never
+## applied; BaseNPC.move_towards now asks for the speed here.
+func _move_speed() -> float:
+	return _get_effective_speed()
 
 ## ~70% gold, ~30% gems; tiered yield; payload grows until delivery.
 ## Haul-size lottery (user spec: "50% one time, 25% 2 and 25% 3"): every
