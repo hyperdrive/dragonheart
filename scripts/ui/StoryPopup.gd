@@ -937,7 +937,7 @@ const STORIES := {
 		"title": "The Second Purification",
 		"image": "res://assets/story/story_king.svg",
 		"tint": Color(0.30, 0.12, 0.10),
-		"text": "Overnight a war camp rises beyond the far ridge: palisades, crimson tents, Osric's sun on every banner. The dead King's cousin has taken the crown, and the old word with it: purification. His army will march out in waves for the Prince, the farmers and the miners, every soul who stood by while a dragon went unpunished.\n\nStand between them and the town. Keep the Prince alive. Bring down the usurper when he rides out with the last wave.",
+		"text": "Overnight a war camp rises beyond the far ridge: palisades, crimson tents, Osric's sun on every banner. The dead King's cousin has taken the crown, and the old word with it: purification. His army will march out in waves for the Prince, the farmers and the miners. And the town's own soldiers, kingless now, gather at the gate with their spears pointed the other way. For once, they stand with you.\n\nKeep the Prince alive. Bring down the usurper when he rides out with the last wave.",
 		"choices": ["Wake the dragon."],
 	},
 	"ending_cycle": {

@@ -55,11 +55,8 @@ func _animate_archery(delta: float) -> void:
 	var bow := get_node_or_null("Sprite/ArmFront/Bow") as Node2D
 	if bow == null:
 		return
-	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
-	var dragon_dying: Variant = dragon.get("_dying") if dragon != null else null
-	var aiming := is_alive and _burning_left <= 0.0 and dragon != null \
-		and is_instance_valid(dragon) and dragon_dying != null and not bool(dragon_dying) \
-		and global_position.distance_to(dragon.global_position) <= arrow_range
+	var dragon := _aim_target()
+	var aiming := is_alive and _burning_left <= 0.0 and dragon != null
 	var nock := bow.get_node_or_null("Nock") as Node2D
 	var string := bow.get_node_or_null("String") as Line2D
 	var arm_back := _rig.part("ArmBack")
@@ -118,16 +115,12 @@ func _tick_ranged_fire(delta: float) -> void:
 	if _ranged_recharge > 0.0:
 		_ranged_recharge -= delta
 		return
-	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
-	if dragon == null or not is_instance_valid(dragon):
-		return
-	var dragon_dying: Variant = dragon.get("_dying")
-	if dragon_dying == null or bool(dragon_dying):
-		return
-	if global_position.distance_to(dragon.global_position) > arrow_range:
+	var dragon := _aim_target()
+	if dragon == null:
 		return
 	_ranged_recharge = 2.0  # user spec: 1 per 2s
 	var arrow := ARROW_SCENE.instantiate() as Arrow
+	arrow.defender_arrow = _defending()
 	get_parent().add_child(arrow)
 	# Loosed from the bow itself (falls back to the feet without a rig).
 	var bow := get_node_or_null("Sprite/ArmFront/Bow") as Node2D
@@ -141,7 +134,29 @@ func _contact_damage(delta: float) -> void:
 
 ## Stand-off positioning: the Archer closes until he can shoot, then holds
 ## a ring just inside his reach instead of walking into breath melee range.
+## What the bow is on: the dragon in reach — or, in the garrison, the
+## nearest invader in reach.
+func _aim_target() -> Node2D:
+	if _defending():
+		return _nearest_invader_within(arrow_range)
+	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
+	if dragon == null or not is_instance_valid(dragon):
+		return null
+	var dying: Variant = dragon.get("_dying")
+	if dying == null or bool(dying):
+		return null
+	return dragon if global_position.distance_to(dragon.global_position) <= arrow_range else null
+
 func _pick_dragon_target() -> Vector2:
+	if _defending():
+		var foe := _squad_target()
+		if foe == null:
+			return BehaviorTree.TARGET_NONE
+		# hold a ring inside bow reach of the squad's target
+		var away := (global_position - foe.global_position).normalized()
+		if global_position.distance_to(foe.global_position) <= arrow_range - STANDOFF_PX:
+			return global_position
+		return foe.global_position + away * (arrow_range - STANDOFF_PX)
 	var target := super._pick_dragon_target()
 	if target == BehaviorTree.TARGET_NONE:
 		return target

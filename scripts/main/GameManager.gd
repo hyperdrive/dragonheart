@@ -848,7 +848,7 @@ func begin_invasion() -> void:
 	queue_followup_story("invasion_begins")
 	if world_manager != null and world_manager.has_method("start_invasion"):
 		world_manager.call("start_invasion")
-	_hud_message("Defend the realm: keep the Prince, the farmers and the miners alive — and slay the usurper King.", 7.0)
+	_hud_message("Defend the realm with the town's garrison: keep the Prince, the farmers and the miners alive — slay the usurper King.", 7.0)
 
 ## The usurper King fell: his army routs. Now the evil wizard comes for the
 ## heart — or, if he is already dead, the wedding.

@@ -20,9 +20,9 @@ var _hit_debt := 0.0
 
 func _ready() -> void:
 	npc_type = "invader"
-	max_health = 50
+	max_health = 60      # two claws +1 at base; a garrison soldier needs ~6 s
 	speed = 78.0
-	attack_damage = 10.0
+	attack_damage = 12.0
 	attack_range = 58.0
 	aggro_range = 0.0
 	reward_gold = 0
@@ -89,14 +89,32 @@ func _contact_damage(delta: float) -> void:
 	super._contact_damage(delta)
 	if _burning_left > 0.0 or not is_alive:
 		return
-	var victim := _nearest_victim()
-	if victim == null or global_position.distance_to(victim.global_position) > attack_range:
+	var victim := _nearest_foe_in_reach()
+	if victim == null:
 		return
 	_hit_debt += attack_damage * delta
 	var whole := int(_hit_debt)
 	if whole > 0:
 		_hit_debt -= float(whole)
 		(victim as BaseNPC).take_damage(whole, Damage.Type.WEAPON, "invader")
+
+## Whoever stands within blade reach: the realm's people first, else a
+## soldier of the town's garrison (they fight back when the squad closes in).
+func _nearest_foe_in_reach() -> BaseNPC:
+	var victim := _nearest_victim()
+	if victim != null and global_position.distance_to(victim.global_position) <= attack_range:
+		return victim as BaseNPC
+	var best: BaseNPC = null
+	var best_d := attack_range
+	for node: Node in get_tree().get_nodes_in_group("soldiers"):
+		var s := node as BaseNPC
+		if s == null or not s.is_alive or s.is_in_group("invaders") or s.is_in_group("king"):
+			continue
+		var d := global_position.distance_to(s.global_position)
+		if d <= best_d:
+			best_d = d
+			best = s
+	return best
 
 ## When their King falls, the army breaks and runs for the camp.
 func rout() -> void:

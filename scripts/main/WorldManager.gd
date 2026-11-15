@@ -1228,8 +1228,10 @@ func _on_escalation_tick() -> void:
 	# user: "soldiers should always be coming") — the King fights a living
 	# army, and _escalation_soldier_spawned's spawn_king() call is already
 	# a no-op while one is out.
-	if game_manager == null or _dragon_hidden() or _invasion_on():
-		return   # no dragon in sight (or the realm's war is over): no recruits
+	if game_manager == null or (_dragon_hidden() and not _invasion_on()):
+		return   # no dragon in sight: no recruits (the invasion recruits regardless)
+	if _invasion_on() and _garrison().size() >= MAX_GARRISON:
+		return   # the garrison is at strength
 	spawn_entity(_next_recruit_type(), 1, rally_point, 90.0)
 	_escalation_soldier_spawned()
 
@@ -1332,18 +1334,22 @@ func _try_buy_soldiers() -> void:
 	# always be coming, especially if there are treasure in the treasury"):
 	# the town keeps buying through the boss battle, so the King fights a
 	# constantly refreshed army instead of a frozen 15.
-	if game_manager == null or game_manager.run_finished or _dragon_hidden() or _invasion_on():
-		return   # the treasury keeps its coin until there is a dragon to fight
+	if game_manager == null or game_manager.run_finished or (_dragon_hidden() and not _invasion_on()):
+		return   # the treasury keeps its coin until there is a dragon (or an invader) to fight
+	if _invasion_on() and _garrison().size() >= MAX_GARRISON:
+		return   # garrison at strength: the treasury keeps its coin
 	# NOTE: no gem reserve for the goblin trade anymore (2026-11-10): the
 	# exchange moved to the dragon's STASH — the town's gems keep converting
 	# to soldiers exactly as the 2026-11-09 user spec.
 	var bought := 0
 	var gold_spent := 0
 	var gems_spent := 0
-	while game_manager.spend_treasury("gold", soldier_gold_cost):
+	# During the invasion buy only up to the garrison's strength.
+	var room := MAX_GARRISON - _garrison().size() if _invasion_on() else 1 << 30
+	while bought < room and game_manager.spend_treasury("gold", soldier_gold_cost):
 		bought += 1
 		gold_spent += soldier_gold_cost
-	while game_manager.spend_treasury("gems", 1):
+	while bought < room and game_manager.spend_treasury("gems", 1):
 		bought += soldiers_per_gem
 		gems_spent += 1
 	if bought == 0:
@@ -1757,11 +1763,10 @@ func start_invasion() -> void:
 	camp.global_position = invasion_camp_position
 	add_child(camp)
 	entity_spawned.emit("invader_camp", invasion_camp_position)
-	# The realm's army lays down its arms: their King is dead.
-	for node: Node in get_tree().get_nodes_in_group("soldiers"):
-		if node.has_method("retire") and node is BaseNPC and (node as BaseNPC).is_alive \
-				and not node.is_in_group("king"):
-			node.call("retire", city_position)
+	# The realm's soldiers become the garrison (Soldier._defending): they
+	# muster at the gate and hunt the invaders in a group (_tick_squad).
+	_squad_released = false
+	_squad_target = null
 	_wave = 0
 	_wave_left = FIRST_WAVE_AFTER
 	# The Prince takes cover in the city.
@@ -1805,6 +1810,8 @@ func _tick_invasion(delta: float) -> void:
 				game_manager.call("_hud_message", "Wave %d of %d marches out of the camp!" % [_wave, INVASION_WAVES], 3.0)
 			if _wave == INVASION_WAVES:
 				_spawn_usurper()
+	_tick_squad(delta)
+	_tick_city_arrows(delta)
 	_spawn_left -= delta
 	if _to_spawn > 0 and _spawn_left <= 0.0 \
 			and get_tree().get_nodes_in_group("invaders").size() < MAX_INVADERS_ALIVE:
@@ -1885,8 +1892,126 @@ func start_wizard_finale() -> bool:
 func invasion_townsfolk_left() -> int:
 	return get_tree().get_nodes_in_group("farmers").size() + get_tree().get_nodes_in_group("miners").size()
 
-## Town systems that pause while the invasion runs (recruits, purchases,
-## respawns, slayers): the realm's own war is over.
+# --- the garrison's squad brain + the city's arrows (2026-11-15) ---------------
+
+## User: "the remaining soldiers forming a group to kill in a group. Also
+## allow the city to shoot arrows on nearby soldiers. Production of miners
+## stops and all focus is on soldiers, but economy stays the same."
+##
+## Squad: the garrison musters at the rally point; once SQUAD_MIN have
+## gathered (or every defender left, if fewer) — or any invader comes
+## within CITY_THREAT_RADIUS of the city — it is RELEASED and all of it
+## goes for ONE target: the invader nearest the squad's centre (focus,
+## not a scatter). When that one falls, the next. With no invaders left in
+## the field it musters again.
+## City walls: every CITY_ARROW_EVERY s the city looses a defender arrow
+## from a tower at the nearest invader within CITY_ARROW_RANGE.
+const SQUAD_MIN := 4
+## The garrison's ceiling: recruiting and purchases refill losses up to here
+## and no further (uncapped, an idle dragon's town grew to 54 men and won the
+## invasion by itself — 158 invaders dead, not one townsperson).
+const MAX_GARRISON := 16
+const MUSTER_RADIUS := 150.0
+const CITY_THREAT_RADIUS := 320.0
+const SQUAD_THINK_EVERY := 0.4
+const CITY_ARROW_EVERY := 0.9
+const CITY_ARROW_RANGE := 340.0
+const CITY_TOWERS: Array[Vector2] = [Vector2(-70.0, -70.0), Vector2(70.0, -70.0), Vector2(0.0, -95.0)]
+var _squad_released := false
+var _squad_target: Node2D = null
+var _squad_think := 0.0
+var _city_arrow_left := CITY_ARROW_EVERY
+
+func squad_released() -> bool:
+	return _squad_released
+
+func squad_target() -> Node2D:
+	if _squad_target != null and (not is_instance_valid(_squad_target) \
+			or not bool(_squad_target.get("is_alive"))):
+		_squad_target = null
+	return _squad_target
+
+func _garrison() -> Array[Node2D]:
+	var out: Array[Node2D] = []
+	for node: Node in get_tree().get_nodes_in_group("soldiers"):
+		var s := node as BaseNPC
+		if s != null and s.is_alive and (s.npc_type == "soldier" or s.npc_type == "archer") \
+				and not bool(s.call("is_retiring")):
+			out.append(s)
+	return out
+
+func _invaders_alive() -> Array[Node2D]:
+	var out: Array[Node2D] = []
+	for node: Node in get_tree().get_nodes_in_group("invaders"):
+		var n := node as BaseNPC
+		if n != null and n.is_alive:
+			out.append(n)
+	if _usurper != null and is_instance_valid(_usurper) and bool(_usurper.get("is_alive")):
+		out.append(_usurper)
+	return out
+
+func _tick_squad(delta: float) -> void:
+	_squad_think -= delta
+	if _squad_think > 0.0:
+		return
+	_squad_think = SQUAD_THINK_EVERY
+	var guards := _garrison()
+	var foes := _invaders_alive()
+	if guards.is_empty() or foes.is_empty():
+		_squad_released = false
+		_squad_target = null
+		return
+	var centre := Vector2.ZERO
+	for g in guards:
+		centre += g.global_position
+	centre /= float(guards.size())
+	var threat := false
+	for f in foes:
+		if f.global_position.distance_to(city_position) <= CITY_THREAT_RADIUS:
+			threat = true
+			break
+	if not _squad_released:
+		var gathered := 0
+		for g in guards:
+			if g.global_position.distance_to(rally_point) <= MUSTER_RADIUS:
+				gathered += 1
+		if gathered >= mini(SQUAD_MIN, guards.size()) or threat:
+			_squad_released = true
+	if _squad_released and squad_target() == null:
+		var best: Node2D = null
+		var best_d := INF
+		for f in foes:
+			if f == _usurper:
+				continue   # the garrison holds the line; the King is the dragon's to slay
+			var d := f.global_position.distance_to(centre)
+			if d < best_d:
+				best_d = d
+				best = f
+		_squad_target = best
+
+func _tick_city_arrows(delta: float) -> void:
+	_city_arrow_left -= delta
+	if _city_arrow_left > 0.0:
+		return
+	_city_arrow_left = CITY_ARROW_EVERY
+	var target: Node2D = null
+	var best := CITY_ARROW_RANGE
+	for f in _invaders_alive():
+		var d := f.global_position.distance_to(city_position)
+		if d <= best:
+			best = d
+			target = f
+	if target == null:
+		return
+	var arrow := (load("res://scenes/objects/Arrow.tscn") as PackedScene).instantiate() as Node2D
+	arrow.set("defender_arrow", true)
+	add_child(arrow)
+	arrow.global_position = city_position + CITY_TOWERS[randi() % CITY_TOWERS.size()]
+	arrow.call("launch", target.global_position, 520.0)
+
+## Town systems that pause while the invasion runs: no new miners and no
+## miner respawns (all focus is on soldiers); slayers stay home. Recruiting,
+## soldier purchases, farmers and the economy carry on.
 func _invasion_on() -> bool:
 	return invasion_active or (game_manager != null and game_manager.phase >= GameManager.Phase.INVASION)
 
@@ -1973,8 +2098,7 @@ func _refresh_nav_area(area: Rect2) -> void:
 # --- signal handlers: NPC → GameManager (the hub) ---------------------------
 
 func _process(delta: float) -> void:
-	if not _invasion_on():
-		_tick_respawn_queue(delta)
+	_tick_respawn_queue(delta)
 	_try_spawn_wizard()
 	_tick_retirements(delta)
 	_tick_invasion(delta)
@@ -1997,9 +2121,9 @@ func _dragon_hidden() -> bool:
 
 func _tick_retirements(delta: float) -> void:
 	var dragon := get_tree().get_first_node_in_group("dragon") as Dragon
-	if dragon == null or not dragon.human_form:
+	if dragon == null or not dragon.human_form or _invasion_on():
 		_retire_clock = 0.0
-		return
+		return   # (the invasion's garrison never stands down)
 	_retire_clock += delta
 	if _retire_clock < RETIRE_EVERY:
 		return
@@ -2089,6 +2213,9 @@ func _tick_respawn_queue(delta: float) -> void:
 	var i := 0
 	while i < _respawn_queue.size():
 		var entry: Dictionary = _respawn_queue[i]
+		if entry["type"] == "miner" and _invasion_on():
+			i += 1
+			continue   # no new miners while the realm is under invasion
 		entry["timer_left"] = float(entry["timer_left"]) - delta
 		if float(entry["timer_left"]) <= 0.0:
 			# retry cadence while the animal species is out of stock

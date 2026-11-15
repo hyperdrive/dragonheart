@@ -28,6 +28,11 @@ var _hit := false
 ## Rider mode: true → damages the nearest live soldier/goblin touched;
 ## false (default) → damages the dragon, exactly as before.
 var rider_arrow: bool = false
+## Defender mode (2026-11-15, the invasion): the town's archers and the city
+## walls shoot the usurper's soldiers — hits invaders only (never the
+## garrison, the dragon or townsfolk).
+var defender_arrow: bool = false
+const DEFENDER_ARROW_DAMAGE := 12
 
 func launch(target: Vector2, speed: float) -> void:
 	var to_target := target - global_position
@@ -43,10 +48,23 @@ func _physics_process(delta: float) -> void:
 	if _life <= 0.0:
 		queue_free()
 		return
-	if rider_arrow:
+	if defender_arrow:
+		_check_defender_hit()
+	elif rider_arrow:
 		_check_rider_hit()
 	else:
 		_check_dragon_hit()
+
+func _check_defender_hit() -> void:
+	for node: Node in get_tree().get_nodes_in_group("invaders"):
+		var npc := node as BaseNPC
+		if npc == null or not npc.is_alive:
+			continue
+		if global_position.distance_to(npc.global_position) <= HIT_RADIUS:
+			_hit = true
+			npc.take_damage(DEFENDER_ARROW_DAMAGE, Damage.Type.WEAPON, "garrison")
+			queue_free()
+			return
 
 ## Stock behaviour: hit the DRAGON.
 func _check_dragon_hit() -> void:

@@ -68,6 +68,8 @@ func _world_manager() -> WorldManager:
 	return get_tree().get_first_node_in_group("world_manager") as WorldManager
 
 func _swarm_rallying() -> bool:
+	if _defending():
+		return not _squad_released_now()   # muster at the gate
 	var world := _world_manager()
 	return world != null and world.swarm_state == WorldManager.SwarmState.RALLY
 
@@ -118,7 +120,48 @@ func _is_bold() -> bool:
 
 ## Morale-aware chase gate: the calm swarm stays home unless bold.
 func _attack_ready() -> bool:
+	if _defending():
+		return _squad_target() != null and _squad_released_now()
 	return _swarm_released() or _is_bold()
+
+# --- the garrison (2026-11-15, the invasion) --------------------------------------
+
+## User: "the remaining soldiers forming a group to kill in a group".
+## While the usurper's army is in the field the town's soldiers and archers
+## are a garrison: they no longer hunt the dragon; they muster at the rally
+## point until enough have gathered (or invaders come near the city), then
+## move out TOGETHER on one shared target (WorldManager's squad brain) and
+## cut it down, then the next. Subclasses that are not the town's army
+## (King, invaders, the hag, heroes) never defend.
+func _defending() -> bool:
+	if npc_type != "soldier" and npc_type != "archer":
+		return false
+	if is_in_group("invaders") or _retiring:
+		return false
+	var world := _world_manager()
+	return world != null and world.invasion_active
+
+func _squad_target() -> Node2D:
+	var world := _world_manager()
+	return world.squad_target() if world != null else null
+
+func _squad_released_now() -> bool:
+	var world := _world_manager()
+	return world != null and world.squad_released()
+
+## Nearest living invader within `reach` (the garrison's melee and arrows).
+func _nearest_invader_within(reach: float) -> BaseNPC:
+	var best: BaseNPC = null
+	var best_d := reach
+	for node: Node in get_tree().get_nodes_in_group("invaders"):
+		var inv := node as BaseNPC
+		if inv == null or not inv.is_alive:
+			continue
+		var d := global_position.distance_to(inv.global_position)
+		if d <= best_d:
+			best_d = d
+			best = inv
+	return best
 
 # --- activity providers & completers ---------------------------------------
 
@@ -126,6 +169,13 @@ func _attack_ready() -> bool:
 ## BOLD soldiers hunt too (morale) — across the WHOLE MAP (user escalation
 ## 2026-11-09: "attack the dragon when they are bold").
 func _pick_dragon_target() -> Vector2:
+	if _defending():
+		var foe := _squad_target()
+		if foe == null:
+			return BehaviorTree.TARGET_NONE
+		# close in around the target, each from his own side (a ring, not a pile)
+		var side := Vector2.from_angle(float(get_instance_id() % 360) * PI / 180.0)
+		return foe.global_position + side * 18.0
 	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return BehaviorTree.TARGET_NONE
@@ -139,6 +189,8 @@ func _pick_dragon_target() -> Vector2:
 ## Chase gate: bold → chase until contact (morale re-checked per pick);
 ## non-bold running an old leg stops when the dragon is beyond aggro_range.
 func _dragon_in_chase_range() -> bool:
+	if _defending():
+		return _squad_target() != null
 	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
 		return false
@@ -164,10 +216,14 @@ func _complete_rally() -> void:
 ## land inside city walls — unreachable trips the whole remediation ladder
 ## could never fix (soldiers grinding in MOVING for minutes).
 func _pick_patrol_target() -> Vector2:
+	if _defending():
+		return _pick_rally_target()   # the garrison doesn't wander: it musters
 	var anchor := home_position + Vector2(randf_range(-200, 200), randf_range(-200, 200))
 	return _cleared_trip_target(anchor, 24.0)
 
 func _pick_idle_target() -> Vector2:
+	if _defending():
+		return _pick_rally_target()
 	var anchor := home_position + Vector2(randf_range(-40, 40), randf_range(-40, 40))
 	return _cleared_trip_target(anchor, 20.0)
 
@@ -218,6 +274,8 @@ func _resolve_weapon() -> void:
 ## Who this fighter is swinging at right now (null = nobody in reach).
 ## Soldiers fight the dragon; the adventurer also cuts down goblins.
 func _combat_target() -> Node2D:
+	if _defending():
+		return _nearest_invader_within(attack_range)
 	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon != null and is_instance_valid(dragon) \
 			and global_position.distance_to(dragon.global_position) <= attack_range:
@@ -296,6 +354,11 @@ func _physics_process(delta: float) -> void:
 	if _retiring:
 		_tick_retire(delta)
 		return
+	if _defending():
+		_keep_squad_order()
+		_garrison_blows(delta)
+		_animate_combat(delta)
+		return
 	_contact_damage(delta)
 	_animate_combat(delta)
 	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
@@ -346,6 +409,41 @@ func _tick_retire(delta: float) -> void:
 
 ## 10 DPS while the hitbox collides with the dragon or goblins
 ## (integer-chunked debt).
+## Squad discipline, every frame: when the squad strikes, everyone drops
+## what he is doing and joins; while attacking, keep aiming at the LIVE
+## target (it marches on — a position snapped at pick time went stale);
+## when the target falls, re-pick at once.
+func _keep_squad_order() -> void:
+	if behavior_tree == null:
+		return
+	var act := behavior_tree.current_activity
+	var on_attack := act != null and str(act.id) == "attack_dragon"
+	if _squad_released_now() and _squad_target() != null:
+		if not on_attack:
+			if behavior_tree.state != BehaviorTree.State.FLEEING:
+				behavior_tree.force_repick()
+			return
+		var aim := _pick_dragon_target()
+		if aim != BehaviorTree.TARGET_NONE:
+			act.target = aim
+	elif on_attack:
+		behavior_tree.force_repick()   # target gone: muster again
+
+## The garrison's blades: the nearest invader in reach, never the dragon.
+var _garrison_debt := 0.0
+
+func _garrison_blows(delta: float) -> void:
+	if npc_type == "archer" or _burning_left > 0.0 or not is_alive or attack_damage <= 0.0:
+		return   # archers loose arrows instead (Archer._tick_ranged_fire)
+	var foe := _nearest_invader_within(attack_range)
+	if foe == null:
+		return
+	_garrison_debt += attack_damage * delta
+	var whole := int(_garrison_debt)
+	if whole > 0:
+		_garrison_debt -= float(whole)
+		foe.take_damage(whole, Damage.Type.WEAPON, "garrison")
+
 ## Who the dragon's death chapter names if this blow is the last (the
 ## King's, the archer's… unknown slayers get the generic chapter).
 func _killer_key() -> String:

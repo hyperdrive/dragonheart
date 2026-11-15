@@ -56,3 +56,21 @@ improved and be a little clearer on the intention".
 | Usurper | A King (King.tscn, `invader = true`): one life, 240 HP, rides with the last wave, hunts the dragon (storm, flaming sword). His fall routs the army (every invader retires to the camp) | "If the invading king dies…" | — |
 | Reckoning | Phase RECKONING: the evil wizard turns (or already has) and attacks — "The Usurper Falls"; if he is already dead, "The Usurper Falls" (quiet) goes straight on | User spec | — |
 | Endings | Wizard slain → "The Wedding" (in the glade) → "The Last Ember" (the user's text, verbatim) → victory tally → new run. Townsfolk all dead → "The Wheel Turns"; Prince dead → "The Prince Falls"; both → new run | User spec | — |
+
+## The garrison (2026-11-15, third pass)
+
+User: "the remaining soldiers forming a group to kill in a group. Also allow
+the city to shoot arrows on nearby soldiers. Production of miners stops and
+all focus is on soldiers, but economy stays the same."
+
+| Decision | Choice | Why | Revisit when |
+|---|---|---|---|
+| Stand-down → garrison | The town's soldiers and archers no longer retire at the invasion; while `invasion_active` they are the garrison (`Soldier._defending`): they stop hunting the dragon entirely (no blows, no arrows, no sighting alarms) | "remaining soldiers…kill in a group" | — |
+| Squad brain (WorldManager) | Muster at the rally point until 4 (or all, if fewer) have gathered — or any invader comes within 320 px of the city — then RELEASED: every defender goes for ONE shared target, the invader nearest the squad's centre; the next when it falls; muster again when the field is clear. Soldiers ring the target (18 px, each from his own side); archers hold a ring inside bow reach | Focus fire, not a scatter | — |
+| Garrison weapons | Soldiers: their 10 DPS blades on the nearest invader in reach. Archers: defender arrows (hit invaders only, 12 dmg) at the nearest invader in reach, 1 per 2 s | No friendly fire on the dragon, townsfolk or each other | — |
+| City walls | Every 0.9 s a defender arrow from one of the city's towers at the nearest invader within 340 px of the city | "allow the city to shoot arrows on nearby soldiers" | — |
+| Invaders fight back | Their blades hit the nearest person in reach — townsfolk first, else a garrison soldier | Two-sided melee | — |
+| Economy | Recruiting and treasury soldier purchases continue during the invasion (reinforcements for the garrison); new miners and miner respawns stop; farmers, food and the miners already working carry on | "all focus is on soldiers, but economy stays the same" | — |
+| Squad discipline | Every frame while the squad strikes: soldiers on other errands drop them and join; attackers re-aim at the LIVE target (a position snapped at pick time went stale as the target marched on); patrols become mustering. Measured: 0.6 → 8.4 defenders around the shared target | "kill in a group" | — |
+| Garrison cap + invader toughness | Garrison capped at 16 (recruits and purchases refill losses up to there; the treasury keeps the rest); invaders 60 HP / 12 DPS (were 50 / 10). Uncapped, an idle dragon's town grew to 54 men and won the invasion alone (158 dead invaders, no townsperson lost); capped, it holds but bleeds (42 garrison dead by wave 7, first townsperson lost) | The dragon must matter | playtests |
+| The usurper | Not a squad target — the garrison holds the line against his soldiers; only the dragon (and the city's arrows) can bring him down | The win must be the dragon's | — |
