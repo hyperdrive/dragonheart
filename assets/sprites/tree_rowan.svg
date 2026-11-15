@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Leaf tree variant: a rowan, autumn-touched, red berries (2026-11-15). Trunk foot at y=60. -->
+  <path d="M 25.5 60 Q 28.5 57 28.5 54 C 28.5 46 28.9 41 28.9 31 L 33.5 31 C 33.5 41 35.5 46 35.5 54 Q 35.5 57 38.5 60 Z" fill="#80522b"/>
+  <path d="M 29.3 56 C 29.5 46 29.4 41 29.6 32" stroke="#a36d3c" stroke-width="1.6" fill="none" opacity="0.9"/>
+  <path d="M 34.5 56 C 34.5 46 32.5 41 32.7 32" stroke="#4f301c" stroke-width="1.8" fill="none" opacity="0.8"/>
+  <path d="M 30.3 50 q 0.6 -2.5 0 -5" stroke="#4f301c" stroke-width="0.7" fill="none" opacity="0.7"/>
+  <path d="M 30.9 43 q 0.6 -2.5 0 -5" stroke="#4f301c" stroke-width="0.7" fill="none" opacity="0.7"/>
+  <path d="M 31.5 36 q 0.6 -2.5 0 -5" stroke="#4f301c" stroke-width="0.7" fill="none" opacity="0.7"/>
+  <path d="M 31.5 35 Q 27.8 34.0 24 29" stroke="#80522b" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <path d="M 32 34 Q 36.0 33.0 40 29" stroke="#80522b" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <ellipse cx="32.5" cy="25" rx="18" ry="14" fill="#34501f"/>
+  <circle cx="24.0" cy="26.8" r="9.0" fill="#5f7a2e"/>
+  <circle cx="26.8" cy="26.5" r="6.8" fill="#44652a"/>
+  <circle cx="36.6" cy="23.2" r="7.8" fill="#7a7a2c"/>
+  <circle cx="28.9" cy="17.6" r="7.4" fill="#7a7a2c"/>
+  <circle cx="27.1" cy="27.2" r="7.0" fill="#5f7a2e"/>
+  <circle cx="34.8" cy="25.2" r="6.4" fill="#7a7a2c"/>
+  <circle cx="39.1" cy="27.8" r="9.3" fill="#4f6e2c"/>
+  <circle cx="29.0" cy="25.9" r="7.7" fill="#5f7a2e"/>
+  <circle cx="33.8" cy="27.4" r="6.9" fill="#4f6e2c"/>
+  <circle cx="44.1" cy="25.7" r="8.4" fill="#4f6e2c"/>
+  <circle cx="30.8" cy="14.9" r="8.9" fill="#7a7a2c"/>
+  <circle cx="25.9" cy="27.7" r="7.6" fill="#44652a"/>
+  <circle cx="36.4" cy="28.3" r="9.4" fill="#7a7a2c"/>
+  <circle cx="21.6" cy="16.1" r="8.6" fill="#7a7a2c"/>
+  <circle cx="34.7" cy="26.8" r="6.1" fill="#44652a"/>
+  <circle cx="26.2" cy="18.4" r="4.2" fill="#a39448" opacity="0.75"/>
+  <circle cx="23.3" cy="16.0" r="2.4" fill="#a39448" opacity="0.75"/>
+  <circle cx="23.2" cy="20.5" r="3.4" fill="#a39448" opacity="0.75"/>
+  <circle cx="20.4" cy="17.6" r="2.3" fill="#a39448" opacity="0.75"/>
+  <circle cx="26.0" cy="15.5" r="2.6" fill="#a39448" opacity="0.75"/>
+  <circle cx="26.2" cy="20.4" r="3.4" fill="#a39448" opacity="0.75"/>
+  <circle cx="22.7" cy="19.1" r="2.7" fill="#a39448" opacity="0.75"/>
+  <circle cx="47.6" cy="23.6" r="1.4" fill="#5f7a2e"/>
+  <circle cx="43.0" cy="13.6" r="1.3" fill="#7a7a2c"/>
+  <circle cx="49.6" cy="20.7" r="1.5" fill="#7a7a2c"/>
+  <circle cx="15.4" cy="19.4" r="1.1" fill="#8a6a28"/>
+  <circle cx="25.7" cy="35.3" r="1.2" fill="#5f7a2e"/>
+  <circle cx="47.7" cy="18.8" r="1.3" fill="#7a7a2c"/>
+  <circle cx="44.7" cy="15.6" r="1.5" fill="#7a7a2c"/>
+  <circle cx="31.0" cy="10.2" r="0.9" fill="#5f7a2e"/>
+  <circle cx="17.1" cy="18.4" r="1.2" fill="#5f7a2e"/>
+  <circle cx="48.1" cy="22.2" r="1.6" fill="#7a7a2c"/>
+  <circle cx="15.5" cy="20.8" r="1.3" fill="#4f6e2c"/>
+  <circle cx="47.4" cy="29.7" r="1.4" fill="#8a6a28"/>
+  <circle cx="18.0" cy="32.2" r="1.4" fill="#8a6a28"/>
+  <circle cx="34.5" cy="35.0" r="1.7" fill="#7a7a2c"/>
+  <circle cx="25.1" cy="34.5" r="1.0" fill="#5f7a2e"/>
+  <circle cx="16.5" cy="19.7" r="1.3" fill="#4f6e2c"/>
+  <circle cx="21.0" cy="13.7" r="1.6" fill="#5f7a2e"/>
+  <circle cx="24.0" cy="11.6" r="1.4" fill="#7a7a2c"/>
+  <circle cx="24.7" cy="23.8" r="1.3" fill="#b8321e"/><circle cx="26.1" cy="24.4" r="1.1" fill="#c94524"/>
+  <circle cx="19.0" cy="20.8" r="1.3" fill="#b8321e"/><circle cx="20.4" cy="21.4" r="1.1" fill="#c94524"/>
+  <circle cx="18.7" cy="14.2" r="1.3" fill="#b8321e"/><circle cx="20.1" cy="14.8" r="1.1" fill="#c94524"/>
+  <circle cx="25.0" cy="16.4" r="1.3" fill="#b8321e"/><circle cx="26.4" cy="17.0" r="1.1" fill="#c94524"/>
+  <circle cx="25.8" cy="28.9" r="1.3" fill="#b8321e"/><circle cx="27.2" cy="29.5" r="1.1" fill="#c94524"/>
+  <circle cx="17.6" cy="26.5" r="1.3" fill="#b8321e"/><circle cx="19.0" cy="27.1" r="1.1" fill="#c94524"/>
+  <circle cx="20.6" cy="29.9" r="1.3" fill="#b8321e"/><circle cx="22.0" cy="30.5" r="1.1" fill="#c94524"/>
+  <circle cx="38.6" cy="18.2" r="1.3" fill="#b8321e"/><circle cx="40.0" cy="18.8" r="1.1" fill="#c94524"/>
+  <circle cx="41.9" cy="28.3" r="1.3" fill="#b8321e"/><circle cx="43.3" cy="28.9" r="1.1" fill="#c94524"/>
+</svg>

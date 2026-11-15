@@ -69,6 +69,15 @@ func _resize() -> void:
 	_mat.set_shader_parameter("extent", _rect.size)
 	_mat.set_shader_parameter("world_half", world_size * 0.5)
 
+## The palette's back-layer grade (GameManager.apply_palette).
+func set_grade(layer: Dictionary) -> void:
+	_mat.set_shader_parameter("ramp_dark", layer["dark"])
+	_mat.set_shader_parameter("ramp_mid", layer["mid"])
+	_mat.set_shader_parameter("ramp_light", layer["light"])
+	_mat.set_shader_parameter("ramp_mix", layer["mix"])
+	_mat.set_shader_parameter("grade_saturation", layer["sat"])
+	_mat.set_shader_parameter("grade_exposure", layer["exp"])
+
 ## Re-read every prop next frame (coalesced: several spawns in one frame
 ## repaint once, after queued frees have gone).
 func refresh() -> void:

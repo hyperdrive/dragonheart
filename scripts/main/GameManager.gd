@@ -390,15 +390,39 @@ func _ready() -> void:
 	_build_color_grade()
 	_start_intro.call_deferred()
 
-# --- the grim-dark colour grade (2026-11-15) -----------------------------------------
+# --- colour: the vignette + layered palettes (2026-11-15) -----------------------------
 
-## User: "harmonise the colour grades across all assets. Pick a colour
-## grading for a grim dark setting and apply." One full-screen pass
-## (assets/shaders/color_grade.gdshader) on CanvasLayer 1: above the world,
-## under the HUD (layer 2), the wizard's shop (10) and the story popups
-## (12) — the world is graded, the UI stays legible.
+## The full-screen pass (assets/shaders/color_grade.gdshader, CanvasLayer 1,
+## under the HUD on layer 2) now only frames the world in a vignette with
+## faded, cold blacks; the colour itself is graded PER LAYER by the active
+## palette (scripts/systems/Palettes.gd — user: "back layer, ie the ground
+## should be grim dark. Houses should be more saturated towards a warm tone
+## and characters should be bright"):
+##   back   the ground (GroundTerrain) + the land: mountains, trees, lakes, glade
+##   middle houses and works: city, tower, mines, pens, fields, the hag's hut,
+##          the temple, the lair, the camp, a sacrifice pole
+##   front  the dragon and every NPC
+## Each layer root gets a layer_grade.gdshader material that its drawn
+## descendants inherit (nodes with a shader of their own — the flame, the
+## burning fire — keep it). C cycles the four palettes.
 const COLOR_GRADE_SHADER := preload("res://assets/shaders/color_grade.gdshader")
+const LAYER_GRADE_SHADER := preload("res://assets/shaders/layer_grade.gdshader")
+const PALETTES_SCRIPT := preload("res://scripts/systems/Palettes.gd")
+const BACK_SCENES: Array[String] = ["res://scenes/props/Mountain.tscn",
+	"res://scenes/props/Lake.tscn", "res://scenes/props/Glade.tscn"]
+## Trees: the back layer's palette but a gentler hand (user: "stem needs to
+## be more brownish" — the full grim ramp washed bark to olive-grey).
+const LAND_SCENES: Array[String] = ["res://scenes/props/Tree.tscn",
+	"res://scenes/props/FirTree.tscn"]
+const MIDDLE_SCENES: Array[String] = ["res://scenes/props/City.tscn",
+	"res://scenes/objects/WizardTower.tscn", "res://scenes/objects/Mine.tscn",
+	"res://scenes/props/PigPen.tscn", "res://scenes/props/CowPen.tscn",
+	"res://scenes/systems/Field.tscn", "res://scenes/props/HagNest.tscn",
+	"res://scenes/props/DragonTemple.tscn", "res://scenes/props/DragonLair.tscn",
+	"res://scenes/props/InvaderCamp.tscn", "res://scenes/props/Sacrifice.tscn"]
 var color_grade: CanvasLayer
+var palette_index := 0
+var _layer_mats := {}   # "back"/"middle"/"front" → ShaderMaterial
 
 func _build_color_grade() -> void:
 	color_grade = CanvasLayer.new()
@@ -409,9 +433,111 @@ func _build_color_grade() -> void:
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var mat := ShaderMaterial.new()
 	mat.shader = COLOR_GRADE_SHADER
+	# vignette and faded blacks only — the palettes grade the colour
+	mat.set_shader_parameter("exposure", 1.0)
+	mat.set_shader_parameter("saturation", 1.0)
+	mat.set_shader_parameter("fire_saturation", 1.0)
+	mat.set_shader_parameter("contrast", 1.06)
+	mat.set_shader_parameter("shadow_tint", Vector3(1.0, 1.0, 1.0))
+	mat.set_shader_parameter("highlight_tint", Vector3(1.0, 1.0, 1.0))
+	mat.set_shader_parameter("lift_color", Vector3(0.03, 0.035, 0.05))
+	mat.set_shader_parameter("vignette", 0.5)
 	rect.material = mat
 	color_grade.add_child(rect)
 	add_child(color_grade)
+	for layer: String in ["back", "land", "middle", "front"]:
+		var m := ShaderMaterial.new()
+		m.shader = LAYER_GRADE_SHADER
+		_layer_mats[layer] = m
+	apply_palette(PALETTES_SCRIPT.DEFAULT)
+	# grade everything that exists, and everything that arrives later
+	if world_manager != null:
+		for child: Node in world_manager.get_children():
+			_grade_node(child)
+		world_manager.child_entered_tree.connect(func(n: Node) -> void: _grade_node.call_deferred(n))
+	if dragon != null:
+		_grade_node(dragon)
+		if dragon.has_signal("form_changed"):
+			dragon.form_changed.connect(func(_on: bool) -> void: _grade_node.call_deferred(dragon))
+
+func apply_palette(index: int) -> void:
+	var list: Array = PALETTES_SCRIPT.PALETTES
+	palette_index = posmod(index, list.size())
+	var pal: Dictionary = list[palette_index]
+	for layer: String in ["back", "land", "middle", "front"]:
+		var src: Dictionary = pal.get(layer, {})
+		if layer == "land" and src.is_empty():
+			src = _land_from(pal["back"])
+		var m: ShaderMaterial = _layer_mats[layer]
+		m.set_shader_parameter("ramp_dark", src["dark"])
+		m.set_shader_parameter("ramp_mid", src["mid"])
+		m.set_shader_parameter("ramp_light", src["light"])
+		m.set_shader_parameter("ramp_mix", src["mix"])
+		m.set_shader_parameter("saturation", src["sat"])
+		m.set_shader_parameter("exposure", src["exp"])
+	var wm := world_manager as WorldManager
+	if wm != null and wm.ground != null and wm.ground.has_method("set_grade"):
+		wm.ground.call("set_grade", pal["back"])
+	print("GameManager: palette %d — %s" % [palette_index + 1, pal["name"]])
+
+## Trees' grade when a palette names none: the back ramp at under half the
+## strength, more of the art's own colour (brown bark, green leaves) kept.
+func _land_from(back: Dictionary) -> Dictionary:
+	var land := back.duplicate()
+	land["mix"] = float(back["mix"]) * 0.4
+	land["sat"] = minf(float(back["sat"]) + 0.25, 1.05)
+	land["exp"] = float(back["exp"]) + 0.16
+	return land
+
+func cycle_palette() -> void:
+	apply_palette(palette_index + 1)
+	var pal: Dictionary = PALETTES_SCRIPT.PALETTES[palette_index]
+	_hud_message("Palette %d/%d: %s — %s" % [palette_index + 1,
+		PALETTES_SCRIPT.PALETTES.size(), pal["name"], pal["blurb"]], 3.0)
+
+func _unhandled_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if key != null and key.pressed and not key.echo and key.physical_keycode == KEY_C \
+			and not story_open and not get_tree().paused:
+		cycle_palette()
+		get_viewport().set_input_as_handled()
+
+## Which layer a world node belongs to ("" = leave it alone).
+func _layer_of(n: Node) -> String:
+	if n == dragon or n is BaseNPC:
+		return "front"
+	var path := n.scene_file_path
+	if path in MIDDLE_SCENES:
+		return "middle"
+	if path in BACK_SCENES:
+		return "back"
+	if path in LAND_SCENES:
+		return "land"
+	return ""
+
+func _grade_node(n: Node) -> void:
+	if n == null or not is_instance_valid(n) or not n.is_inside_tree():
+		return
+	var layer := _layer_of(n)
+	if layer == "":
+		return
+	var item := n as CanvasItem
+	if item == null:
+		return
+	item.material = _layer_mats[layer]
+	_inherit_grade(item)
+
+## Drawn descendants use the root's grade — except anything with a shader
+## of its own (the dragon's flame, a burning body), which keeps it.
+func _inherit_grade(item: CanvasItem) -> void:
+	for child: Node in item.get_children():
+		var ci := child as CanvasItem
+		if ci == null:
+			continue
+		if ci.material != null and ci.material != item.material:
+			continue
+		ci.use_parent_material = true
+		_inherit_grade(ci)
 
 # --- the opening chapter (2026-11-14) -------------------------------------------
 

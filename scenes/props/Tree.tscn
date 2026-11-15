@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://t7r3e2a1w9q4"]
+[gd_scene load_steps=4 format=3 uid="uid://t7r3e2a1w9q4"]
 
 [ext_resource type="Texture2D" path="res://assets/sprites/tree.svg" id="1_tree_tex"]
+[ext_resource type="Script" path="res://scripts/props/LeafTree.gd" id="2_tree_script"]
 
 [sub_resource type="RectangleShape2D" id="1_tree_shape"]
 size = Vector2(30, 10)
@@ -8,6 +9,7 @@ size = Vector2(30, 10)
 [node name="Tree" type="StaticBody2D"]
 collision_layer = 16
 collision_mask = 0
+script = ExtResource("2_tree_script")
 
 [node name="Sprite" type="Sprite2D" parent="."]
 position = Vector2(0, -27)

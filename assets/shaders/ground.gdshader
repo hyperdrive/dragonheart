@@ -21,6 +21,13 @@ uniform vec2 origin = vec2(-1760.0, -1760.0);   // world rect of this quad
 uniform vec2 extent = vec2(3520.0, 3520.0);
 uniform vec2 world_half = vec2(960.0, 960.0);   // the playfield's half size
 uniform float seed = 0.0;
+// the palette's back-layer grade (Palettes.gd, set by GameManager)
+uniform vec3 ramp_dark : source_color = vec3(0.1);
+uniform vec3 ramp_mid : source_color = vec3(0.5);
+uniform vec3 ramp_light : source_color = vec3(0.9);
+uniform float ramp_mix = 0.0;
+uniform float grade_saturation = 1.0;
+uniform float grade_exposure = 1.0;
 
 varying vec2 world;
 
@@ -200,8 +207,12 @@ void fragment() {
 
 	// a quieter palette (2026-11-15, user: "a lot less saturated" — the
 	// ground is the stage; the dragon's fire carries the colour)
-	float luma = dot(col, vec3(0.299, 0.587, 0.114));
-	col = mix(vec3(luma), col, 1.0);    // the colour grade (color_grade.gdshader) takes it down to ~0.64
+	// the palette's back-layer ramp: grim-dark, by luminance
+	float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
+	vec3 ramp = luma < 0.5 ? mix(ramp_dark, ramp_mid, luma * 2.0) : mix(ramp_mid, ramp_light, luma * 2.0 - 1.0);
+	col = mix(col, ramp, ramp_mix);
+	float gl = dot(col, vec3(0.2126, 0.7152, 0.0722));
+	col = mix(vec3(gl), col, grade_saturation) * grade_exposure;
 
 	// beyond the boundary walls the land dims into wilderness
 	vec2 outside = max(abs(w) - world_half, vec2(0.0));
