@@ -175,6 +175,7 @@ func _ready() -> void:
 	# Fire breath window wiring handled in fire_breath(); the idle starts on play.
 	fire_area.monitoring = false  # breath window only, set in fire_breath()
 	flame.visible = false
+	_build_flame_fx()
 	flight_state_changed.emit(false, 0.0, false)  # initial HUD chip state
 
 func sync_from_game_manager() -> void:
@@ -574,6 +575,7 @@ func _ignite_flammables() -> void:
 				base.catch_fire()
 
 func _process(delta: float) -> void:
+	_feed_flame_fx()
 	# Auto-theft: the core loop. When a payload carrier is in range and
 	# cooldown allows, attempt an interception. (Dead dragons steal nothing.)
 	if _dying:
@@ -1078,6 +1080,38 @@ func learn_greater_flame() -> void:
 	_flame_length = 2.0
 	_apply_facing()
 	print("Dragon: GREATER FLAME — reach %0.0f, the ground burns behind it" % fire_reach)
+
+# --- the flame shader (2026-11-15) ---------------------------------------------------
+
+## User: "increase saturation of the flame. Maybe we should try writing a
+## flame shader?" The breath is drawn by assets/shaders/dragon_flame.gdshader
+## on one ColorRect inside the Flame node (so the facing flip and Greater
+## Flame's ×2 length still apply). The three old ColorRects stay hidden in
+## the scene: the breath animation still scales and fades OuterFlame, and
+## _process feeds that burst and fade to the shader.
+const FLAME_SHADER := preload("res://assets/shaders/dragon_flame.gdshader")
+const FLAME_FX_RECT := Rect2(-4.0, -20.0, 76.0, 40.0)  # mouth → tip, across
+var _flame_fx_mat: ShaderMaterial
+@onready var _outer_flame: CanvasItem = $Vis/FireArea/Flame/OuterFlame
+
+func _build_flame_fx() -> void:
+	var fx := ColorRect.new()
+	fx.name = "FlameFX"
+	fx.position = FLAME_FX_RECT.position
+	fx.size = FLAME_FX_RECT.size
+	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flame_fx_mat = ShaderMaterial.new()
+	_flame_fx_mat.shader = FLAME_SHADER
+	_flame_fx_mat.set_shader_parameter("seed", randf() * 10.0)
+	fx.material = _flame_fx_mat
+	flame.add_child(fx)
+
+func _feed_flame_fx() -> void:
+	if _flame_fx_mat == null or not flame.visible or _outer_flame == null:
+		return
+	var burst: float = (_outer_flame as Control).scale.x if _outer_flame is Control else 1.0
+	_flame_fx_mat.set_shader_parameter("power", burst)
+	_flame_fx_mat.set_shader_parameter("fade", clampf(_outer_flame.modulate.a * 1.25, 0.0, 1.0))
 
 func _drop_ground_fire(delta: float) -> void:
 	if not greater_flame or human_form:

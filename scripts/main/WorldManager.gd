@@ -330,6 +330,7 @@ func _ready() -> void:
 	tower_position = _clamp_to_interior(tower_position, FOOTPRINT_RADIUS["tower"])
 	generate_world()
 	_build_nav_grid()
+	_build_ground()
 	# Connect to field_burnt signal AFTER generation (fields are created in generate_world)
 	for field_node in get_tree().get_nodes_in_group("fields"):
 		var field := field_node as Field
@@ -1007,6 +1008,7 @@ func _spawn_sacrifice(burnt_field_position: Vector2) -> void:
 	add_child(instance)
 	setup_entity("sacrifice", instance)
 	print("WorldManager: Sacrifice spawned at %s" % str(position))
+	refresh_ground()
 
 
 ## Jittered position inside the mining district (spreads miners across it).
@@ -1585,11 +1587,31 @@ func spawn_hag_nest() -> void:
 	fen_hag = hag
 	entity_spawned.emit("hag", hag.global_position)
 	print("WorldManager: the Hag's Nest rises in the fen at %s" % nest_pos)
+	refresh_ground()
 	# New scenery: re-test the grid cells under the nest and its firs.
 	var area := Rect2(nest_pos, Vector2.ZERO).grow(120.0)
 	for fir_node: Node in get_tree().get_nodes_in_group("fir_trees"):
 		area = area.expand((fir_node as Node2D).global_position)
 	_refresh_nav_area(area.grow(40.0))
+
+# --- the living ground (2026-11-15) ------------------------------------------------
+
+## Meadow hills under everything, blended toward each prop's own ground
+## (GroundTerrain.gd + assets/shaders/ground.gdshader). Repainted whenever
+## a landmark rises.
+const GROUND_SCRIPT := preload("res://scripts/systems/GroundTerrain.gd")
+var ground: Node2D = null
+
+func _build_ground() -> void:
+	ground = GROUND_SCRIPT.new() as Node2D
+	ground.name = "Ground"
+	ground.set("world_size", world_size)
+	add_child(ground)
+	ground.call("refresh")
+
+func refresh_ground() -> void:
+	if ground != null and is_instance_valid(ground):
+		ground.call("refresh")
 
 # --- the Temple of the Dragon Queen (2026-11-15) ---------------------------------
 
@@ -1636,6 +1658,7 @@ func spawn_dragon_temple() -> void:
 	register_footprint(spot, TEMPLE_RADIUS)   # walkable ruins, but no new fields on them
 	entity_spawned.emit("terrain", spot)
 	print("WorldManager: the Temple of the Dragon Queen stands at %s" % spot)
+	refresh_ground()
 
 # --- the aftermath: the glade, the deer, the Prince (2026-11-15) --------------
 
@@ -1684,6 +1707,7 @@ func spawn_glade() -> void:
 	register_footprint(glade_position, 160.0)
 	entity_spawned.emit("glade", glade_position)
 	print("WorldManager: a glade blooms at %s" % glade_position)
+	refresh_ground()
 	_deer_timer = Timer.new()
 	_deer_timer.wait_time = DEER_EVERY
 	_deer_timer.timeout.connect(_on_deer_timer)
@@ -1809,6 +1833,7 @@ func start_invasion() -> void:
 	camp.global_position = invasion_camp_position
 	add_child(camp)
 	entity_spawned.emit("invader_camp", invasion_camp_position)
+	refresh_ground()
 	# The realm's soldiers become the garrison (Soldier._defending): they
 	# muster at the gate and hunt the invaders in a group (_tick_squad).
 	_squad_released = false

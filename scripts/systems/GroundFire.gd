@@ -23,8 +23,11 @@ const VICTIM_GROUPS: Array[String] = ["farmers", "miners", "soldiers", "goblins"
 var _age := 0.0
 var _check_left := 0.0
 var _seed := 0.0
-var _tongues: Array[Polygon2D] = []
 var _glow: Polygon2D
+var _fire_mat: ShaderMaterial
+## The flames themselves: the same rising-fire shader as a burning body
+## (assets/shaders/body_fire.gdshader, spread = ground patch), 2026-11-15.
+const BODY_FIRE_SHADER := preload("res://assets/shaders/body_fire.gdshader")
 
 func _ready() -> void:
 	z_index = 0
@@ -36,43 +39,34 @@ func _ready() -> void:
 		var a := TAU * float(k) / 12.0
 		bed.append(Vector2.from_angle(a) * RADIUS * Vector2(1.0, 0.5) * randf_range(0.85, 1.1))
 	_glow.polygon = bed
-	_glow.color = Color(0.55, 0.12, 0.02, 0.75)
+	_glow.color = Color(0.6, 0.06, 0.0, 0.75)
 	add_child(_glow)
-	# a few licking tongues of fire
-	for i in 4:
-		var tongue := Polygon2D.new()
-		tongue.position = Vector2(randf_range(-RADIUS * 0.6, RADIUS * 0.6), randf_range(-2.0, 3.0))
-		tongue.color = [Color(1.0, 0.42, 0.05, 0.9), Color(1.0, 0.68, 0.12, 0.95),
-			Color(1.0, 0.92, 0.55, 1.0)][i % 3]
-		add_child(tongue)
-		_tongues.append(tongue)
-	_shape_tongues()
+	var rect := ColorRect.new()
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.size = Vector2(RADIUS * 2.6, RADIUS * 2.2)
+	rect.position = Vector2(-rect.size.x * 0.5, -rect.size.y + RADIUS * 0.35)
+	_fire_mat = ShaderMaterial.new()
+	_fire_mat.shader = BODY_FIRE_SHADER
+	_fire_mat.set_shader_parameter("seed", randf() * 10.0)
+	_fire_mat.set_shader_parameter("spread", 1.0)
+	_fire_mat.set_shader_parameter("intensity", 0.0)
+	rect.material = _fire_mat
+	add_child(rect)
 
 func _physics_process(delta: float) -> void:
 	_age += delta
 	if _age >= LIFETIME:
 		queue_free()
 		return
-	# the last second: the fire gutters and dies down
-	var fade := clampf((LIFETIME - _age) / 1.0, 0.0, 1.0)
-	modulate.a = fade
-	_shape_tongues()
+	# flares up at once, gutters over the last second
+	var life := smoothstep(0.0, 0.2, _age) * clampf((LIFETIME - _age) / 1.2, 0.0, 1.0)
+	_fire_mat.set_shader_parameter("intensity", life)
+	_glow.color.a = (0.55 + 0.15 * sin(_age * 11.0 + _seed)) * clampf((LIFETIME - _age) / 1.0, 0.0, 1.0)
 	_check_left -= delta
 	if _check_left > 0.0:
 		return
 	_check_left = CHECK_EVERY
 	_burn_walkers()
-
-func _shape_tongues() -> void:
-	var t := _age * 9.0 + _seed
-	for i in _tongues.size():
-		var h := (9.0 + 5.0 * sin(t + float(i) * 1.7)) * (1.0 - 0.25 * float(i % 3))
-		var w := 4.2 - float(i % 3)
-		var sway := 2.0 * sin(t * 0.7 + float(i))
-		_tongues[i].polygon = PackedVector2Array([
-			Vector2(-w, 0.0), Vector2(-w * 0.4, -h * 0.55),
-			Vector2(sway, -h), Vector2(w * 0.4, -h * 0.5), Vector2(w, 0.0)])
-	_glow.color.a = 0.6 + 0.15 * sin(t * 1.3)
 
 func _burn_walkers() -> void:
 	for group: String in VICTIM_GROUPS:

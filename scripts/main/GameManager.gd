@@ -387,7 +387,31 @@ func _ready() -> void:
 		dragon.rider_upgraded.connect(_on_rider_upgraded)
 	emit_signal("gold_changed", treasury["gold"])
 	emit_signal("food_changed", food)
+	_build_color_grade()
 	_start_intro.call_deferred()
+
+# --- the grim-dark colour grade (2026-11-15) -----------------------------------------
+
+## User: "harmonise the colour grades across all assets. Pick a colour
+## grading for a grim dark setting and apply." One full-screen pass
+## (assets/shaders/color_grade.gdshader) on CanvasLayer 1: above the world,
+## under the HUD (layer 2), the wizard's shop (10) and the story popups
+## (12) — the world is graded, the UI stays legible.
+const COLOR_GRADE_SHADER := preload("res://assets/shaders/color_grade.gdshader")
+var color_grade: CanvasLayer
+
+func _build_color_grade() -> void:
+	color_grade = CanvasLayer.new()
+	color_grade.name = "ColorGrade"
+	color_grade.layer = 1
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = COLOR_GRADE_SHADER
+	rect.material = mat
+	color_grade.add_child(rect)
+	add_child(color_grade)
 
 # --- the opening chapter (2026-11-14) -------------------------------------------
 

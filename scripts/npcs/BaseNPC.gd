@@ -187,7 +187,7 @@ func catch_fire() -> void:
 	if behavior_tree != null:
 		behavior_tree.kill()
 	if sprite != null:
-		sprite.modulate = Color(1.0, 0.4, 0.1)  # scorched tint
+		sprite.modulate = Color(0.78, 0.42, 0.28)  # scorched, sooty
 		_flames_spawn()
 	print(npc_type + " caught fire — panicking!")
 	# TTRPG story beat: the first miner torching is a chapter title
@@ -222,14 +222,22 @@ func _tick_burning(delta: float) -> void:
 
 # --- flame overlay (2026-11-09) -------------------------------------------------
 
-## Burning look beyond the scorched tint: three warm flame tongues over the
-## body, code-flickered (height waves, side sway, alpha pulse) — applies to
-## ALL burning NPC types (user-grilled). Torn down the frame the fire is
-## out or the body dies.
-const FLAME_FLICKER_HZ := 14.0
+## Burning look (2026-11-15, user: "When NPCs are alit with fire they need
+## a better shader too"): a column of rising fire drawn by
+## assets/shaders/body_fire.gdshader — turbulent tongues licking up the body,
+## white-hot at the base, blood-red at the tips, sparks and a glow. It flares
+## at ignition and gutters as the burn runs out (`intensity`); every NPC gets
+## its own seed so no two fires flicker in step. The overlay is a child of
+## the NPC itself, NOT of the sprite: the sprite carries the scorched tint,
+## which would otherwise dull the flames. Applies to ALL burning NPC types;
+## torn down the frame the fire is out or the body dies.
+const BODY_FIRE_SHADER := preload("res://assets/shaders/body_fire.gdshader")
+const FLAME_FLARE_TIME := 0.25   # ignition flare-up
+const FLAME_GUTTER_TIME := 0.7   # dying down at the end of the burn
 
 var _flames: Node2D = null
-var _flame_phase := 0.0
+var _flame_mat: ShaderMaterial = null
+var _flame_age := 0.0
 
 func _flames_spawn() -> void:
 	if _flames != null or sprite == null:
@@ -237,47 +245,67 @@ func _flames_spawn() -> void:
 	_flames = Node2D.new()
 	_flames.name = "Flames"
 	_flames.z_index = 2
-	sprite.add_child(_flames)
-	# body-top anchors: rise from ~waist to over the head; widths narrow
-	var spec := [
-		{"x": -7.0, "h": 10.0, "c": Color(0.85, 0.2, 0.08)},
-		{"x": 2.0, "h": 14.0, "c": Color(1.0, 0.5, 0.08)},
-		{"x": -3.0, "h": 18.0, "c": Color(1.0, 0.85, 0.25)},
-	]
-	for i in spec.size():
-		var tongue := ColorRect.new()
-		tongue.name = "Tongue%d" % i
-		var h: float = spec[i]["h"]
-		tongue.size = Vector2(6 + i, h)
-		tongue.position = Vector2(spec[i]["x"], -h + 2.0)
-		tongue.color = spec[i]["c"]
-		tongue.rotation = randf_range(-0.1, 0.1)
-		_flames.add_child(tongue)
+	add_child(_flames)
+	# Ablaze from the hips up (user: "before the NPC was ablaze from the
+	# hip up which made you appreciate the running legs more"): the base of
+	# the fire sits at the waist, the tongues climb past the head. Sized
+	# from the body — the sprite sits at the hips — so scaled bodies (the
+	# King) burn bigger, within limits.
+	# (The sprite's position is already in this NPC's space — only the
+	# flame's SIZE follows the sprite's scale; the waist does not.)
+	var waist := absf(sprite.position.y) * 0.85
+	var hip := absf(sprite.position.y) * absf(sprite.scale.y)
+	var tall := clampf(hip * 1.5, 30.0, 46.0)
+	var wide := clampf(hip * 1.0, 22.0, 32.0)
+	var rect := ColorRect.new()
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# the candle's round base sits on the waist, the flame over the chest
+	rect.position = Vector2(-wide * 0.5, -tall)
+	rect.size = Vector2(wide, tall)
+	_flame_mat = ShaderMaterial.new()
+	_flame_mat.shader = BODY_FIRE_SHADER
+	_flame_mat.set_shader_parameter("seed", randf() * 10.0)
+	_flame_mat.set_shader_parameter("intensity", 0.0)
+	rect.material = _flame_mat
+	_flames.add_child(rect)
+	_flame_age = 0.0
+	_flame_waist = waist
+	_flame_lean = 0.0
+	_follow_body()
 
-func _animate_flames(delta: float) -> void:
+var _flame_waist := 20.0
+var _flame_lean := 0.0
+
+## The flame rides the body: anchored at the rig's torso (which bobs on
+## every footfall and leans into the run), else at the waist.
+func _follow_body() -> void:
 	if _flames == null:
 		return
-	_flame_phase += delta * FLAME_FLICKER_HZ
-	for i in _flames.get_child_count():
-		var tongue := _flames.get_child(i) as ColorRect
-		if tongue == null:
-			continue
-		var w := 1.0 + 0.31 * float(i)
-		# breathing height wave, differing per tongue; zero stays >= 1 scale?
-		tongue.scale.y = 0.7 + 0.45 * absf(sin(_flame_phase * w + 2.1 * float(i)))
-		tongue.rotation = 0.16 * sin(_flame_phase * (0.6 + 0.17 * float(i)))
-		tongue.position.x = _flame_anchor_x(i) + 1.5 \
-			* sin(_flame_phase * (0.9 + 0.13 * float(i)))
-		tongue.modulate.a = 0.78 + 0.22 * absf(sin(_flame_phase * (1.3 + 0.09 * i)))
+	var rig := sprite as HumanoidRig
+	var torso := rig.part("Torso") if rig != null else null
+	if torso != null:
+		_flames.global_position = torso.global_position + Vector2(0.0, -4.0)
+	else:
+		_flames.position = Vector2(0.0, -_flame_waist)
 
-func _flame_anchor_x(i: int) -> float:
-	var spec := [-7.0, 2.0, -3.0]
-	return spec[i] if i < spec.size() else 0.0
+func _animate_flames(delta: float) -> void:
+	if _flames == null or _flame_mat == null:
+		return
+	_follow_body()
+	# streams back from the run (eased, so turns swing the flame over)
+	var run := clampf(velocity.x / 140.0, -1.0, 1.0)
+	_flame_lean = lerpf(_flame_lean, run, clampf(delta * 6.0, 0.0, 1.0))
+	_flame_mat.set_shader_parameter("lean", _flame_lean)
+	_flame_age += delta
+	var flare := smoothstep(0.0, FLAME_FLARE_TIME, _flame_age)
+	var gutter := clampf(_burning_left / FLAME_GUTTER_TIME, 0.0, 1.0)
+	_flame_mat.set_shader_parameter("intensity", flare * lerpf(0.35, 1.0, gutter))
 
 func _flames_teardown() -> void:
 	if _flames != null and is_instance_valid(_flames):
 		_flames.queue_free()
 	_flames = null
+	_flame_mat = null
 	if not is_alive or _burning_left > 0.0:
 		return
 	# The burn is over: the last of its damage lands (frame rounding), and

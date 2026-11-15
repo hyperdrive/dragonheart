@@ -901,25 +901,28 @@ shape = SubResource("1_j7h1g")
 visible = false
 
 [node name="OuterFlame" type="ColorRect" parent="Vis/FireArea/Flame" unique_id=403964177]
+visible = false
 offset_left = 12.0
 offset_top = -10.0
 offset_right = 56.0
 offset_bottom = 12.0
-color = Color(1, 0.45, 0.05, 0.85)
+color = Color(1, 0.2, 0, 0.95)
 
 [node name="MidFlame" type="ColorRect" parent="Vis/FireArea/Flame" unique_id=1761579978]
+visible = false
 offset_left = 10.0
 offset_top = -7.0
 offset_right = 42.0
 offset_bottom = 8.0
-color = Color(1, 0.65, 0.1, 0.95)
+color = Color(1, 0.46, 0, 1)
 
 [node name="CoreFlame" type="ColorRect" parent="Vis/FireArea/Flame" unique_id=793250827]
+visible = false
 offset_left = 8.0
 offset_top = -4.0
 offset_right = 26.0
 offset_bottom = 4.0
-color = Color(1, 0.95, 0.6, 1)
+color = Color(1, 0.84, 0.18, 1)
 
 [node name="FireDetector" type="Node2D" parent="Vis/FireArea" unique_id=563030850]
 
@@ -931,14 +934,14 @@ offset_left = 10.0
 offset_top = -5.0
 offset_right = 18.0
 offset_bottom = 3.0
-color = Color(1, 0.6, 0.2, 1)
+color = Color(1, 0.42, 0, 1)
 
 [node name="Ember2" type="ColorRect" parent="Vis/FireArea/EmberPieces" unique_id=2039025561]
 visible = false
 offset_left = -18.0
 offset_right = -10.0
 offset_bottom = 8.0
-color = Color(1, 0.5, 0.1, 1)
+color = Color(1, 0.24, 0, 1)
 
 [node name="Ember3" type="ColorRect" parent="Vis/FireArea/EmberPieces" unique_id=1059084500]
 visible = false
@@ -946,7 +949,7 @@ offset_left = -10.0
 offset_top = -10.0
 offset_right = -2.0
 offset_bottom = -2.0
-color = Color(1, 0.7, 0.3, 1)
+color = Color(1, 0.62, 0.04, 1)
 
 [node name="CollisionShape" type="CollisionShape2D" parent="." unique_id=726434892]
 shape = SubResource("1_b5t6n")
