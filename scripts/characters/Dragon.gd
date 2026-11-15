@@ -225,7 +225,7 @@ func _physics_process(delta: float) -> void:
 		_flight_recharge_left -= delta
 		if _flight_recharge_left <= 0.0:
 			_flight_recharge_left = 0.0
-			print("Dragon's wings are rested — the sky awaits! (Q)")
+			print("Dragon's wings are rested — the sky awaits! (%s)" % SETTINGS_KEYS.key_name("fly"))
 
 	var input_direction := Vector2.ZERO
 	if Input.is_action_pressed("move_left"):
@@ -304,11 +304,12 @@ var _strike_cooldown: float = 0.0
 
 signal strike_missed
 
+const SETTINGS_KEYS := preload("res://scripts/ui/SettingsMenu.gd")   # bound-key names for hints
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("eat") and not _dying and not human_form:
 		_try_context_action()
-	var key := event as InputEventKey
-	if key != null and key.pressed and not key.echo and key.physical_keycode == KEY_T \
+	if event.is_action_pressed("shapeshift") and not event.is_echo() \
 			and can_shapeshift and not _dying and game_manager != null:
 		game_manager.request_shapeshift()
 		get_viewport().set_input_as_handled()
@@ -728,7 +729,7 @@ func _try_flight() -> void:
 		return
 	if _flying:
 		if _over_water():
-			print("Too much water below to land — glide to a shore! (Q)")
+			print("Too much water below to land — glide to a shore! (%s)" % SETTINGS_KEYS.key_name("fly"))
 			return
 		land_flight()
 		return

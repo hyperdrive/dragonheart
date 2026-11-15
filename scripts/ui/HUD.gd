@@ -2,6 +2,8 @@ extends Control
 
 class_name GameHUD
 
+const SETTINGS_KEYS := preload("res://scripts/ui/SettingsMenu.gd")   # bound-key names
+
 ## HUD view: binds to GameManager (single state hub) —
 ## treasury (town pool), food, dragon stash + carried claws (the hauling loop),
 ## dragon levels, threat readout (soldiers/swarm/King), victory
@@ -119,7 +121,7 @@ func _on_flight_state(flying: bool, seconds_left: float, charging: bool) -> void
 		wings_label.text = "Wings %ds" % ceili(seconds_left)
 		wings_label.modulate = Color(1.0, 0.85, 0.6)
 	else:
-		wings_label.text = "Wings: ready (Q)"
+		wings_label.text = "Wings: ready (%s)" % SETTINGS_KEYS.key_name("fly")
 		wings_label.modulate = Color.WHITE
 
 func _refresh_pools() -> void:

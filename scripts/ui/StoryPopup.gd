@@ -745,7 +745,7 @@ const STORIES := {
 		"title": "Honey and Fen-Mint",
 		"image": "res://assets/story/story_transform.svg",
 		"tint": Color(0.30, 0.12, 0.08),
-		"text": "The tea is sweet. The third cup is not tea at all. It starts in your teeth — a cold ache, as if each fang were drawn by a patient hand. Then your bones. Your wings fold, and fold, and scales rain off you to smoke on the hearthstones. When you can breathe again you are kneeling on a rag rug: freckled hands, auburn braids, a green dress. Not a stranger's shape — one of the voices knows this face, and is weeping. \"There now,\" says the old woman. \"Much easier to talk to.\"\n\n(Press T to change between dragon and girl. No enemy will see the girl — but she cannot breathe fire, fly or feed.)",
+		"text": "The tea is sweet. The third cup is not tea at all. It starts in your teeth — a cold ache, as if each fang were drawn by a patient hand. Then your bones. Your wings fold, and fold, and scales rain off you to smoke on the hearthstones. When you can breathe again you are kneeling on a rag rug: freckled hands, auburn braids, a green dress. Not a stranger's shape — one of the voices knows this face, and is weeping. \"There now,\" says the old woman. \"Much easier to talk to.\"\n\n(Press {key:shapeshift} to change between dragon and girl. No enemy will see the girl — but she cannot breathe fire, fly or feed.)",
 		"choices": ["Look down at your hands."],
 	},
 	"hag_tea_warning": {
@@ -1166,6 +1166,8 @@ var current_kind: String = ""
 ## (which owns pause + the once-per-run ledger); this popup stays dumb.
 ## `note` joins the text as a closing paragraph (outcome reports say what
 ## the deed actually did — the flame gained, who waits in the lair).
+const SETTINGS_KEYS := preload("res://scripts/ui/SettingsMenu.gd")   # {key:action} → bound key
+
 func open(kind: String, note: String = "") -> void:
 	var story: Variant = STORIES.get(kind)
 	if story == null:
@@ -1180,7 +1182,7 @@ func open(kind: String, note: String = "") -> void:
 	else:
 		image_rect.texture = null
 	_show_animation(str(STORIES[kind].get("animation", "")))
-	text_label.text = STORIES[kind]["text"] + ("\n\n" + note if note != "" else "")
+	text_label.text = SETTINGS_KEYS.with_keys(STORIES[kind]["text"] + ("\n\n" + note if note != "" else ""))
 	_rebuild_choices(STORIES[kind]["choices"])
 	# One-answer chapters (meals, outcome reports) just continue.
 	var count: int = STORIES[kind]["choices"].size()
@@ -1241,10 +1243,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			if i >= choice_texts.size():
 				break
 			if key.physical_keycode == HOTKEYS[i]:
-				_on_choice_pressed(i)
+				# handled FIRST: the choice can take this popup out of the
+				# tree (a scene reload), and then there is no viewport
 				get_viewport().set_input_as_handled()
+				_on_choice_pressed(i)
 				return
 	if event.is_action_pressed("ui_cancel"):
 		# ESC picks the closing line (last choice) — the story must answer.
-		_on_choice_pressed(choice_texts.size() - 1)
 		get_viewport().set_input_as_handled()
+		_on_choice_pressed(choice_texts.size() - 1)

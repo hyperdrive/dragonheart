@@ -501,8 +501,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		open_settings_menu()
 		get_viewport().set_input_as_handled()
 		return
-	var key := event as InputEventKey
-	if key != null and key.pressed and not key.echo and key.physical_keycode == KEY_C \
+	if event.is_action_pressed("palette") and not event.is_echo() \
 			and not story_open and not get_tree().paused:
 		cycle_palette()
 		get_viewport().set_input_as_handled()
@@ -595,14 +594,14 @@ func _on_chapter_choice(kind: String, choice_index: int) -> void:
 				if wm.hag_alive():
 					wm.fen_hag.befriend()
 				wm.force_wizard_turn()
-			_hud_message("Ambrose Fairweather waits in his tower. Press T to wake the dragon.", 6.0)
+			_hud_message("Ambrose Fairweather waits in his tower. Press %s to wake the dragon." % SETTINGS_SCRIPT.key_name("shapeshift"), 6.0)
 		"hag_unmasked":
 			# she was attacked during the visit: she knows the girl's face now
 			story_flags["hag_attacked_at_house"] = true
 			var wm := world_manager as WorldManager
 			if wm != null and wm.hag_alive():
 				wm.fen_hag.unmask()
-			_hud_message("Mother Grisla attacks! Press T to wake the dragon.", 6.0)
+			_hud_message("Mother Grisla attacks! Press %s to wake the dragon." % SETTINGS_SCRIPT.key_name("shapeshift"), 6.0)
 		# --- the hag's house, she is dead: the book of Lorindel ---
 		"hag_house_ruin", "hag_house_book":
 			if choice_index == 0:

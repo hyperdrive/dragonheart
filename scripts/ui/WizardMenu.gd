@@ -15,7 +15,7 @@ const OPTIONS: Array = [
 	{"kind": "shield", "label": "Shield 40 (%s)", "desc": "Absorbs 40 damage, then gone. Cannot restack while one is active."},
 	{"kind": "speed", "label": "Speed Boost (%s)", "desc": "Fast wings for 6s (x1.6). Also quickens your claws for good (0.2s recharge)."},
 	{"kind": "range", "label": "Longer Flame (%s)", "desc": "Breath reaches +20px further. Permanent."},
-	{"kind": "flight", "label": "Longer Flight (%s)", "desc": "Q flight bursts last +3s longer. Permanent."},
+	{"kind": "flight", "label": "Longer Flight (%s)", "desc": "Flight bursts last +3s longer. Permanent."},
 	{"kind": "brute", "label": "Brute Force (%s)", "desc": "Heavier claws: +7 claw damage. Repeatable, up to 50 (one strike per soldier)."},
 	{"kind": "rider_train", "label": "Train Dragon Rider (%s)", "desc": "Train the sacrifice as a dragon rider. Costs 10g. Enables rider combat."},
 ]
@@ -118,12 +118,12 @@ func _flash_stash() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()   # before: close() may leave the tree
 		close()
-		get_viewport().set_input_as_handled()
 		return
 	for i in HOTKEYS.size():
 		var key := event as InputEventKey
 		if key != null and key.pressed and key.physical_keycode == HOTKEYS[i]:
-			_on_option_pressed(OPTIONS[i]["kind"])
 			get_viewport().set_input_as_handled()
+			_on_option_pressed(OPTIONS[i]["kind"])
 			return
