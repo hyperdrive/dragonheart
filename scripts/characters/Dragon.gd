@@ -82,7 +82,6 @@ var _claw_phase := 0.0
 
 @export_group("Fire breath")
 @export var fire_reach: float = 95.0        # ignition distance from the mouth
-@export var fire_ignite_cone: float = 0.25  # facing half-plane dot threshold
 ## Flame economy: breaths are a resource — spent on fire, refilled by eating
 ## animals (pig +1, cow +2). Empty claws = a very quiet dragon.
 @export var max_flame_charges: int = 4
@@ -547,31 +546,49 @@ func _fire_origin() -> Vector2:
 const FLAMMABLE_GROUPS: Array[String] = ["farmers", "miners", "soldiers",
 	"goblins", "king", "wizard", "adventurers", "hag", "fields", "invaders"]
 
+## The breath's footprint on the ground (2026-11-15 fix, user: "the hitbox
+## for the dragon fire is currently strange. It seems to take a lot of hits
+## far below the actual flame"): the old test was a ±75° fan
+## (fire_ignite_cone 0.25) out to the full reach — at 95 px it lit actors
+## ~90 px above and below a jet drawn only ~±17 px tall. Now a band that
+## follows the drawn flame: from the jaws out to fire_reach, BREATH_HALF_W
+## at the mouth widening by BREATH_FLARE per pixel (Greater Flame's longer
+## jet flares the same way). An actor burns when its feet stand in the
+## band; a field when its plot overlaps it.
+## (a touch larger, 2026-11-15: "could be a tiny bit larger" — 12/0.14 →
+## 16/0.18: ±16 px at the jaws, ±33 at the normal tip)
+const BREATH_HALF_W := 16.0
+const BREATH_FLARE := 0.18
+const BREATH_BEHIND := 8.0           # a hair behind the mouth (point blank)
+const FIELD_HALF := Vector2(34.0, 26.0)   # Field.tscn's plot, halved
+
+func _breath_half_width(along: float) -> float:
+	return BREATH_HALF_W + maxf(along, 0.0) * BREATH_FLARE
+
+## Is a point (with an optional half-extent) inside the breath's band?
+func _in_breath(p: Vector2, half := Vector2.ZERO) -> bool:
+	var rel := p - _fire_origin()
+	var along := rel.x * float(facing)
+	if along + half.x < -BREATH_BEHIND or along - half.x > fire_reach:
+		return false
+	return absf(rel.y) - half.y <= _breath_half_width(clampf(along, 0.0, fire_reach))
+
 func _ignite_flammables() -> void:
-	var facing_vec := Vector2(float(facing), 0.0)
-	var origin := _fire_origin()
 	for group: String in FLAMMABLE_GROUPS:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			# Fields are not BaseNPC subclasses, so handle them first
 			if node is Field:
 				var field := node as Field
-				var to_target := field.global_position - origin
-				if to_target.length() <= fire_reach and \
-				   to_target.normalized().dot(facing_vec) >= fire_ignite_cone:
+				if _in_breath(field.global_position, FIELD_HALF):
 					field.burn()
 				continue
-			
-			# Now handle BaseNPC subclasses (farmers, miners, soldiers, goblins, king)
 			var base := node as BaseNPC
 			if base == null:
 				continue
 			if base.npc_type == "goblin" \
 					and int((node as Goblin).service_state) == Goblin.ServiceState.UNINITIALIZED:
 				continue  # never encountered: the dragon cannot ignite it yet
-			var target_pos: Vector2 = base.global_position
-			var to_target := target_pos - origin
-			if to_target.length() <= fire_reach and \
-			   to_target.normalized().dot(facing_vec) >= fire_ignite_cone:
+			if _in_breath(base.global_position):
 				base.catch_fire()
 
 func _process(delta: float) -> void:

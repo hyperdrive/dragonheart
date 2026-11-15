@@ -54,3 +54,10 @@ of range; the fire shield arm/immune/re-arm cycle; the archer fires 1/2s
 dragon dodges to ≤5 hp, and he holds the standoff ring under ATTACK.
 `probe_king_lives` still 22/22. 14400-frame regression: 0 script
 errors, purchases flowing.
+
+## 2026-11-15: lightning reach cut to 2/3
+
+User: "The wizard is way too dangerous now. Let's limit his reach to 2/3 of
+what it is currently." `Wizard.LIGHTNING_RANGE` 500 → 333 px. He still hunts
+the whole map; he now has to walk in closer before he can strike. Probe:
+no bolt at 450 or 360 px, a hit at 320.

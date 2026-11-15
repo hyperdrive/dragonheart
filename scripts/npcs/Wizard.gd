@@ -39,7 +39,11 @@ const FALLEN_TRIM := Color(1.0, 0.42, 0.40)
 const KIND_SPEED := 30.0
 const HUNT_SPEED := 75.0
 
-const LIGHTNING_RANGE := 500.0   # "long range" — outclasses the breath cone
+## Reach cut to 2/3 (2026-11-15, user: "the wizard is way too dangerous
+## now. Let's limit his reach to 2/3 of what it is currently"): 500 → 333.
+## Still well beyond the breath (95, Greater Flame 190) — he must now walk
+## in closer to strike, so the dragon can close or flee in time.
+const LIGHTNING_RANGE := 333.0
 const LIGHTNING_DAMAGE := 30
 const LIGHTNING_RECHARGE := 2.0
 

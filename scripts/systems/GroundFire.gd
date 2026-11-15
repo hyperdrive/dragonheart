@@ -78,4 +78,25 @@ func _burn_walkers() -> void:
 			# feet on the ellipse of the patch
 			if Vector2(d.x, d.y * 2.0).length() > RADIUS + 4.0:
 				continue
-			npc.take_damage(KILL_DAMAGE, Damage.Type.DRAGON_FIRE, "greater_flame")
+			_doom(npc)
+
+## Whoever walks in bursts into flame (2026-11-15, user: "the fire on the
+## ground does indeed kill the soldiers but they need to burst into flame
+## too"): they catch fire — the burning body, the panic run — and the
+## Queen's fire finishes them DOOM_DELAY seconds later. Marked once, so the
+## patch's 0.1 s checks don't stack timers. Actors whose fire cloak holds
+## (the King after a burn) or who cannot burn still die at once.
+const DOOM_DELAY := 1.1
+
+func _doom(npc: BaseNPC) -> void:
+	if npc.has_meta("greater_flame_doomed"):
+		return
+	npc.set_meta("greater_flame_doomed", true)
+	npc.catch_fire()
+	if npc._burning_left <= 0.0:
+		npc.take_damage(KILL_DAMAGE, Damage.Type.DRAGON_FIRE, "greater_flame")
+		return
+	var timer := npc.get_tree().create_timer(DOOM_DELAY, false)
+	timer.timeout.connect(func() -> void:
+		if is_instance_valid(npc) and npc.is_alive:
+			npc.take_damage(KILL_DAMAGE, Damage.Type.DRAGON_FIRE, "greater_flame"))

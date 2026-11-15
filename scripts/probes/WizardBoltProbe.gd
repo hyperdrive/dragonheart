@@ -67,7 +67,7 @@ func _physics_process(delta: float) -> void:
 					_goto(S.REPORT)
 				return
 			_health_before = int(gm.dragon.get("health"))
-			# Park the dragon 200px out — well inside the 500px lightning
+			# Park the dragon 200px out — well inside the 333px lightning
 			# range, outside melee anything.
 			var dragon := gm.dragon as Dragon
 			gm.world_manager.call("spawn_entity", "wizard", 1,

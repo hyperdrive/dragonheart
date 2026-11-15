@@ -128,3 +128,26 @@ User: "When NPCs are alit with fire they need a better shader too."
   anchored over the chest) and streams back from the run (`lean`, eased
   from velocity.x, so a turn swings the tip over). 30–46 px tall, 22–32
   wide. Ground patches keep the wide ragged bed (`spread` = 1).
+
+## The breath's hitbox (2026-11-15)
+
+User: "The hitbox for the dragon fire is currently strange. It seems to take
+a lot of hits far below the actual flame."
+
+The ignition test was a ±75° fan (`fire_ignite_cone` 0.25) out to the full
+reach: at 95 px it lit actors ~90 px above and below a jet drawn ~±17 px
+tall. Now `Dragon._in_breath`: a band from 8 px behind the jaws to
+`fire_reach`, half-width 12 px at the mouth widening 0.14 px per px (±25 at
+the normal tip, ±37 at Greater Flame's). An actor burns when its feet stand
+in it; a field when its 68×52 plot overlaps it. `fire_ignite_cone` is gone.
+Probe: farmers at (60, 0) and (90, 10) ignite; (60, ±45) and (150, 0) don't.
+- Follow-up ("could be a tiny bit larger"): half-width 12 → 16 px at the
+  jaws, flare 0.14 → 0.18 (±33 px at the normal tip).
+
+## Greater Flame's ground fires ignite (2026-11-15)
+
+User: "The fire on the ground does indeed kill the soldiers but they need to
+burst into flame too." `GroundFire._doom`: whoever steps in catches fire
+(the burning body and the panic run) and the Queen's fire finishes them
+1.1 s later; marked once per actor. Actors who can't burn or whose fire
+cloak holds still die at once; the fireproof slayer is unharmed.
