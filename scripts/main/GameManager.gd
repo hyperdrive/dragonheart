@@ -158,6 +158,8 @@ func _on_story_choice(kind: String, choice_index: int) -> void:
 		_on_sacrifice_choice(kind, choice_index)
 	elif kind.begins_with("intro_") or kind.begins_with("hag_"):
 		_on_chapter_choice(kind, choice_index)
+	elif kind.begins_with("prince_"):
+		_on_prince_choice(kind, choice_index)
 	# Goblin-encounter answers are handled by WorldManager (it connects
 	# story_choice_made). The answer is tribal once-per-run, so GameManager
 	# must NOT pick goblins — get_first_node_in_group would strand the rest.
@@ -753,12 +755,16 @@ func start_boss_battle(king) -> void:
 	boss_battle_started.emit(king)
 
 func notify_king_defeated() -> void:
-	if run_finished:
+	if run_finished or phase != Phase.REALM:
 		return
 	notify_story("king_defeat")  # the FINAL fall gets its epic chapter
-	run_finished = true
 	king_defeated.emit()
-	var tally := {
+	begin_aftermath()
+
+## The run's score card — emitted by the true ending (invasion_won), no
+## longer at the King's fall (2026-11-15: the story goes on).
+func _victory_tally() -> Dictionary:
+	return {
 		"time_survived": run_timer,
 		"gold_stolen": stash["gold"],
 		"gems_stolen": stash["gems"],
@@ -767,7 +773,96 @@ func notify_king_defeated() -> void:
 		"scales_level": scales_level,
 		"soldiers_seen": soldier_count,
 	}
-	victory_achieved.emit(tally)
+
+# --- the aftermath, the courtship, the invasion (2026-11-15) ----------------------
+
+## The run's phases. REALM: the King lives. AFTERMATH: the King is dead —
+## a glade blooms, deer graze, Prince Aurel walks (the courtship). INVASION:
+## the kiss brought two hundred spears over the ridge (PREPARED: the
+## WorldManager side is a stub). ENDED: the cycle repeated, or a queen was
+## crowned.
+enum Phase { REALM, AFTERMATH, INVASION, ENDED }
+var phase := Phase.REALM
+signal phase_changed(new_phase: Phase)
+signal invasion_started
+
+func _set_phase(p: Phase) -> void:
+	if phase == p:
+		return
+	phase = p
+	phase_changed.emit(p)
+	print("GameManager: phase → %s" % Phase.keys()[p])
+
+func begin_aftermath() -> void:
+	_set_phase(Phase.AFTERMATH)
+	queue_followup_story("glade_blooms")
+	if world_manager != null and world_manager.has_method("spawn_glade"):
+		world_manager.call("spawn_glade")
+
+## The farm girl walked into the Prince. Meeting 1 is all flirting (no kiss;
+## either may turn the other down); from meeting 2 on she may kiss him — or
+## turn him away, and he goes back to the city road to be found again.
+var prince_meetings := 0
+
+func notify_prince_meeting() -> void:
+	if phase != Phase.AFTERMATH or story_open or get_tree().paused:
+		return
+	prince_meetings += 1
+	if prince_meetings == 1:
+		_open_story_now("prince_meet_1")
+	else:
+		_open_story_now("prince_meet_2_wary" if story_flags.has("prince_spurned") else "prince_meet_2")
+
+func _on_prince_choice(kind: String, choice_index: int) -> void:
+	var wm := world_manager as WorldManager
+	match kind:
+		"prince_meet_1":
+			_pending_story_kind = ["prince_meet_1_flirt", "prince_meet_1_coy", "prince_meet_1_spurn"][mini(choice_index, 2)]
+			if choice_index == 2:
+				story_flags["prince_spurned"] = true
+			if wm != null:
+				wm.relocate_prince()
+		"prince_meet_2", "prince_meet_2_wary":
+			if choice_index == 0:
+				story_flags.erase("prince_spurned")
+				_pending_story_kind = "prince_kiss"
+			else:
+				story_flags["prince_spurned"] = true
+				_pending_story_kind = "prince_rejected"
+				if wm != null:
+					wm.relocate_prince()
+		"prince_kiss":
+			begin_invasion()
+
+## PREPARED (user: "Don't implement this, but prepare for this stage"):
+## the phase flips, the signal fires and the story is written; the actual
+## invasion (200 soldiers + a King hunting farmers and miners) is
+## WorldManager.start_invasion's job — a logged stub for now.
+func begin_invasion() -> void:
+	if phase != Phase.AFTERMATH:
+		return
+	_set_phase(Phase.INVASION)
+	invasion_started.emit()
+	if world_manager != null and world_manager.has_method("start_invasion"):
+		world_manager.call("start_invasion")
+	_hud_message("War-horns on the eastern ridge… (the invasion arrives in a later update)", 6.0)
+
+## Endings, ready for the invasion to call.
+func invasion_won() -> void:
+	if phase != Phase.INVASION:
+		return
+	_set_phase(Phase.ENDED)
+	run_finished = true
+	_open_story_now("ending_queen")
+	victory_achieved.emit(_victory_tally())
+
+func invasion_lost() -> void:
+	if phase != Phase.INVASION:
+		return
+	_set_phase(Phase.ENDED)
+	run_finished = true
+	_pending_death_reload = true    # the cycle turns: a new run begins
+	_open_story_now("ending_cycle")
 
 # --- misc ------------------------------------------------------------------
 

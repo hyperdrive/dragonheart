@@ -1579,6 +1579,155 @@ func spawn_hag_nest() -> void:
 		area = area.expand((fir_node as Node2D).global_position)
 	_refresh_nav_area(area.grow(40.0))
 
+# --- the aftermath: the glade, the deer, the Prince (2026-11-15) --------------
+
+## After the King's last fall (GameManager.begin_aftermath): a glade blooms
+## on open ground away from every landmark, deer graze in it (one every
+## DEER_EVERY s, at most DEER_MAX), and Prince Aurel strolls there until
+## the farm girl meets him; after each meeting he goes back to the city
+## road (relocate_prince).
+const DEER_EVERY := 10.0
+const DEER_MAX := 3
+const GLADE_CLEARANCE := 330.0   # from city, lair, tower, nests, mountains
+## The meadow's radius (mirrors Glade.RADIUS). The aftermath's new scripts
+## (Glade, Deer, Prince) are reached through their instances, never by class
+## name: an editor that has not rescanned yet does not know new class_names
+## and refused to parse this whole file (2026-11-15).
+const GLADE_RADIUS := 150.0
+var glade_position := Vector2.INF
+var prince: Node2D = null
+var _deer_timer: Timer
+
+func spawn_glade() -> void:
+	if glade_position != Vector2.INF:
+		return
+	glade_position = _find_glade_spot()
+	# The meadow is open: scenery trees standing inside it make way.
+	for child: Node in get_children():
+		var tree_node := child as Node2D
+		if tree_node != null and tree_node.scene_file_path == "res://scenes/props/Tree.tscn" \
+				and _in_meadow(tree_node.global_position, 1.15):
+			tree_node.queue_free()
+	var glade := (load("res://scenes/props/Glade.tscn") as PackedScene).instantiate() as Node2D
+	glade.global_position = glade_position
+	add_child(glade)
+	# a ring of trees (they block like any tree; the grid learns them below)
+	var tree_scene := load("res://scenes/props/Tree.tscn") as PackedScene
+	for i in 6:
+		var a := TAU * float(i) / 6.0 + randf_range(-0.25, 0.25)
+		var spot := glade_position + Vector2.from_angle(a) * Vector2(205.0, 150.0)
+		if nav_grid != null and nav_grid.is_built and not nav_grid.is_walkable(spot):
+			continue
+		var tree := tree_scene.instantiate() as Node2D
+		tree.global_position = spot
+		add_child(tree)
+		register_footprint(spot, FOOTPRINT_RADIUS["tree"])
+	_refresh_nav_area(Rect2(glade_position, Vector2.ZERO).grow(260.0))
+	register_footprint(glade_position, 160.0)
+	entity_spawned.emit("glade", glade_position)
+	print("WorldManager: a glade blooms at %s" % glade_position)
+	_deer_timer = Timer.new()
+	_deer_timer.wait_time = DEER_EVERY
+	_deer_timer.timeout.connect(_on_deer_timer)
+	add_child(_deer_timer)
+	_deer_timer.start()
+	_on_deer_timer()
+	spawn_prince()
+
+## Open ground far from every landmark: score random walkable candidates
+## by their distance to the nearest landmark; the meadow needs its radius
+## clear on the grid too.
+func _find_glade_spot() -> Vector2:
+	var marks: Array[Vector2] = [city_position, lair_position, tower_position,
+		goblin_mountain_position, pig_pen_position, cow_pen_position]
+	for group: String in ["hag_nest", "mines", "fields"]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			marks.append((node as Node2D).global_position)
+	for m: Node in get_tree().get_nodes_in_group("mountains"):
+		marks.append((m as Node2D).global_position)
+	var half := world_size * 0.5 - Vector2(WORLD_MARGIN + 160.0, WORLD_MARGIN + 120.0)
+	var best := Vector2.ZERO
+	var best_score := -INF
+	for i in 160:
+		var p := Vector2(randf_range(-half.x, half.x), randf_range(-half.y, half.y))
+		var near := INF
+		for m in marks:
+			near = minf(near, p.distance_to(m))
+		var clear := true
+		if nav_grid != null and nav_grid.is_built:
+			for k in 8:
+				if not nav_grid.is_walkable(p + Vector2.from_angle(TAU * k / 8.0) * Vector2(130.0, 90.0)):
+					clear = false
+					break
+		var score := near - (0.0 if clear else 1000.0)
+		if score > best_score:
+			best_score = score
+			best = p
+	return best
+
+## Inside the meadow oval (Glade.RADIUS wide, a little flatter in y)?
+func _in_meadow(p: Vector2, scale_by: float = 1.0) -> bool:
+	var d := (p - glade_position) / (Vector2(GLADE_RADIUS, GLADE_RADIUS * 0.72) * scale_by)
+	return d.length() <= 1.0
+
+func _on_deer_timer() -> void:
+	if get_tree().get_nodes_in_group("deer").size() >= DEER_MAX:
+		return
+	var deer := (load("res://scenes/npcs/Deer.tscn") as PackedScene).instantiate() as Node2D
+	var spot := glade_position + Vector2.from_angle(randf() * TAU) * Vector2(110.0, 70.0)
+	if nav_grid != null and nav_grid.is_built:
+		spot = nav_grid.nearest_walkable(spot)
+	deer.set("glade_center", glade_position)
+	deer.global_position = spot
+	add_child(deer)
+	entity_spawned.emit("deer", spot)
+
+func spawn_prince() -> void:
+	if prince != null and is_instance_valid(prince):
+		return
+	prince = (load("res://scenes/npcs/Prince.tscn") as PackedScene).instantiate() as Node2D
+	prince.global_position = glade_position + Vector2(-40.0, 20.0)
+	add_child(prince)
+	prince.set("home_position", prince.global_position)
+	entity_spawned.emit("prince", prince.global_position)
+	print("Prince Aurel walks in the glade, mourning his father.")
+
+## After a meeting that did not end in a kiss: he goes back to the city
+## road and strolls by the gate until she finds him again.
+func relocate_prince() -> void:
+	if prince == null or not is_instance_valid(prince):
+		return
+	var spot := city_position + Vector2(randf_range(-120.0, 120.0), -170.0 + randf_range(-30.0, 30.0))
+	if nav_grid != null and nav_grid.is_built:
+		spot = nav_grid.nearest_walkable(spot)
+	prince.call("relocate", spot)
+
+# --- the invasion (PREPARED, not implemented — 2026-11-15) --------------------
+
+## User: "The kiss triggers the next phase of the game: the invasion. Don't
+## implement this, but prepare for this stage where 200 soldiers + a King
+## invade and kill everything (farmers and miners). If they succeed the
+## game ends. Cycle has repeated and Dragon failed. If Dragon kills the
+## invasion she can marry the prince and become queen."
+##
+## Plan (docs/decisions/2026-11-15-aftermath-glade-prince.md):
+##   start_invasion()   wave in INVASION_SOLDIERS soldiers + a new King from
+##                      the east edge (Osric's ridge) in INVASION_WAVES waves;
+##                      they hunt farmers and miners (not only the dragon)
+##   lose               every farmer and miner dead → GameManager.invasion_lost()
+##   win                every invader dead → GameManager.invasion_won()
+## Until then this logs and leaves the world as it is.
+const INVASION_SOLDIERS := 200
+const INVASION_WAVES := 5
+
+func start_invasion() -> void:
+	print("WorldManager: INVASION requested (%d soldiers + a King in %d waves) — not implemented yet" % [
+		INVASION_SOLDIERS, INVASION_WAVES])
+
+## Win/lose checks the invasion will run (ready for the implementation).
+func invasion_townsfolk_left() -> int:
+	return get_tree().get_nodes_in_group("farmers").size() + get_tree().get_nodes_in_group("miners").size()
+
 # --- the dragon slayer (2026-11-14) -------------------------------------------
 
 ## User: "a new NPC that appears randomly like the adventurer". One at a

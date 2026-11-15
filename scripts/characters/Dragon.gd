@@ -312,6 +312,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _try_context_action() -> void:
+	# A deer of the glade in reach and nearest of all: the hunt (2026-11-15).
+	var deer := _nearest_deer()
+	if deer != null:
+		var deer_dist := global_position.distance_to(deer.global_position)
+		var nearest_other := INF
+		for other: Node2D in [_nearest_edible_pen(), _nearest_strike_target(), _soldier_in_strike_reach()]:
+			if other != null:
+				nearest_other = minf(nearest_other, global_position.distance_to(other.global_position))
+		if deer_dist <= nearest_other:
+			_eat_deer(deer)
+			return
 	var pen := _nearest_edible_pen()
 	var victim := _nearest_strike_target()
 	var soldier := _soldier_in_strike_reach()
@@ -330,6 +341,43 @@ func _try_context_action() -> void:
 		_strike_kill(victim)
 	else:
 		_strike_soldier(soldier)
+
+## Nearest living deer within strike reach, else null.
+func _nearest_deer() -> BaseNPC:
+	var best: BaseNPC = null
+	var best_d := strike_reach
+	for node: Node in get_tree().get_nodes_in_group("deer"):
+		var d := node as BaseNPC
+		if d == null or not d.is_alive:
+			continue
+		var dist := global_position.distance_to(d.global_position)
+		if dist <= best_d:
+			best_d = dist
+			best = d
+	return best
+
+## A deer of the glade: +2 flames and +20 health (user spec). Like the pens,
+## a meal that would give nothing is refused (the deer lives on).
+const DEER_FLAMES := 2
+const DEER_HEALTH := 20
+
+func _eat_deer(deer: BaseNPC) -> void:
+	var gains_flame := flame_charges < float(max_flame_charges)
+	var gains_health := health < max_health
+	if not gains_flame and not gains_health:
+		eat_refused.emit("health")
+		print("Dragon: too full to hunt — the deer bounds away.")
+		return
+	_play_claw_swing()
+	deer.kill_by_dragon()
+	health = mini(health + DEER_HEALTH, max_health)
+	health_changed.emit(health)
+	flame_charges = minf(flame_charges + float(DEER_FLAMES), float(max_flame_charges))
+	flame_charges_changed.emit(int(flame_charges), max_flame_charges)
+	print("Dragon ate a deer: +%d flames, +%d health." % [DEER_FLAMES, DEER_HEALTH])
+	if game_manager != null:
+		game_manager.notify_story("deer_eaten")
+		game_manager.call("_hud_message", "A deer of the glade: +%d flames, +%d health" % [DEER_FLAMES, DEER_HEALTH], 3.0)
 
 ## Nearest pen (either species) with stock within its own reach, else null.
 func _nearest_edible_pen() -> AnimalPen:
@@ -1050,11 +1098,18 @@ var _human_rig: HumanoidRig = null
 ## until she walks INTO one — then rough hands, and the dragon tears back
 ## out of her (GameManager tells it and switches the form).
 const ACCOST_RANGE := 26.0
+const PRINCE_MEET_RANGE := 34.0
 const ACCOSTERS := ["soldier", "archer", "king"]
 
 func _check_accosted() -> void:
 	if game_manager == null or game_manager.story_open:
 		return
+	# The Prince (2026-11-15): walking into him as the girl is a meeting.
+	for node: Node in get_tree().get_nodes_in_group("prince"):
+		var p := node as Node2D
+		if p != null and global_position.distance_to(p.global_position) <= PRINCE_MEET_RANGE:
+			game_manager.notify_prince_meeting()
+			return
 	# The King in reach outranks his guards: his chapter wins.
 	var by := ""
 	for group: String in ["soldiers", "king"]:
