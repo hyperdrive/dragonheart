@@ -96,10 +96,151 @@ func _ready() -> void:
 		2.0, Callable()
 	)
 
+# --- smitten: the hero turned outlaw (2026-11-15) ------------------------------
+
+## User: "If the human form dragon encounters the adventurer, she can let
+## herself be seduced … This cause the adventurer to reverse his stealing
+## and he is now stealing from the city. But the soldiers will also attack
+## him." After the courtship (GameManager adventurer_*) he robs the TOWN
+## TREASURY at the city gate and hauls it to the dragon's lair hoard, over
+## and over. He joins the "outlaws" group: the King's soldiers hunt him
+## (Soldier._outlaw_in_sight). He no longer hunts goblins or touches the
+## dragon — he defends himself against the soldiers only.
+var smitten := false
+## Balance (2026-11-15): he SNEAKS in (the guards only notice him at arm's
+## length — Soldier._nearest_outlaw) and runs for it with the sack, faster
+## than a soldier can follow. But caught, 2-3 soldiers must be able to
+## kill him (user): 90 HP. Duel math — soldiers 10 DPS / 50 HP, his blade
+## 15 DPS: two soldiers deal ~100 before both fall (he dies after one
+## goes down), three ~200 (he dies, none of them do). At 240 HP he wiped
+## out the whole 4-man garrison in a probe.
+const OUTLAW_HEALTH := 90
+const OUTLAW_RUN_SPEED := 100.0
+
+## Creeping up on the treasury (empty-handed, on the robbing errand).
+func is_sneaking() -> bool:
+	return smitten and not _carrying_loot() and behavior_tree != null \
+		and behavior_tree.current_activity != null \
+		and str(behavior_tree.current_activity.id) == "rob_city"
+
+func turn_outlaw() -> void:
+	if smitten or not is_alive:
+		return
+	smitten = true
+	add_to_group("outlaws")
+	max_health = OUTLAW_HEALTH
+	health = OUTLAW_HEALTH
+	behavior_tree.clear_activities()
+	behavior_tree.register_activity(
+		"haul_to_lair", 50,
+		_pick_lair_target, 0.0,
+		0.0, _complete_haul_to_lair,
+		_carrying_loot
+	)
+	behavior_tree.register_activity(
+		"rob_city", 40,
+		_pick_home_target, loot_time,
+		1.0, _complete_rob_city,
+		_can_rob_city
+	)
+	behavior_tree.register_activity(
+		"idle", 1,
+		_pick_outlaw_idle, 1.5,
+		2.0, Callable()
+	)
+	behavior_tree.force_repick()
+	_float_heart()
+	print("The adventurer is smitten — he robs the city for the dragon now!")
+
+func _can_rob_city() -> bool:
+	return payload_amount <= 0 and game_manager != null \
+		and int(game_manager.treasury["gold"]) > 0
+
+## The whole treasury goes into the sack (the dragon's own medicine).
+func _complete_rob_city() -> void:
+	if game_manager == null:
+		return
+	var take := int(game_manager.treasury["gold"])
+	if take <= 0 or not game_manager.spend_treasury("gold", take):
+		return
+	set_payload("gold", take)
+	print("The outlaw adventurer empties the town treasury — %d gold for his lady's lair!" % take)
+	game_manager.call("_hud_message", "Corvin robs the city treasury: %d gold on its way to your lair!" % take, 4.0)
+
+func _complete_haul_to_lair() -> void:
+	if not _carrying_loot() or game_manager == null:
+		return
+	var hauled := payload_amount
+	set_payload("", 0)
+	game_manager.add_stolen("gold", hauled)
+	print("The outlaw adventurer piles %d gold in the dragon's lair." % hauled)
+	game_manager.call("_hud_message", "Corvin leaves %d gold in your hoard, with a pressed flower." % hauled, 4.0)
+	_float_heart()
+
+## Waiting for the treasury to refill: he lurks on the road between the
+## city and the lair (out of the patrols' way, mostly).
+func _pick_outlaw_idle() -> Vector2:
+	var world := get_tree().get_first_node_in_group("world_manager") as WorldManager
+	if world == null:
+		return _pick_idle_target()
+	var lurk := world.city_position.lerp(_lair_site() if _lair_site() != Vector2.INF else world.city_position, 0.6)
+	return _cleared_trip_target(lurk + Vector2(randf_range(-90.0, 90.0), randf_range(-90.0, 90.0)), 20.0)
+
+## The nearest King's man in sword reach (an outlaw's only foes).
+func _nearest_lawman(reach: float) -> BaseNPC:
+	var best: BaseNPC = null
+	var best_d := reach
+	for node: Node in get_tree().get_nodes_in_group("soldiers"):
+		var s := node as BaseNPC
+		if s == null or s == self or not s.is_alive:
+			continue
+		var d := global_position.distance_to(s.global_position)
+		if d <= best_d:
+			best_d = d
+			best = s
+	return best
+
+var _lawman_debt := 0.0
+
+func _strike_lawmen(delta: float) -> void:
+	if _burning_left > 0.0 or not is_alive:
+		return
+	var foe := _nearest_lawman(attack_range)
+	if foe == null:
+		return
+	_lawman_debt += attack_damage * delta
+	var whole := int(_lawman_debt)
+	if whole > 0:
+		_lawman_debt -= float(whole)
+		foe.take_damage(whole, Damage.Type.WEAPON, "adventurer")
+
+## A little heart floats up over him (smitten, and every delivery).
+func _float_heart() -> void:
+	if not is_inside_tree():
+		return
+	var heart := Polygon2D.new()
+	var pts := PackedVector2Array()
+	for k in 24:
+		var t := TAU * float(k) / 24.0
+		pts.append(Vector2(16.0 * pow(sin(t), 3.0),
+			-(13.0 * cos(t) - 5.0 * cos(2.0 * t) - 2.0 * cos(3.0 * t) - cos(4.0 * t))) * 0.28)
+	heart.polygon = pts
+	heart.color = Color(1.0, 0.35, 0.5)
+	heart.z_index = 4
+	get_parent().add_child(heart)
+	heart.global_position = global_position + Vector2(0.0, -44.0)
+	var tw := heart.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(heart, "global_position:y", heart.global_position.y - 26.0, 1.4)
+	tw.tween_property(heart, "modulate:a", 0.0, 1.4).set_delay(0.5)
+	tw.chain().tween_callback(heart.queue_free)
+
 # --- the hero's story on the rig (2026-11-14) ---------------------------------
 
 ## The nearest living goblin within sword reach — else the dragon.
 func _combat_target() -> Node2D:
+	if smitten:
+		return _nearest_lawman(attack_range + 8.0)
 	var best: Node2D = null
 	var best_d := attack_range + 8.0
 	for node: Node in get_tree().get_nodes_in_group("goblins"):
@@ -143,6 +284,8 @@ func _animate_story(delta: float) -> void:
 	if behavior_tree != null and behavior_tree.current_activity != null:
 		act = str(behavior_tree.current_activity.id)
 		st = behavior_tree.state
+	if act == "rob_city":
+		act = "raid_lair"   # the same sneak-and-scoop, at the city's coffers
 	if act == "raid_lair" and st == BehaviorTree.State.MOVING:
 		# creeping up on the hoard
 		speed = SNEAK_SPEED
@@ -167,7 +310,7 @@ func _animate_story(delta: float) -> void:
 		elif _scoop_phase < 0.25:
 			_coin_flung = false
 	else:
-		speed = WALK_SPEED
+		speed = OUTLAW_RUN_SPEED if smitten and _carrying_loot() else WALK_SPEED
 		if _story_pose:
 			_story_pose = false
 			rig.arms_override = false
@@ -206,6 +349,9 @@ func _fling_coin() -> void:
 ## soldier flow. The dragon branch stays in the inherited super call.
 func _contact_damage(delta: float) -> void:
 	if _burning_left > 0.0 or not is_alive:
+		return
+	if smitten:
+		_strike_lawmen(delta)   # the soldiers only — never his lady
 		return
 	for node: Node in get_tree().get_nodes_in_group("goblins"):
 		var goblin := node as BaseNPC

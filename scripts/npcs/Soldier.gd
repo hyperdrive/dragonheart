@@ -44,6 +44,12 @@ func _ready() -> void:
 		_attack_ready, _dragon_in_chase_range
 	)
 	behavior_tree.register_activity(
+		"hunt_outlaw", 55,
+		_pick_outlaw_target, attack_interval,
+		0.0, _complete_attack,
+		_outlaw_in_sight, _outlaw_in_sight
+	)
+	behavior_tree.register_activity(
 		"rally", 40,
 		_pick_rally_target, 0.0,
 		0.5, _complete_rally,
@@ -163,6 +169,62 @@ func _nearest_invader_within(reach: float) -> BaseNPC:
 			best = inv
 	return best
 
+# --- the outlaw (2026-11-15) ------------------------------------------------------
+
+## The smitten adventurer robs the treasury for the dragon (Adventurer.
+## turn_outlaw): the King's men — soldiers and the King, not archers, the
+## hag or heroes — cut him down when he comes within OUTLAW_SIGHT.
+const OUTLAW_SIGHT := 380.0
+## A sneaking outlaw is only seen at arm's length; and the King's men are
+## town guards — they don't chase him far beyond the city.
+const OUTLAW_SNEAK_SIGHT := 70.0
+const OUTLAW_TOWN_RANGE := 650.0
+var _outlaw_debt := 0.0
+
+func _hunts_outlaws() -> bool:
+	return (npc_type == "soldier" or npc_type == "king") and not _retiring \
+		and not is_in_group("invaders") and not _defending()
+
+func _nearest_outlaw(reach: float, sighting := true) -> BaseNPC:
+	if not _hunts_outlaws():
+		return null
+	var world := _world_manager()
+	var best: BaseNPC = null
+	var best_d := reach
+	for node: Node in get_tree().get_nodes_in_group("outlaws"):
+		var o := node as BaseNPC
+		if o == null or o == self or not o.is_alive:
+			continue
+		if world != null and o.global_position.distance_to(world.city_position) > OUTLAW_TOWN_RANGE:
+			continue
+		var d := global_position.distance_to(o.global_position)
+		if sighting and o.has_method("is_sneaking") and bool(o.call("is_sneaking")):
+			d += OUTLAW_SIGHT - OUTLAW_SNEAK_SIGHT   # seen only up close
+		if d <= best_d:
+			best_d = d
+			best = o
+	return best
+
+func _outlaw_in_sight() -> bool:
+	return _nearest_outlaw(OUTLAW_SIGHT) != null
+
+func _pick_outlaw_target() -> Vector2:
+	var o := _nearest_outlaw(OUTLAW_SIGHT)
+	if o == null:
+		return BehaviorTree.TARGET_NONE
+	var side := Vector2.from_angle(float(get_instance_id() % 360) * PI / 180.0)
+	return o.global_position + side * 16.0
+
+func _outlaw_blows(delta: float) -> void:
+	var o := _nearest_outlaw(attack_range, false)
+	if o == null or _burning_left > 0.0 or not is_alive:
+		return
+	_outlaw_debt += attack_damage * delta
+	var whole := int(_outlaw_debt)
+	if whole > 0:
+		_outlaw_debt -= float(whole)
+		o.take_damage(whole, Damage.Type.WEAPON, npc_type)
+
 # --- activity providers & completers ---------------------------------------
 
 ## During ATTACK the aggro range widens hugely: the whole swarm hunts.
@@ -280,7 +342,7 @@ func _combat_target() -> Node2D:
 	if dragon != null and is_instance_valid(dragon) \
 			and global_position.distance_to(dragon.global_position) <= attack_range:
 		return dragon
-	return null
+	return _nearest_outlaw(attack_range, false)
 
 func _animate_combat(delta: float) -> void:
 	var foe := _combat_target()
@@ -360,6 +422,7 @@ func _physics_process(delta: float) -> void:
 		_animate_combat(delta)
 		return
 	_contact_damage(delta)
+	_outlaw_blows(delta)
 	_animate_combat(delta)
 	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon != null and is_instance_valid(dragon) \

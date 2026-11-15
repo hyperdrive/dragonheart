@@ -160,6 +160,11 @@ func _on_story_choice(kind: String, choice_index: int) -> void:
 		_on_chapter_choice(kind, choice_index)
 	elif kind.begins_with("prince_"):
 		_on_prince_choice(kind, choice_index)
+	elif kind.begins_with("adventurer_"):
+		_on_adventurer_choice(kind, choice_index)
+	elif kind.begins_with("wizard_girl_") or kind.begins_with("wizard_tome_") \
+			or kind.begins_with("temple_"):
+		_on_tome_choice(kind, choice_index)
 	elif kind.begins_with("usurper_") or kind.begins_with("ending_"):
 		_on_finale_choice(kind)
 	# Goblin-encounter answers are handled by WorldManager (it connects
@@ -437,6 +442,8 @@ func _on_chapter_choice(kind: String, choice_index: int) -> void:
 				wm.force_wizard_turn()
 			_hud_message("Ambrose Fairweather waits in his tower. Press T to wake the dragon.", 6.0)
 		"hag_unmasked":
+			# she was attacked during the visit: she knows the girl's face now
+			story_flags["hag_attacked_at_house"] = true
 			var wm := world_manager as WorldManager
 			if wm != null and wm.hag_alive():
 				wm.fen_hag.unmask()
@@ -512,6 +519,153 @@ func notify_girl_accosted(by: String) -> void:
 		kind = "girl_accosted_soldier_%d" % (_accost_count % ACCOST_SOLDIER_TELLINGS + 1)
 		_accost_count += 1
 	_open_story_now(kind)
+
+# --- the girl's meetings (2026-11-15) ---------------------------------------------
+
+## The girl walked into Mother Grisla (Dragon._check_meetings). User: "For
+## the Hag, the same thing should happen [as with the soldiers] if and only
+## if the Hag wasn't attacked during the visit in her house. Hag will still
+## attack the dragon because she is a Hag." Spared at tea (or never asked):
+## she smells the dragon on the girl, the claws come out, the dragon tears
+## back out of her. Attacked at tea: she already knows that face — no
+## chapter, no forced change; she is hunting the dragon regardless.
+func notify_girl_meets_hag() -> void:
+	var d := dragon as Dragon
+	var wm := world_manager as WorldManager
+	if d == null or not d.human_form or wm == null or not wm.hag_alive() \
+			or story_open or get_tree().paused or not story_mode:
+		return
+	if story_flags.has("hag_attacked_at_house"):
+		_hud_message("Mother Grisla grins through her teeth: she knows that face. No disguise fools a hag twice.")
+		return
+	if not d.set_human_form(false):
+		return
+	wm.fen_hag.unmask()   # because she is a hag
+	_open_story_now("girl_accosted_hag")
+
+## The girl walked into the adventurer. A three-level courtship (Disney
+## flirt, then — literally — the bees and the flowers); seduced, he turns
+## his trade around: from now on he robs the CITY and hauls its gold to
+## her lair, and the King's soldiers hunt him for it.
+var _adventurer: WeakRef = null
+
+func notify_girl_meets_adventurer(adv: Node2D) -> void:
+	var d := dragon as Dragon
+	if d == null or not d.human_form or story_open or get_tree().paused or not story_mode:
+		return
+	if adv == null or not is_instance_valid(adv):
+		return
+	if bool(adv.get("smitten")):
+		_hud_message("Corvin blows you a kiss over his sack of the King's gold.")
+		return
+	_adventurer = weakref(adv)
+	_open_story_now("adventurer_meet")
+
+func _on_adventurer_choice(kind: String, choice_index: int) -> void:
+	match kind:
+		"adventurer_meet":
+			_pending_story_kind = ["adventurer_flirt", "adventurer_banter",
+				"adventurer_walk_on"][mini(choice_index, 2)]
+		"adventurer_flirt", "adventurer_banter":
+			_pending_story_kind = ["adventurer_moment", "adventurer_backpack",
+				"adventurer_wanting"][mini(choice_index, 2)]
+		"adventurer_moment", "adventurer_backpack":
+			_pending_story_kind = "adventurer_bees" if choice_index == 0 else "adventurer_parted"
+		"adventurer_bees":
+			_pending_story_kind = "adventurer_turned"
+		"adventurer_turned":
+			var adv: Node2D = _adventurer.get_ref() as Node2D if _adventurer != null else null
+			if adv != null and is_instance_valid(adv) and adv.has_method("turn_outlaw"):
+				adv.call("turn_outlaw")
+				_hud_message("Corvin robs the city for you now — his loot goes to your lair. The King's soldiers will hunt him.", 6.0)
+
+## Meeting the kindly wizard — as the girl (the Lorindel chapter and the
+## temple quest), or carrying the Ember Tome in either shape (the offer).
+func notify_meets_kind_wizard() -> void:
+	var d := dragon as Dragon
+	var wm := world_manager as WorldManager
+	if d == null or wm == null or story_open or get_tree().paused or not story_mode:
+		return
+	if wm.tower_wizard == null or not is_instance_valid(wm.tower_wizard) \
+			or not wm.tower_wizard.is_alive or not wm.tower_wizard.is_kind():
+		return
+	if story_flags.has("has_tome"):
+		# Kept once: he only asks again when the girl comes calling (the
+		# dragon visits the shop past his door far too often for that).
+		if story_flags.has("tome_kept") and not d.human_form:
+			return
+		_open_story_now("wizard_tome_offer")
+	elif not d.human_form:
+		return
+	elif not story_flags.has("temple_quest"):
+		_open_story_now("wizard_girl_meet")
+	else:
+		_hud_message("Ambrose tips his hat to you. \"Any luck at the old temple, my dear? Near the old dragon's mountain, they say.\"")
+
+## The Temple of the Dragon Queen (DragonTemple.gd's trigger): the first
+## visit — in either shape — is the dream, the hidden stair and the tome.
+func notify_temple() -> void:
+	if story_open or get_tree().paused or not story_mode:
+		return
+	if story_flags.has("has_tome"):
+		_hud_message("The Queen's ruins are quiet. Her tome is warm against your heart.")
+		return
+	_open_story_now("temple_enter")
+
+func _on_tome_choice(kind: String, choice_index: int) -> void:
+	var wm := world_manager as WorldManager
+	match kind:
+		"wizard_girl_meet":
+			_pending_story_kind = "wizard_girl_lorindel"
+		"wizard_girl_lorindel":
+			_pending_story_kind = "wizard_girl_quest"
+		"wizard_girl_quest":
+			story_flags["temple_quest"] = true
+			if wm != null and wm.has_method("spawn_dragon_temple"):
+				wm.call("spawn_dragon_temple")
+			_hud_message("Find the Temple of the Dragon Queen near your mountain.", 6.0)
+		"temple_enter":
+			_pending_story_kind = "temple_secret"
+		"temple_secret":
+			_pending_story_kind = "temple_tome"
+		"temple_tome":
+			story_flags["has_tome"] = true
+			_hud_message("You carry the Ember Tome of Queen Ysolde.", 5.0)
+			_maybe_learn_greater_flame()
+		"wizard_tome_offer":
+			_pending_story_kind = "wizard_tome_betrayal" if choice_index == 0 else "wizard_tome_kept"
+			if choice_index != 0:
+				story_flags["tome_kept"] = true
+		"wizard_tome_betrayal":
+			# User: "If she returns the book to the wizard he turns evil and
+			# tries to kill her to get the book." The tome will not go to
+			# him; it stays with her, and he comes for it.
+			story_flags["tome_offered"] = true
+			story_shown["wizard_emerge"] = true   # this chapter told his fall
+			var d := dragon as Dragon
+			if d != null and d.human_form:
+				d.set_human_form(false)
+			if wm != null:
+				wm.force_wizard_turn()
+			_hud_message("Ambrose Fairweather has turned — he will kill you for the tome!", 6.0)
+
+## User: "If she keeps it until the second wave of the invasion, she will
+## learn automatically Greater flame". WorldManager reports every wave; a
+## tome found after the second wave has marched teaches at once.
+var invasion_wave := 0
+
+func on_invasion_wave(wave: int) -> void:
+	invasion_wave = wave
+	_maybe_learn_greater_flame()
+
+func _maybe_learn_greater_flame() -> void:
+	var d := dragon as Dragon
+	if d == null or d.greater_flame or not story_flags.has("has_tome"):
+		return
+	if invasion_wave < 2 or (phase != Phase.INVASION and phase != Phase.RECKONING):
+		return
+	d.learn_greater_flame()
+	_open_or_queue("greater_flame")
 
 func _hud_message(text: String, duration: float = 4.0) -> void:
 	if hud != null and hud.has_method("show_message"):

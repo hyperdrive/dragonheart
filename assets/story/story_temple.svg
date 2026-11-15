@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="552" height="100" viewBox="0 0 552 100">
+  <!-- Story vignette: the temple of the dragon queen (2026-11-14). -->
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1a3a"/><stop offset="0.55" stop-color="#a2483a"/><stop offset="1" stop-color="#f2a05a"/></linearGradient>
+    <radialGradient id="r2" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffb05a" stop-opacity="0.35"/><stop offset="1" stop-color="#ffb05a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="r3" cx="0.5" cy="0.5" r="0.75"><stop offset="0.55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity="0.55"/></radialGradient>
+  </defs>
+  <rect x="0" y="0" width="552" height="100" fill="url(#g1)" opacity="1.0"/>
+  <circle cx="133.5" cy="23.6" r="0.52" fill="#ffffff" opacity="0.73"/>
+  <circle cx="344.4" cy="6.4" r="0.31" fill="#ffffff" opacity="0.86"/>
+  <circle cx="145.1" cy="12.4" r="0.90" fill="#ffffff" opacity="0.66"/>
+  <circle cx="459.0" cy="21.1" r="0.68" fill="#ffffff" opacity="0.48"/>
+  <circle cx="349.4" cy="35.2" r="0.61" fill="#ffffff" opacity="0.81"/>
+  <circle cx="369.2" cy="6.3" r="0.75" fill="#ffffff" opacity="0.73"/>
+  <circle cx="167.9" cy="5.1" r="0.82" fill="#ffffff" opacity="0.66"/>
+  <circle cx="395.0" cy="35.6" r="0.73" fill="#ffffff" opacity="0.91"/>
+  <circle cx="218.9" cy="32.8" r="0.57" fill="#ffffff" opacity="0.91"/>
+  <circle cx="482.1" cy="7.5" r="0.38" fill="#ffffff" opacity="0.52"/>
+  <circle cx="529.2" cy="19.7" r="0.68" fill="#ffffff" opacity="0.57"/>
+  <circle cx="279.9" cy="17.9" r="0.51" fill="#ffffff" opacity="0.72"/>
+  <circle cx="321.8" cy="36.6" r="0.71" fill="#ffffff" opacity="0.91"/>
+  <circle cx="469.9" cy="39.7" r="0.70" fill="#ffffff" opacity="0.49"/>
+  <circle cx="472.2" cy="38.7" r="0.84" fill="#ffffff" opacity="0.71"/>
+  <circle cx="392.3" cy="11.6" r="0.80" fill="#ffffff" opacity="0.72"/>
+  <circle cx="159.0" cy="6.3" r="0.81" fill="#ffffff" opacity="0.94"/>
+  <circle cx="52.2" cy="32.8" r="0.55" fill="#ffffff" opacity="0.48"/>
+  <circle cx="163.9" cy="31.7" r="0.82" fill="#ffffff" opacity="0.42"/>
+  <circle cx="338.3" cy="5.6" r="0.73" fill="#ffffff" opacity="0.58"/>
+  <circle cx="483.2" cy="39.3" r="0.60" fill="#ffffff" opacity="0.95"/>
+  <circle cx="172.5" cy="6.8" r="0.66" fill="#ffffff" opacity="0.42"/>
+  <circle cx="276" cy="70" r="120" fill="url(#r2)"/>
+  <path d="M -20 100 L -20 65.4 Q 1.1 63.3 22.3 64.8 T 64.6 64.3 Q 85.7 62.2 106.9 62.5 T 149.1 60.7 Q 170.3 58.6 191.4 63.0 T 233.7 65.2 Q 254.9 63.1 276.0 65.0 T 318.3 64.8 Q 339.4 62.7 360.6 64.4 T 402.9 64.0 Q 424.0 61.9 445.1 66.0 T 487.4 68.0 Q 508.6 65.9 529.7 66.4 T 572.0 64.8 L 572 100 Z" fill="#3a2632" opacity="1.0"/>
+  <rect x="191" y="40" width="10" height="46" fill="#2a1c24"/>
+  <rect x="189" y="37" width="14" height="3" fill="#2a1c24"/>
+  <rect x="227" y="34" width="10" height="52" fill="#2a1c24"/>
+  <rect x="225" y="31" width="14" height="3" fill="#2a1c24"/>
+  <rect x="315" y="36" width="10" height="50" fill="#2a1c24"/>
+  <rect x="313" y="33" width="14" height="3" fill="#2a1c24"/>
+  <path d="M 351 86 V 60 L 355 56 L 358 61 L 361 57 V 86 Z" fill="#2a1c24"/>
+  <path d="M 165 86 V 68 L 169 64 L 172 69 L 175 65 V 86 Z" fill="#2a1c24"/>
+  <path d="M 186 36 L 330 38 L 330 44 L 186 42 Z" fill="#2a1c24"/>
+  <path d="M 150 86 L 160 80 L 392 80 L 402 86 Z" fill="#2a1c24"/>
+  <circle cx="276" cy="60" r="13" fill="#3a2830"/>
+  <path d="M 268 67 C 263 57 271 49 278 52 C 285 55 284 64 277 64 C 272 64 272 58 277 58" stroke="#ff7a3a" stroke-width="1.6" fill="none" opacity="0.8"/>
+  <path d="M -20 100 L -20 89.2 Q 1.1 88.3 22.3 89.5 T 64.6 89.8 Q 85.7 88.9 106.9 89.2 T 149.1 88.5 Q 170.3 87.6 191.4 89.0 T 233.7 89.5 Q 254.9 88.6 276.0 89.7 T 318.3 89.9 Q 339.4 89.0 360.6 89.2 T 402.9 88.5 Q 424.0 87.6 445.1 87.4 T 487.4 86.3 Q 508.6 85.4 529.7 86.6 T 572.0 86.8 L 572 100 Z" fill="#1a1218" opacity="1.0"/>
+  <path d="M 118.7 85.5 L 118.18 92 M 121.3 85.5 L 121.82 92 M 120 80.3 L 123.9 84.2 M 120 80.3 L 116.1 84.2" stroke="#1a1218" stroke-width="1.82" stroke-linecap="round" fill="none"/>
+  <path d="M 117.66 78.48 L 122.34 78.48 L 121.82 86.02 L 118.18 86.02 Z" fill="#1a1218"/>
+  <circle cx="120" cy="75.88" r="2.34" fill="#1a1218"/>
+  <path d="M 118 80 q -6 4 -4 10" stroke="#1a1218" stroke-width="1.2" fill="none"/>
+  <rect x="0" y="0" width="552" height="100" fill="url(#r3)"/>
+  <rect x="1.5" y="1.5" width="549" height="97" fill="none" stroke="#c9a24a" stroke-width="1" opacity="0.7"/>
+</svg>

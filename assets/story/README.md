@@ -32,6 +32,11 @@ frame edge to edge. Story kinds that share a theme share one vignette:
 | `story_goblins.svg` | `goblin_encounter_*` |
 | `story_sacrifice.svg` | `sacrifice_*` |
 | `story_rider.svg` | `rider_upgraded` |
+| `story_adventurer.svg` | `adventurer_meet`, `_flirt`, `_banter`, `_walk_on`, `_wanting`, `_turned` |
+| `story_bees.svg` | `adventurer_moment`, `_backpack`, `_parted`, `_bees` — the meadow backdrop; `adventurer_bees` also plays `scripts/ui/BeesAndFlowers.gd` over it (`"animation": "bees"`) |
+| `story_temple.svg` | `wizard_girl_quest`, `temple_enter` |
+| `story_tome.svg` | `temple_secret`, `temple_tome` |
+| `story_greater_flame.svg` | `greater_flame` |
 
 The old 96×96 icons (`assets/field_fire.svg`, `pick_flame.svg`,
 `king_crown.svg`, `wizard_bolt.svg`, `dragon_fall.svg`) are no longer

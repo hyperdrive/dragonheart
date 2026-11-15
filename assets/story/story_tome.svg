@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="552" height="100" viewBox="0 0 552 100">
+  <!-- Story vignette: the hidden stair and the ember tome (2026-11-14). -->
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0e0a10"/><stop offset="1" stop-color="#24141a"/></linearGradient>
+    <radialGradient id="r2" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#e8d0a0" stop-opacity="0.25"/><stop offset="1" stop-color="#e8d0a0" stop-opacity="0"/></radialGradient>
+    <radialGradient id="r3" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ff8a2a" stop-opacity="0.6"/><stop offset="1" stop-color="#ff8a2a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="r4" cx="0.5" cy="0.5" r="0.75"><stop offset="0.55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity="0.55"/></radialGradient>
+  </defs>
+  <rect x="0" y="0" width="552" height="100" fill="url(#g1)" opacity="1.0"/>
+  <path d="M 0 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 26 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 52 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 78 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 104 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 130 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 156 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 182 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 208 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 234 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 260 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 286 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 312 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 338 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 364 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 390 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 416 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 442 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 468 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 494 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 520 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 546 0 V 100" stroke="#000" stroke-width="0.8" opacity="0.3"/>
+  <path d="M 0 0 L 70 0 L 130 100 L 0 100 Z" fill="#3a2a26" opacity="0.7"/>
+  <path d="M 0 12 H 40" stroke="#5a4a40" stroke-width="2"/>
+  <path d="M 0 24 H 52" stroke="#5a4a40" stroke-width="2"/>
+  <path d="M 0 36 H 64" stroke="#5a4a40" stroke-width="2"/>
+  <path d="M 0 48 H 76" stroke="#5a4a40" stroke-width="2"/>
+  <path d="M 0 60 H 88" stroke="#5a4a40" stroke-width="2"/>
+  <path d="M 0 72 H 100" stroke="#5a4a40" stroke-width="2"/>
+  <path d="M 0 84 H 112" stroke="#5a4a40" stroke-width="2"/>
+  <circle cx="30" cy="6" r="60" fill="url(#r2)"/>
+  <path d="M 186 40 q 14 -16 28 0 l -4 10 l -6 -3 l -4 6 l -4 -6 l -6 3 Z" fill="#2a1e1e"/>
+  <circle cx="195" cy="40" r="1.6" fill="#ff5a2a"/><circle cx="205" cy="40" r="1.6" fill="#ff5a2a"/>
+  <path d="M 338 40 q 14 -16 28 0 l -4 10 l -6 -3 l -4 6 l -4 -6 l -6 3 Z" fill="#2a1e1e"/>
+  <circle cx="347" cy="40" r="1.6" fill="#ff5a2a"/><circle cx="357" cy="40" r="1.6" fill="#ff5a2a"/>
+  <circle cx="276" cy="62" r="70" fill="url(#r3)"/>
+  <path d="M 236 100 L 244 74 L 308 74 L 316 100 Z" fill="#3a2a24"/>
+  <path d="M 240 74 H 312 V 70 H 240 Z" fill="#4a3a30"/>
+  <path d="M 254 70 L 260 56 L 292 56 L 298 70 Z" fill="#7a1a14"/>
+  <path d="M 260 56 L 276 54 L 292 56 L 276 58 Z" fill="#c9a24a"/>
+  <path d="M 268 64 C 266 60 272 58 276 61 C 280 58 286 60 284 64 L 276 69 Z" fill="#ffb03a"/>
+  <path d="M 276 58 L 236.4 38.8" stroke="#ffcf7a" stroke-width="0.8" opacity="0.35"/>
+  <path d="M 276 58 L 243.2 28.6" stroke="#ffcf7a" stroke-width="0.8" opacity="0.35"/>
+  <path d="M 276 58 L 252.6 20.7" stroke="#ffcf7a" stroke-width="0.8" opacity="0.35"/>
+  <path d="M 276 58 L 263.8 15.7" stroke="#ffcf7a" stroke-width="0.8" opacity="0.35"/>
+  <path d="M 276 58 L 276.0 14.0" stroke="#ffcf7a" stroke-width="0.8" opacity="0.35"/>
+  <path d="M 276 58 L 288.2 15.7" stroke="#ffcf7a" stroke-width="0.8" opacity="0.35"/>
+  <path d="M 276 58 L 299.4 20.7" stroke="#ffcf7a" stroke-width="0.8" opacity="0.35"/>
+  <path d="M 276 58 L 308.8 28.6" stroke="#ffcf7a" stroke-width="0.8" opacity="0.35"/>
+  <path d="M 276 58 L 315.6 38.8" stroke="#ffcf7a" stroke-width="0.8" opacity="0.35"/>
+  <path d="M 194.8 92.0 L 194.32 98 M 197.2 92.0 L 197.68 98 M 196 87.2 L 199.6 81.2" stroke="#120a0c" stroke-width="1.68" stroke-linecap="round" fill="none"/>
+  <path d="M 193.84 85.52 L 198.16 85.52 L 197.68 92.48 L 194.32 92.48 Z" fill="#120a0c"/>
+  <circle cx="196" cy="83.12" r="2.16" fill="#120a0c"/>
+  <rect x="0" y="0" width="552" height="100" fill="url(#r4)"/>
+  <rect x="1.5" y="1.5" width="549" height="97" fill="none" stroke="#c9a24a" stroke-width="1" opacity="0.7"/>
+</svg>

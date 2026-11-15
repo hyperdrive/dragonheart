@@ -862,6 +862,157 @@ const STORIES := {
 		"text": "The King reins in beside you and looks you over the way a man looks at a horse he might buy. \"Pretty,\" he says. \"The crown has rights over everything in this realm, girl. Everything.\" A gauntleted hand closes on your arm and drags you toward his saddle while his guards smirk. His great-grandfather thought the world was his to take, too. The fire comes up through you like a dam bursting — scales over skin, wings over the sky, teeth where the girl was. His horse has the sense to bolt. The King does not.",
 		"choices": ["Remind him what a crown is worth."],
 	},
+	# --- the girl meets the hag (2026-11-15): spared at tea, a hag regardless ---
+	"girl_accosted_hag": {
+		"title": "Waste Not",
+		"image": "res://assets/story/story_hag_quest.svg",
+		"tint": Color(0.10, 0.18, 0.12),
+		"text": "Mother Grisla is grubbing in her herb bed when your shadow falls across it. \"Why, if it isn't my clever girl!\" She hobbles up beaming and pinches your cheek between two hard fingers. Then she sniffs. And sniffs again. \"Fen-mint... and dragon-smoke.\" The pinch tightens. \"Such tender little cheeks. Heart must be taken warm, dearie, and here you've brought it right to my garden.\" Her fingers unfold into black hooks; her smile splits past her ears. A hag is a hag, whatever she promised over tea. The ember in your chest roars, and the girl comes apart in scale and flame.",
+		"choices": ["Tear free of her claws."],
+	},
+	# --- the girl meets the adventurer: a courtship in three steps (2026-11-15) ---
+	"adventurer_meet": {
+		"title": "A Hero, Approximately",
+		"image": "res://assets/story/story_adventurer.svg",
+		"tint": Color(0.40, 0.46, 0.30),
+		"text": "He comes swaggering up the road, whistling, sword on his hip and a backpack bulging with somebody else's gold. He spots you, trips over nothing, and turns the stumble into a bow so deep his pack nearly tips him over. \"Corvin Larkspur, at your service! Slayer of goblins, finder of treasure, rescuer of... are you in need of rescuing? I can wait.\" He flashes a grin that has clearly worked in every tavern from here to the coast. Up close he smells of road dust and stolen coin, and his eyes are very blue. Somewhere inside you, one of the voices giggles.",
+		"choices": ["Flutter your lashes. (Flirt.)", "Tease him about that sword. (Banter.)", "Walk on by. (Not today, hero.)"],
+	},
+	"adventurer_flirt": {
+		"title": "The Lane Gets Shorter",
+		"image": "res://assets/story/story_adventurer.svg",
+		"tint": Color(0.42, 0.44, 0.30),
+		"text": "You flutter your lashes, and Corvin forgets the end of his sentence. \"I... yes. Hello.\" He offers you his arm with the air of a man who has rehearsed this in a mirror. \"Might a humble hero walk a lady down the lane? Bandits, you know. Wolves. Possibly dragons.\" You assure him gravely that you have never once seen a dragon. He laughs at everything you say, even the parts that aren't jokes, and picks you a daisy and gets the stem stuck in his gauntlet.",
+		"choices": ["Let him walk you down the lane.", "Ask what's in that heavy backpack.", "Leave him wanting more."],
+	},
+	"adventurer_banter": {
+		"title": "Swordplay",
+		"image": "res://assets/story/story_adventurer.svg",
+		"tint": Color(0.40, 0.42, 0.32),
+		"text": "\"That's a very big sword,\" you observe, \"for a very small goblin problem.\" Corvin's ears go pink. \"It is a perfectly ordinary-sized sword!\" He draws it to prove the point, nearly takes off his own hat, and performs three flourishes that end with the blade pointing at a confused cow. \"The Larkspur Spin. Undefeated.\" You clap, slowly. He bows anyway. It is terribly hard not to like him.",
+		"choices": ["Let him show you his famous sword-work.", "Ask what's in that heavy backpack.", "Leave him wanting more."],
+	},
+	"adventurer_walk_on": {
+		"title": "Not Today, Hero",
+		"image": "res://assets/story/story_adventurer.svg",
+		"tint": Color(0.36, 0.40, 0.32),
+		"text": "You walk on by. Behind you there is a long, wounded silence, then the clank of a hero trying to look as if he meant to stop there anyway. \"Same time tomorrow, then!\" he calls after you. You don't look back. You do smile.\n\n(Find him on the road again, as the girl, if you change your mind.)",
+		"choices": ["Walk on."],
+	},
+	"adventurer_wanting": {
+		"title": "Leave Him Wanting",
+		"image": "res://assets/story/story_adventurer.svg",
+		"tint": Color(0.38, 0.40, 0.32),
+		"text": "\"Another time, hero.\" You tap the end of his nose with one finger and leave him standing in the road with his mouth open and a daisy wilting in his fist. You hear him say \"Wow\" to nobody at all. He will be thinking about you for days.\n\n(Meet him on the road again, as the girl, to finish what you started.)",
+		"choices": ["Glance back once. Just once."],
+	},
+	"adventurer_moment": {
+		"title": "Something in the Air",
+		"image": "res://assets/story/story_bees.svg",
+		"tint": Color(0.46, 0.50, 0.34),
+		"text": "The lane ends in a meadow, and the meadow is full of flowers, and the flowers are full of bees, and Corvin has gone very quiet. He tucks a wildflower behind your ear with hands that are suddenly not steady at all. \"I've fought trolls,\" he says. \"I've robbed a dragon. Nothing ever made my knees go like this.\" The bees hum. The sun is warm. He is looking at your mouth. You know exactly what would happen if you leaned a little closer, and so, by the look of him, does he.",
+		"choices": ["Let yourself be seduced.", "Not today, hero."],
+	},
+	"adventurer_backpack": {
+		"title": "The Hero's Haul",
+		"image": "res://assets/story/story_bees.svg",
+		"tint": Color(0.46, 0.46, 0.30),
+		"text": "\"This?\" He swings the pack down proudly and lets you peek: gold, a great deal of it, and some of it you recognise. \"Dragon's hoard,\" he whispers, delighted. \"Robbed it blind while the beast was out. The King pays a fortune to get it back.\" You keep your face perfectly still. Then you lean close and murmur that a truly gallant man would rob the KING instead, and lay the gold at a lady's feet. Corvin's eyes go wide, then soft, then wicked. \"For you,\" he breathes, \"I would rob the moon.\" In the meadow behind him, the bees hum their approval.",
+		"choices": ["Let yourself be seduced.", "Not today, hero."],
+	},
+	"adventurer_parted": {
+		"title": "A Hero Unrequited",
+		"image": "res://assets/story/story_bees.svg",
+		"tint": Color(0.40, 0.44, 0.34),
+		"text": "You set a hand on his chest and gently push. \"Not today, hero.\" He takes it like a gentleman, which is to say he clutches his heart, staggers, and collapses theatrically into the daisies. \"Slain,\" he informs the sky. \"Slain by a farm girl.\" He is still lying there when you leave.\n\n(You may find him again on the road, as the girl.)",
+		"choices": ["Leave him to the daisies."],
+	},
+	"adventurer_bees": {
+		"title": "The Birds and the Bees",
+		"image": "res://assets/story/story_bees.svg",
+		"animation": "bees",
+		"tint": Color(0.60, 0.74, 0.50),
+		"text": "And here, dear reader, the story politely turns its back and looks at a meadow instead. Look: a bee. A bold, fuzzy, striped young bee, buzzing in a very determined manner toward a flower. The flower is shy. The flower is pink. The flower turns ever so slightly toward the sun, which is to say toward the bee. The bee lands. There is a great deal of pollen. Some time passes, as time does in meadows. Somewhere a bluebird sings, perhaps a little too loudly. The flower blushes a deeper pink. The bee has to sit down.",
+		"choices": ["Ahem."],
+	},
+	"adventurer_turned": {
+		"title": "Robbing the King, for Love",
+		"image": "res://assets/story/story_adventurer.svg",
+		"tint": Color(0.46, 0.36, 0.30),
+		"text": "Afterwards Corvin lies in the clover with grass in his hair and the look of a man who has been hit very pleasantly on the head. He catches your hand and kisses your knuckles. \"The dragon's gold goes back to the dragon,\" he declares, \"and the King's gold goes to you. Every coin. I swear it on my sword.\" He seems to think the whole thing was his idea. You do not correct him.\n\n(From now on Corvin robs the city treasury and hauls the loot to your lair. The King's soldiers will hunt him for it. Love is rarely safe.)",
+		"choices": ["Kiss his nose. Send him off to rob the King."],
+	},
+	# --- the wizard meets the girl: Lorindel, the Ember Queen, the tome (2026-11-15) ---
+	"wizard_girl_meet": {
+		"title": "A Stranger at the Tower",
+		"image": "res://assets/story/story_intro_wizard_saved.svg",
+		"tint": Color(0.22, 0.20, 0.16),
+		"text": "The old wizard is pottering about his doorstep, watering a pot of something that hisses at him, when you come up the path. \"Lost, my dear? The village is the other way.\" Then he looks at your face properly, and the watering can stops in mid-air. He comes closer, peering, as if at a page in a language he once loved. \"Those eyes,\" he says softly. \"Ember-gold, with the fire behind them. I haven't seen eyes like those outside of a book.\" He does not know you. With a cold jolt you realise he truly does not know you. He only knows what you are.",
+		"choices": ["\"What do you mean, what I am?\""],
+	},
+	"wizard_girl_lorindel": {
+		"title": "The Lost People",
+		"image": "res://assets/story/story_lorindel_book.svg",
+		"tint": Color(0.26, 0.08, 0.06),
+		"text": "\"Sit, sit.\" He waves you to a mossy bench and leans on his staff. \"Once there was a valley called Lorindel: high halls carved into the living mountain, deep fires, and a people who could be dragons and could be folk like you. They traded flame-glass for grain in the river towns, and nobody minded much, until a king named Osric decided God minded. He came over the ridge with choirs and iron. He burned the halls with the young still inside, broke the eggs on the altar stones, and called it purification.\" His eyes glitter. \"A hundred years ago. And yet here you are, child, with Lorindel looking out of your face.\"",
+		"choices": ["\"Is there nothing left of them?\""],
+	},
+	"wizard_girl_quest": {
+		"title": "The Ember Queen's Tome",
+		"image": "res://assets/story/story_temple.svg",
+		"tint": Color(0.30, 0.16, 0.14),
+		"text": "\"Ah. Now that is the question.\" He leans in, and his voice drops to a hush. \"Lorindel was ruled by a sorceress-queen, Ysolde the Ember Queen, and her spells were written in a tome bound in her own shed scales. Osric's men never found it. They say her temple still stands, in ruins, near the old dragon's mountain, if you know how to look.\" He pats your hand. \"Lorindel's blood would know the way. And if you find it...\" The smile does not quite reach his eyes. \"...bring it to me. I'd keep it safe.\" On his chest, the empty locket catches the light.",
+		"choices": ["Promise to look for the temple."],
+	},
+	"temple_enter": {
+		"title": "The Temple of the Dragon Queen",
+		"image": "res://assets/story/story_temple.svg",
+		"tint": Color(0.30, 0.16, 0.18),
+		"text": "You have been here before. Not in this life: in the dream that has come every night since the broken altar, the one with the columns, and the coiled dragon on the wall, and a woman's voice singing in a tongue you never learned. Ivy hangs where banners hung. The braziers still smoulder after a hundred years, which is impossible, and yet. In the dream you always walked to the centre of the floor and knelt. Your feet are already moving.",
+		"choices": ["Walk to where the dream always ends."],
+	},
+	"temple_secret": {
+		"title": "The Hidden Stair",
+		"image": "res://assets/story/story_tome.svg",
+		"tint": Color(0.16, 0.08, 0.08),
+		"text": "You kneel where you knelt in the dream. The slab under your hands is cracked, and through the crack breathes a faint, warm ember light. You press your palm to the dragon in the roundel above it, its red stone eye level with yours, and the stone sighs and sinks. The slab grinds aside. A stair winds down beneath the ruins, swept clean, as if someone has been waiting. At the bottom, on an altar between two carved dragon skulls, a book glows like a coal.",
+		"choices": ["Descend."],
+	},
+	"temple_tome": {
+		"title": "The Ember Tome",
+		"image": "res://assets/story/story_tome.svg",
+		"tint": Color(0.22, 0.08, 0.06),
+		"text": "It is bound in red scales and warm to the touch, and when you lift it the voices in your chest do something they have never done before: they kneel. The first page bears a seal, a crowned dragon, and a line in a script you can somehow read: FOR MY DAUGHTERS, WHEN THEY COME HOME. Queen Ysolde's tome. Most of it will not open yet; the pages are hot and stubborn as a sleeping fire. But it settles against your heart as if it has finally found where it belongs.\n\n(Keep the tome until the invasion's second wave, and its fire will wake.)",
+		"choices": ["Hold it close. Keep it secret."],
+	},
+	"wizard_tome_offer": {
+		"title": "The Wizard's Price",
+		"image": "res://assets/story/story_intro_wizard_saved.svg",
+		"tint": Color(0.22, 0.18, 0.20),
+		"text": "Ambrose sees the tome before he sees you. He goes very still, the way a cat goes still. \"You found it.\" His voice is a whisper, hungry and reverent. \"Queen Ysolde's own hand.\" He holds out both palms, trembling ever so slightly. \"Give it here, child. It isn't safe with someone who doesn't understand it. I'll keep it for you. I'll keep it for Lorindel.\" Under his robe, the empty locket has begun, very faintly, to glow.",
+		"choices": ["Give him the tome.", "Keep it. Tell him you found nothing."],
+	},
+	"wizard_tome_betrayal": {
+		"title": "The Hand That Grasps",
+		"image": "res://assets/story/story_wizard.svg",
+		"tint": Color(0.24, 0.14, 0.30),
+		"text": "You hold out the tome. His fingers close on it, and the book bites. Ember-light flares across the cover and Ambrose screams, snatching back a hand blistered to the bone. The tome stays in yours; it will open for no one but Lorindel's blood. When he looks up, the kindly old man is gone. \"Then I'll take it from your ashes,\" he hisses, and his robes bleed violet-black, his eyes ignite, and the empty locket burns like a hungry heart. He knows you now. Perhaps he always did. The dragon tears up out of you to meet him.",
+		"choices": ["Burn him."],
+	},
+	"wizard_tome_kept": {
+		"title": "A Secret Kept",
+		"image": "res://assets/story/story_intro_wizard_saved.svg",
+		"tint": Color(0.20, 0.18, 0.16),
+		"text": "\"Found it? Gracious, no.\" You let your shoulders droop. \"Just rubble and owls.\" Ambrose studies you for a long moment, and the tome weighs against your heart like a second one. Then he smiles, all twinkle again. \"Pity. Keep looking, my dear. Keep looking.\" He watches you all the way down the path.\n\n(Keep the tome until the invasion's second wave, and Queen Ysolde's fire will be yours.)",
+		"choices": ["Walk away. Don't look back."],
+	},
+	"greater_flame": {
+		"title": "Greater Flame",
+		"image": "res://assets/story/story_greater_flame.svg",
+		"tint": Color(0.34, 0.08, 0.04),
+		"text": "The second wave is marching when the tome begins to burn against your heart. It falls open on its own, pages flipping in a wind that isn't there, and stops at a spell written in a hand like flame: GREATER FLAME. Queen Ysolde's voice fills your head, clear as a bell after a hundred years of silence. \"They came with choirs and iron, daughter. Answer them as I could not.\" Your breath catches fire. It leaves you twice as far as ever before, and where it touches the earth, the earth keeps burning.\n\n(Greater Flame: your breath reaches twice as far and leaves fire on the ground for 5 seconds. Anyone who walks into it dies.)",
+		"choices": ["Answer them."],
+	},
 	# --- the aftermath: glade, deer, the Prince; the invasion + endings (2026-11-15) ---
 	"glade_blooms": {
 		"title": "Where the Crown Fell",
@@ -1028,6 +1179,7 @@ func open(kind: String, note: String = "") -> void:
 		image_rect.texture = load(image_path)
 	else:
 		image_rect.texture = null
+	_show_animation(str(STORIES[kind].get("animation", "")))
 	text_label.text = STORIES[kind]["text"] + ("\n\n" + note if note != "" else "")
 	_rebuild_choices(STORIES[kind]["choices"])
 	# One-answer chapters (meals, outcome reports) just continue.
@@ -1035,6 +1187,22 @@ func open(kind: String, note: String = "") -> void:
 	hint_label.text = "Press 1 or ESC to continue" if count == 1 \
 		else "Pick an answer (1-%d • ESC for the last line)" % count
 	visible = true
+
+## Animated story art (2026-11-15): "animation": "bees" plays the bee and
+## the shy flower over the story image (BeesAndFlowers.gd).
+const BEES_SCRIPT := preload("res://scripts/ui/BeesAndFlowers.gd")
+var _bees: Control = null
+
+func _show_animation(which: String) -> void:
+	if which == "bees":
+		if _bees == null:
+			_bees = BEES_SCRIPT.new() as Control
+			_bees.name = "Bees"
+			$Center/Panel/VBox/ImageBox.add_child(_bees)
+		_bees.call("restart")
+		_bees.visible = true
+	elif _bees != null:
+		_bees.visible = false
 
 func _rebuild_choices(choice_texts: Array) -> void:
 	for i in 4:

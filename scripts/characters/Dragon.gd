@@ -248,11 +248,13 @@ func _physics_process(delta: float) -> void:
 	if human_form and _human_rig != null:
 		_human_rig.tick(delta, velocity)
 		_check_accosted()
+	_check_meetings()
 
 	# While the breath window is open, flammable actors/fields in the cone
 	# catch fire.
 	if is_firing:
 		_ignite_flammables()
+		_drop_ground_fire(delta)
 	
 	# Face travel direction: mirrors the body and the whole fire assembly.
 	if input_direction.x != 0.0:
@@ -522,7 +524,7 @@ func _apply_facing() -> void:
 		_human.scale.x = 1.4 * float(facing)
 	fire_area.position.x = 63.0 * float(facing)   # mouth tip (Sprite-space ~64)
 	fire_collision.position.x = 27.0 * float(facing)  # adjust hitbox offset too
-	flame.scale.x = float(facing)
+	flame.scale.x = float(facing) * _flame_length
 
 ## Everything flammable caught in the breath cone ignites: farmers, miners,
 ## soldiers, goblins (+ the King), and crop fields (Field.burn → stubble →
@@ -1054,6 +1056,46 @@ func increase_flame_range(add_px: float) -> void:
 	fire_reach += add_px
 	print("Dragon flame range +%dpx (reach %0.0f)!" % [int(add_px), fire_reach])
 
+# --- Greater Flame (2026-11-15, the Ember Tome) ----------------------------------
+
+## User: "she will learn automatically Greater flame, that is twice as long
+## and leave fires on the ground for 5s killing anyone who moves into
+## them". Learned at the invasion's second wave while she keeps the tome
+## (GameManager). The breath's reach and the drawn flame double; while she
+## breathes, patches of fire (GroundFire.gd) drop along the cone.
+const GROUND_FIRE_SCRIPT := preload("res://scripts/systems/GroundFire.gd")
+const GROUND_FIRE_EVERY := 0.09
+const GROUND_FIRE_MAX := 60
+var greater_flame := false
+var _flame_length := 1.0
+var _ground_fire_left := 0.0
+
+func learn_greater_flame() -> void:
+	if greater_flame:
+		return
+	greater_flame = true
+	fire_reach *= 2.0
+	_flame_length = 2.0
+	_apply_facing()
+	print("Dragon: GREATER FLAME — reach %0.0f, the ground burns behind it" % fire_reach)
+
+func _drop_ground_fire(delta: float) -> void:
+	if not greater_flame or human_form:
+		return
+	_ground_fire_left -= delta
+	if _ground_fire_left > 0.0:
+		return
+	_ground_fire_left = GROUND_FIRE_EVERY
+	if get_tree().get_nodes_in_group("ground_fire").size() >= GROUND_FIRE_MAX:
+		return
+	var patch := GROUND_FIRE_SCRIPT.new() as Node2D
+	patch.add_to_group("ground_fire")
+	get_parent().add_child(patch)
+	# somewhere along the breath, from the mouth to the flame's tip; the
+	# patch lands on the GROUND below the flame (the dragon's feet line)
+	var along := randf_range(18.0, fire_reach)
+	patch.global_position = _fire_origin() + Vector2(along * float(facing), randf_range(-10.0, 10.0))
+
 ## Shield restock: refused while any shield remains (non-stackable pool).
 func add_shield(points: int) -> bool:
 	if shield_points > 0:
@@ -1150,6 +1192,56 @@ func _check_accosted() -> void:
 					by = npc.npc_type
 	if by != "":
 		game_manager.notify_girl_accosted(by)
+
+## Meetings (2026-11-15, user: storypopup hooks for the human form): the
+## girl walking into Mother Grisla, the adventurer or the kindly wizard
+## opens their chapter (GameManager decides which). Each meeting fires on
+## the FIRST touch only and re-arms once she has stepped away, so standing
+## beside someone never reopens the same popup. The tome can also be
+## brought back to the wizard by the dragon herself.
+const MEET_RANGE := 34.0
+const MEET_LEAVE := 70.0
+var _met: Dictionary = {}   # key → true while still in contact
+
+func _check_meetings() -> void:
+	if game_manager == null or _dying:
+		return
+	var touching: Dictionary = {}
+	if human_form:
+		for group: String in ["hag", "adventurers"]:
+			for node: Node in get_tree().get_nodes_in_group(group):
+				var npc := node as BaseNPC
+				if npc != null and npc.is_alive:
+					_touch(touching, group + str(npc.get_instance_id()), npc, group)
+	# the kindly wizard: as the girl, or as the dragon bringing the tome
+	for node: Node in get_tree().get_nodes_in_group("wizard"):
+		var wiz := node as BaseNPC
+		if wiz != null and wiz.is_alive and wiz.has_method("is_kind") and bool(wiz.call("is_kind")) \
+				and (human_form or game_manager.story_flags.has("has_tome")):
+			_touch(touching, "wizard" + str(wiz.get_instance_id()), wiz, "wizard")
+	for key: String in _met.keys():
+		if not touching.has(key):
+			_met.erase(key)
+
+func _touch(touching: Dictionary, key: String, npc: Node2D, group: String) -> void:
+	var d := global_position.distance_to(npc.global_position)
+	if _met.has(key):
+		if d <= MEET_LEAVE:
+			touching[key] = true   # still near: stays spent
+		return
+	if d > MEET_RANGE:
+		return
+	touching[key] = true
+	_met[key] = true
+	if game_manager.story_open or get_tree().paused:
+		return
+	match group:
+		"hag":
+			game_manager.notify_girl_meets_hag()
+		"adventurers":
+			game_manager.notify_girl_meets_adventurer(npc)
+		"wizard":
+			game_manager.notify_meets_kind_wizard()
 
 func set_human_form(on: bool) -> bool:
 	if on == human_form or _dying:

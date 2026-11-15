@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="552" height="100" viewBox="0 0 552 100">
+  <!-- Story vignette: the adventurer on the road (2026-11-14). -->
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ac8f0"/><stop offset="0.7" stop-color="#e8f4f0"/><stop offset="1" stop-color="#c8e4a0"/></linearGradient>
+    <radialGradient id="r2" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff4b0" stop-opacity="0.6"/><stop offset="1" stop-color="#fff4b0" stop-opacity="0"/></radialGradient>
+    <radialGradient id="r3" cx="0.5" cy="0.5" r="0.75"><stop offset="0.55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity="0.55"/></radialGradient>
+  </defs>
+  <rect x="0" y="0" width="552" height="100" fill="url(#g1)" opacity="1.0"/>
+  <circle cx="470" cy="20" r="50" fill="url(#r2)"/>
+  <path d="M -20 100 L -20 58.2 Q 1.1 56.1 22.3 55.6 T 64.6 53.0 Q 85.7 50.9 106.9 53.3 T 149.1 53.6 Q 170.3 51.5 191.4 54.3 T 233.7 55.1 Q 254.9 53.0 276.0 56.4 T 318.3 57.7 Q 339.4 55.6 360.6 54.9 T 402.9 52.0 Q 424.0 49.9 445.1 52.0 T 487.4 51.9 Q 508.6 49.8 529.7 53.3 T 572.0 54.8 L 572 100 Z" fill="#9ccc7a" opacity="1.0"/>
+  <path d="M -20 100 L -20 72.2 Q 1.1 71.0 22.3 74.5 T 64.6 76.8 Q 85.7 75.6 106.9 77.1 T 149.1 77.5 Q 170.3 76.3 191.4 74.7 T 233.7 72.0 Q 254.9 70.8 276.0 74.3 T 318.3 76.6 Q 339.4 75.4 360.6 76.7 T 402.9 76.9 Q 424.0 75.7 445.1 75.4 T 487.4 74.0 Q 508.6 72.8 529.7 74.8 T 572.0 75.7 L 572 100 Z" fill="#7ab85a" opacity="1.0"/>
+  <path d="M 150 100 Q 260 70 330 74 T 552 66 L 552 74 Q 420 80 340 84 T 210 100 Z" fill="#d8c08a"/>
+  <circle cx="343.8" cy="94.4" r="1.3" fill="#ff7aa0"/>
+  <circle cx="463.9" cy="94.9" r="1.3" fill="#ffe05a"/>
+  <circle cx="358.2" cy="96.6" r="1.3" fill="#ff7aa0"/>
+  <circle cx="205.2" cy="96.2" r="1.3" fill="#b07aff"/>
+  <circle cx="300.2" cy="92.0" r="1.3" fill="#ff7aa0"/>
+  <circle cx="403.6" cy="89.7" r="1.3" fill="#ffe05a"/>
+  <circle cx="505.8" cy="94.7" r="1.3" fill="#ffe05a"/>
+  <circle cx="420.6" cy="85.0" r="1.3" fill="#b07aff"/>
+  <circle cx="69.9" cy="84.0" r="1.3" fill="#ff7aa0"/>
+  <circle cx="115.6" cy="87.0" r="1.3" fill="#ffe05a"/>
+  <circle cx="481.6" cy="88.1" r="1.3" fill="#ffe05a"/>
+  <circle cx="297.7" cy="93.5" r="1.3" fill="#ffe05a"/>
+  <circle cx="100.3" cy="97.6" r="1.3" fill="#ffe05a"/>
+  <circle cx="533.5" cy="96.5" r="1.3" fill="#ffffff"/>
+  <circle cx="11.9" cy="89.8" r="1.3" fill="#ffe05a"/>
+  <circle cx="145.6" cy="88.6" r="1.3" fill="#ff7aa0"/>
+  <circle cx="329.0" cy="93.9" r="1.3" fill="#ff7aa0"/>
+  <circle cx="171.1" cy="95.5" r="1.3" fill="#b07aff"/>
+  <circle cx="384.4" cy="86.6" r="1.3" fill="#b07aff"/>
+  <circle cx="389.0" cy="84.8" r="1.3" fill="#ff7aa0"/>
+  <circle cx="524.0" cy="89.0" r="1.3" fill="#b07aff"/>
+  <circle cx="10.0" cy="95.0" r="1.3" fill="#ffffff"/>
+  <circle cx="207.8" cy="95.8" r="1.3" fill="#b07aff"/>
+  <circle cx="25.8" cy="86.5" r="1.3" fill="#ffe05a"/>
+  <circle cx="65.7" cy="87.4" r="1.3" fill="#b07aff"/>
+  <circle cx="190.1" cy="89.0" r="1.3" fill="#ffffff"/>
+  <circle cx="428.1" cy="85.5" r="1.3" fill="#ffffff"/>
+  <circle cx="474.6" cy="84.5" r="1.3" fill="#ff7aa0"/>
+  <circle cx="115.1" cy="91.2" r="1.3" fill="#ffffff"/>
+  <circle cx="506.8" cy="88.8" r="1.3" fill="#ff7aa0"/>
+  <circle cx="172.5" cy="88.4" r="1.3" fill="#ffe05a"/>
+  <circle cx="440.9" cy="92.8" r="1.3" fill="#ffffff"/>
+  <circle cx="550.2" cy="86.3" r="1.3" fill="#ff7aa0"/>
+  <circle cx="44.7" cy="92.4" r="1.3" fill="#b07aff"/>
+  <circle cx="17.6" cy="94.4" r="1.3" fill="#ffffff"/>
+  <circle cx="456.1" cy="90.4" r="1.3" fill="#b07aff"/>
+  <circle cx="80.4" cy="97.7" r="1.3" fill="#ff7aa0"/>
+  <circle cx="442.5" cy="88.7" r="1.3" fill="#ffe05a"/>
+  <circle cx="72.1" cy="94.2" r="1.3" fill="#ffe05a"/>
+  <circle cx="348.0" cy="95.0" r="1.3" fill="#ff7aa0"/>
+  <path d="M 262 70 q -10 6 -8 16 l 6 0 Z" fill="#b03a3a"/>
+  <path d="M 266.3 83.5 L 265.62 92 M 269.7 83.5 L 270.38 92 M 268 76.7 L 273.1 68.2" stroke="#3a2a20" stroke-width="2.38" stroke-linecap="round" fill="none"/>
+  <path d="M 264.94 74.32 L 271.06 74.32 L 270.38 84.18 L 265.62 84.18 Z" fill="#3a2a20"/>
+  <circle cx="268" cy="70.92" r="3.06" fill="#3a2a20"/>
+  <path d="M 273 69 L 284 50" stroke="#e8e8f0" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M 272 71 L 276 66" stroke="#8a5a2a" stroke-width="2.4"/>
+  <rect x="256" y="72" width="9" height="12" rx="2" fill="#7a5a3a"/>
+  <path d="M 316.5 84.5 L 315.9 92 M 319.5 84.5 L 320.1 92 M 318 78.5 L 322.5 83.0 M 318 78.5 L 313.5 83.0" stroke="#2a5a2a" stroke-width="2.10" stroke-linecap="round" fill="none"/>
+  <path d="M 315.3 76.4 L 320.7 76.4 L 320.1 85.1 L 315.9 85.1 Z" fill="#2a5a2a"/>
+  <circle cx="318" cy="73.4" r="2.70" fill="#2a5a2a"/>
+  <path d="M 315 89 L 321 89 L 323 84 L 313 84 Z" fill="#2a5a2a"/>
+  <path d="M 316 73 q -5 4 -3 10" stroke="#a0502a" stroke-width="1.4" fill="none"/>
+  <circle cx="318.6" cy="73.4" r="0.6" fill="#ffb03a"/>
+  <path d="M 293 60 c -3 -4 -8 0 -3 4 l 3 3 l 3 -3 c 5 -4 0 -8 -3 -4 Z" fill="#ff5a7a"/>
+  <rect x="0" y="0" width="552" height="100" fill="url(#r3)"/>
+  <rect x="1.5" y="1.5" width="549" height="97" fill="none" stroke="#c9a24a" stroke-width="1" opacity="0.7"/>
+</svg>

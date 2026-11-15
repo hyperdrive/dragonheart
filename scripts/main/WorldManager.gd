@@ -1591,6 +1591,52 @@ func spawn_hag_nest() -> void:
 		area = area.expand((fir_node as Node2D).global_position)
 	_refresh_nav_area(area.grow(40.0))
 
+# --- the Temple of the Dragon Queen (2026-11-15) ---------------------------------
+
+## The kindly wizard's quest (GameManager: wizard_girl_quest) raises the
+## ruined temple of Lorindel's sorceress-queen NEAR the dragon's mountain:
+## a short walk away, on open ground, clear of the hag's fen. The temple
+## script is reached by path, never by class name (editor rescan caveat).
+const TEMPLE_RADIUS := 90.0
+var temple_position := Vector2.INF
+
+func spawn_dragon_temple() -> void:
+	if temple_position != Vector2.INF:
+		return
+	var avoid: Array[Vector2] = []
+	for node: Node in get_tree().get_nodes_in_group("hag_nest"):
+		avoid.append((node as Node2D).global_position)
+	var spot := Vector2.INF
+	# south first (the wizard's line: "south of the dragon's mountain"),
+	# then fan out around the mountain
+	var angles: Array[float] = [90.0, 60.0, 120.0, 30.0, 150.0, 0.0, 180.0, 330.0, 210.0, 300.0, 240.0, 270.0]
+	for dist: float in [250.0, 310.0, 380.0]:
+		for deg: float in angles:
+			var anchor := _clamp_to_interior(lair_position + Vector2.RIGHT.rotated(deg_to_rad(deg)) * dist, TEMPLE_RADIUS)
+			if anchor.distance_to(lair_position) < 200.0:
+				continue
+			var too_close := false
+			for a: Vector2 in avoid:
+				if anchor.distance_to(a) < 260.0:
+					too_close = true
+			if too_close:
+				continue
+			var free := _terrain_free_position(anchor, TEMPLE_RADIUS)
+			if free != Vector2.INF and free.distance_to(lair_position) >= 200.0:
+				spot = free
+				break
+		if spot != Vector2.INF:
+			break
+	if spot == Vector2.INF:
+		spot = _clamp_to_interior(lair_position + Vector2(0.0, 260.0), TEMPLE_RADIUS)
+	temple_position = spot
+	var temple := (load("res://scenes/props/DragonTemple.tscn") as PackedScene).instantiate() as Node2D
+	temple.global_position = spot
+	add_child(temple)
+	register_footprint(spot, TEMPLE_RADIUS)   # walkable ruins, but no new fields on them
+	entity_spawned.emit("terrain", spot)
+	print("WorldManager: the Temple of the Dragon Queen stands at %s" % spot)
+
 # --- the aftermath: the glade, the deer, the Prince (2026-11-15) --------------
 
 ## After the King's last fall (GameManager.begin_aftermath): a glade blooms
@@ -1808,6 +1854,7 @@ func _tick_invasion(delta: float) -> void:
 			_to_spawn += WAVE_SIZES[_wave - 1]
 			if game_manager != null:
 				game_manager.call("_hud_message", "Wave %d of %d marches out of the camp!" % [_wave, INVASION_WAVES], 3.0)
+				game_manager.call("on_invasion_wave", _wave)
 			if _wave == INVASION_WAVES:
 				_spawn_usurper()
 	_tick_squad(delta)
