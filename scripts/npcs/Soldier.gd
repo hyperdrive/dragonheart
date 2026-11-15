@@ -173,7 +173,8 @@ func _nearest_invader_within(reach: float) -> BaseNPC:
 
 ## The smitten adventurer robs the treasury for the dragon (Adventurer.
 ## turn_outlaw): the King's men — soldiers and the King, not archers, the
-## hag or heroes — cut him down when he comes within OUTLAW_SIGHT.
+## hag or heroes — cut him down when he comes within OUTLAW_SIGHT. Wolves
+## near the town get the same treatment (user: "soldiers kill wolves too").
 const OUTLAW_SIGHT := 380.0
 ## A sneaking outlaw is only seen at arm's length; and the King's men are
 ## town guards — they don't chase him far beyond the city.
@@ -191,7 +192,8 @@ func _nearest_outlaw(reach: float, sighting := true) -> BaseNPC:
 	var world := _world_manager()
 	var best: BaseNPC = null
 	var best_d := reach
-	for node: Node in get_tree().get_nodes_in_group("outlaws"):
+	for node: Node in get_tree().get_nodes_in_group("outlaws") \
+			+ get_tree().get_nodes_in_group("wolves"):   # wolves too (2026-11-15)
 		var o := node as BaseNPC
 		if o == null or o == self or not o.is_alive:
 			continue

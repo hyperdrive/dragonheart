@@ -426,7 +426,7 @@ func _soldier_in_strike_reach() -> BaseNPC:
 		return null
 	var best: BaseNPC = null
 	var best_dist := INF
-	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer", "invaders", "adventurers"]:
+	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer", "invaders", "adventurers", "wolves"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			var npc := node as BaseNPC
 			if npc == null or not npc.is_alive:
@@ -544,7 +544,7 @@ func _fire_origin() -> Vector2:
 ## (2026-11-14 user: "fire should kill all the actors, but the wizard who
 ## survives two blasts" — Wizard.catch_fire counts the blasts).
 const FLAMMABLE_GROUPS: Array[String] = ["farmers", "miners", "soldiers",
-	"goblins", "king", "wizard", "adventurers", "hag", "fields", "invaders"]
+	"goblins", "king", "wizard", "adventurers", "hag", "fields", "invaders", "wolves"]
 
 ## The breath's footprint on the ground (2026-11-15 fix, user: "the hitbox
 ## for the dragon fire is currently strange. It seems to take a lot of hits
@@ -1514,7 +1514,7 @@ func _rider_shoot_at_enemies(delta: float) -> void:
 	# so the old scan found zero targets and never fired).
 	var nearest_enemy: Node2D = null
 	var nearest_dist: float = INF
-	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer", "invaders", "adventurers"]:
+	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer", "invaders", "adventurers", "wolves"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			var npc := node as BaseNPC
 			if npc == null or not npc.is_alive or npc.is_in_group("king"):

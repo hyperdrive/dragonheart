@@ -18,7 +18,7 @@ const KILL_DAMAGE := 9999
 ## Everyone who walks: the realm, the hag, the heroes, the deer, the Prince.
 const VICTIM_GROUPS: Array[String] = ["farmers", "miners", "soldiers", "goblins",
 	"king", "wizard", "adventurers", "hag", "invaders", "dragon_slayer",
-	"prince", "deer"]
+	"prince", "deer", "wolves"]
 
 var _age := 0.0
 var _check_left := 0.0

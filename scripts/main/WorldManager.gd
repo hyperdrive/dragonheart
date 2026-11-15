@@ -331,6 +331,7 @@ func _ready() -> void:
 	generate_world()
 	_build_nav_grid()
 	_build_ground()
+	_start_wolves()
 	# Connect to field_burnt signal AFTER generation (fields are created in generate_world)
 	for field_node in get_tree().get_nodes_in_group("fields"):
 		var field := field_node as Field
@@ -1613,6 +1614,261 @@ func refresh_ground() -> void:
 	if ground != null and is_instance_valid(ground):
 		ground.call("refresh")
 
+# --- wolves (2026-11-15) ----------------------------------------------------------------
+
+## User: "Introduce a pack (4) wolf every other 30s of game play, no more than
+## three packs." Every WOLF_PACK_EVERY seconds (every other 30 s tick) a
+## pack of WOLF_PACK_SIZE comes in from the wild edge of the map, far from
+## the city and the dragon — while fewer than WOLF_MAX_PACKS packs still
+## have a living wolf. Wolf.gd hunts the pens and the deer.
+const WOLF_SCENE_PATH := "res://scenes/npcs/Wolf.tscn"
+const WOLF_PACK_EVERY := 60.0
+const WOLF_PACK_SIZE := 4
+const WOLF_MAX_PACKS := 3
+var _wolf_timer: Timer
+var _next_pack_id := 1
+
+## The pack brain (2026-11-15, user: "the wolves should have a squad brain,
+## just as the soldiers when they defend against the invading horde") — one
+## per pack, thinking every PACK_THINK_EVERY s like the garrison's squad:
+##   muster  a scattered pack gathers on its middle; once PACK_MUSTER_MIN
+##           (or all, if fewer) stand within PACK_MUSTER_RADIUS it is
+##           RELEASED on ONE prey — the deer or stocked pen nearest the
+##           pack — and every wolf closes on it from its own side.
+##   meal    PACK_MEAL kills feed the pack: it falls back to its den and
+##           rests PACK_REST s, then musters again.
+##   at bay  a soldier within PACK_THREAT_RADIUS of any packmate becomes the
+##           whole pack's target at once — they fight as one, like the
+##           garrison's focus — until he falls; then the hunt resumes.
+## Each wolf still bolts from the dragon on its own (BehaviorTree flee).
+##
+## The attack (2026-11-15, user: "the pack is too dense … there should be
+## some interesting attack dynamic where they spread out when they
+## attack"): released on prey, the pack first ENCIRCLES — every wolf runs to
+## its own place on a wide ring around the prey (PACK_CIRCLE_RADIUS, slots
+## spread evenly, the ring turned to face the pack's approach). When most of
+## them stand in place, or PACK_CIRCLE_MAX s have passed, they STRIKE: the
+## rush ripples round the ring, each wolf PACK_STAGGER s after the one
+## before. Soldiers get a straight charge — no time for manners.
+const PACK_THINK_EVERY := 0.4
+const PACK_MUSTER_MIN := 3
+const PACK_MUSTER_RADIUS := 140.0
+const PACK_CIRCLE_RADIUS := 125.0
+const PACK_CIRCLE_MAX := 4.5
+const PACK_IN_PLACE := 34.0
+const PACK_STAGGER := 0.35
+const PACK_MEAL := 2
+const PACK_REST := 25.0
+const PACK_THREAT_RADIUS := 70.0
+var _packs := {}   # pack id → {"den", "released", "target", "kills", "rest", "centre",
+				   #              "phase" ("circle"/"strike"), "circle_left", "strike_age", "angle0"}
+var _pack_think := 0.0
+
+func pack_order(pack_id: int) -> Dictionary:
+	return _packs.get(pack_id, {})
+
+## A packmate made a kill (Wolf._complete_hunt).
+func pack_kill(pack_id: int) -> void:
+	var p: Dictionary = _packs.get(pack_id, {})
+	if p.is_empty():
+		return
+	p["kills"] = int(p["kills"]) + 1
+	if int(p["kills"]) >= PACK_MEAL:
+		p["kills"] = 0
+		p["rest"] = PACK_REST
+		p["released"] = false
+		p["target"] = null
+
+func _pack_members() -> Dictionary:
+	var out := {}
+	for node: Node in get_tree().get_nodes_in_group("wolves"):
+		var w := node as BaseNPC
+		if w == null or not w.is_alive:
+			continue
+		var id := int(w.get("pack_id"))
+		if not out.has(id):
+			out[id] = []
+		(out[id] as Array).append(w)
+	return out
+
+func _tick_packs(delta: float) -> void:
+	for id: int in _packs:
+		var pk: Dictionary = _packs[id]
+		pk["rest"] = maxf(float(pk["rest"]) - delta, 0.0)
+		pk["circle_left"] = maxf(float(pk.get("circle_left", 0.0)) - delta, 0.0)
+		pk["strike_age"] = float(pk.get("strike_age", 0.0)) + delta
+	_pack_think -= delta
+	if _pack_think > 0.0:
+		return
+	_pack_think = PACK_THINK_EVERY
+	var members := _pack_members()
+	for id: int in _packs.keys():
+		if not members.has(id):
+			_packs.erase(id)   # the pack is gone
+	for id: int in _packs:
+		var p: Dictionary = _packs[id]
+		var pack: Array = members[id]
+		var centre := Vector2.ZERO
+		for w: BaseNPC in pack:
+			centre += w.global_position
+		centre /= float(pack.size())
+		p["centre"] = centre
+		# at bay: a soldier on top of any packmate draws the whole pack
+		var foe := _pack_threat(pack)
+		if foe != null:
+			if p["target"] != foe:
+				p["strike_age"] = 0.0
+			p["target"] = foe
+			p["released"] = true
+			p["phase"] = "strike"   # a straight charge at a soldier
+			continue
+		var held: Variant = p["target"]
+		if held != null and (not is_instance_valid(held) \
+				or (held is BaseNPC and (held as BaseNPC).npc_type != "deer")):
+			p["target"] = null      # the soldier is dead or gone: back to the hunt
+		if float(p["rest"]) > 0.0:
+			p["released"] = false
+			p["target"] = null
+			continue
+		if not bool(p["released"]):
+			var gathered := 0
+			for w: BaseNPC in pack:
+				if w.global_position.distance_to(centre) <= PACK_MUSTER_RADIUS:
+					gathered += 1
+			if gathered >= mini(PACK_MUSTER_MIN, pack.size()):
+				p["released"] = true
+		if bool(p["released"]) and not _prey_valid(p["target"]):
+			p["target"] = _nearest_prey(centre)
+			if p["target"] == null:
+				p["released"] = false
+			else:
+				# a new prey: spread out round it first
+				p["phase"] = "circle"
+				p["circle_left"] = PACK_CIRCLE_MAX
+				p["angle0"] = ((centre - (p["target"] as Node2D).global_position).angle()) - PI * 0.5
+		if bool(p["released"]) and str(p.get("phase", "")) == "circle":
+			var in_place := 0
+			for w: BaseNPC in pack:
+				if w.global_position.distance_to(pack_slot_spot(p, w)) <= PACK_IN_PLACE:
+					in_place += 1
+			if in_place >= mini(PACK_MUSTER_MIN, pack.size()) or float(p["circle_left"]) <= 0.0:
+				p["phase"] = "strike"
+				p["strike_age"] = 0.0
+
+## A wolf's place on the encircling ring: its slot spread evenly round the
+## prey, the ring opened toward the side the pack came from.
+func pack_slot_spot(p: Dictionary, wolf: Node) -> Vector2:
+	var t: Variant = p.get("target")
+	if t == null or not is_instance_valid(t):
+		return (wolf as Node2D).global_position
+	var slot := int(wolf.get("pack_slot"))
+	var a := float(p.get("angle0", 0.0)) + TAU * float(slot) / float(WOLF_PACK_SIZE) + PI / float(WOLF_PACK_SIZE)
+	return (t as Node2D).global_position + Vector2.from_angle(a) * PACK_CIRCLE_RADIUS * Vector2(1.0, 0.7)
+
+func _pack_threat(pack: Array) -> BaseNPC:
+	for node: Node in get_tree().get_nodes_in_group("soldiers"):
+		var s := node as BaseNPC
+		if s == null or not s.is_alive:
+			continue
+		for w: BaseNPC in pack:
+			if s.global_position.distance_to(w.global_position) <= PACK_THREAT_RADIUS:
+				return s
+	return null
+
+func _prey_valid(t: Variant) -> bool:
+	if t == null or not is_instance_valid(t):
+		return false
+	if t is AnimalPen:
+		return (t as AnimalPen).animal_count() > 0
+	return t is BaseNPC and (t as BaseNPC).is_alive
+
+## The deer or stocked pen nearest the pack.
+func _nearest_prey(from: Vector2) -> Node2D:
+	var best: Node2D = null
+	var best_d := INF
+	for node: Node in get_tree().get_nodes_in_group("deer"):
+		var deer := node as BaseNPC
+		if deer != null and deer.is_alive and deer.global_position.distance_to(from) < best_d:
+			best_d = deer.global_position.distance_to(from)
+			best = deer
+	for group: String in ["pig_pens", "cow_pens"]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			var pen := node as AnimalPen
+			if pen != null and pen.animal_count() > 0 and pen.global_position.distance_to(from) < best_d:
+				best_d = pen.global_position.distance_to(from)
+				best = pen
+	return best
+
+func _start_wolves() -> void:
+	_wolf_timer = Timer.new()
+	_wolf_timer.wait_time = WOLF_PACK_EVERY
+	_wolf_timer.autostart = true
+	_wolf_timer.timeout.connect(_on_wolf_timer)
+	add_child(_wolf_timer)
+
+func wolf_packs_alive() -> int:
+	var packs := {}
+	for node: Node in get_tree().get_nodes_in_group("wolves"):
+		var w := node as BaseNPC
+		if w != null and w.is_alive:
+			packs[int(w.get("pack_id"))] = true
+	return packs.size()
+
+func _on_wolf_timer() -> void:
+	if wolf_packs_alive() >= WOLF_MAX_PACKS:
+		return
+	spawn_wolf_pack()
+
+func spawn_wolf_pack() -> void:
+	var den := _wolf_den_spot()
+	if den == Vector2.INF:
+		return
+	var scene := load(WOLF_SCENE_PATH) as PackedScene
+	var pack := _next_pack_id
+	_next_pack_id += 1
+	_packs[pack] = {"den": den, "released": false, "target": null, "kills": 0,
+		"rest": 0.0, "centre": den, "phase": "circle", "circle_left": 0.0,
+		"strike_age": 0.0, "angle0": 0.0}
+	for i in WOLF_PACK_SIZE:
+		var wolf := scene.instantiate() as Node2D
+		wolf.set("pack_id", pack)
+		wolf.set("pack_slot", i)
+		wolf.set("den", den)
+		var spot := den + Vector2.from_angle(TAU * float(i) / float(WOLF_PACK_SIZE)) * 26.0
+		if nav_grid != null and nav_grid.is_built:
+			spot = nav_grid.nearest_walkable(spot)
+		wolf.global_position = spot
+		add_child(wolf)
+		wolf.set("home_position", spot)
+	entity_spawned.emit("wolf", den)
+	print("WorldManager: a wolf pack (%d) comes out of the wild at %s" % [WOLF_PACK_SIZE, den])
+	if game_manager != null:
+		game_manager.call("_hud_message", "A wolf pack howls at the edge of the realm. They are after your pigs and cows.", 4.0)
+
+## The wild edge: a walkable spot near the map border, as far as possible
+## from the city and the dragon.
+func _wolf_den_spot() -> Vector2:
+	var half := world_size * 0.5 - Vector2(WORLD_MARGIN + 40.0, WORLD_MARGIN + 40.0)
+	var dragon := get_tree().get_first_node_in_group("dragon") as Node2D
+	var best := Vector2.INF
+	var best_score := -INF
+	for i in 40:
+		var p := Vector2(randf_range(-half.x, half.x), randf_range(-half.y, half.y))
+		# push it out to the nearest edge
+		if absf(p.x) / half.x > absf(p.y) / half.y:
+			p.x = signf(p.x) * half.x
+		else:
+			p.y = signf(p.y) * half.y
+		if nav_grid != null and nav_grid.is_built and not nav_grid.is_walkable(p):
+			continue
+		var score := p.distance_to(city_position)
+		if dragon != null:
+			score = minf(score, p.distance_to(dragon.global_position) * 1.5)
+		if score > best_score:
+			best_score = score
+			best = p
+	return best
+
 # --- the Temple of the Dragon Queen (2026-11-15) ---------------------------------
 
 ## The kindly wizard's quest (GameManager: wizard_girl_quest) raises the
@@ -2174,6 +2430,7 @@ func _process(delta: float) -> void:
 	_try_spawn_wizard()
 	_tick_retirements(delta)
 	_tick_invasion(delta)
+	_tick_packs(delta)
 
 # --- stand-down while the dragon hides (2026-11-14) ------------------------------
 
