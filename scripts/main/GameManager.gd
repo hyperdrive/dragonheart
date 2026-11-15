@@ -367,6 +367,7 @@ var upgrade_purchases: int = 0
 @onready var hud: Control = $HUDLayer/HUD
 
 func _ready() -> void:
+	SETTINGS_SCRIPT.apply_saved(get_window())   # the player's scale / fit / window
 	food = starting_food
 	update_camera_position()
 	if world_manager and hud and world_manager.has_signal("entity_spawned"):
@@ -496,6 +497,10 @@ func cycle_palette() -> void:
 		PALETTES_SCRIPT.PALETTES.size(), pal["name"], pal["blurb"]], 3.0)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") and not story_open and not get_tree().paused:
+		open_settings_menu()
+		get_viewport().set_input_as_handled()
+		return
 	var key := event as InputEventKey
 	if key != null and key.pressed and not key.echo and key.physical_keycode == KEY_C \
 			and not story_open and not get_tree().paused:
@@ -925,6 +930,23 @@ func _pay_stash(cost: int) -> bool:
 # --- wizard shop (the tower site; replaces the old U-key panel) ---------------
 
 const WIZARD_MENU_SCENE := preload("res://scenes/ui/WizardMenu.tscn")
+const SETTINGS_SCRIPT := preload("res://scripts/ui/SettingsMenu.gd")
+
+## ESC in play: the settings menu (scale, window fit, window mode) over the
+## paused world — SettingsMenu.gd.
+var settings_menu: CanvasLayer
+
+func open_settings_menu() -> void:
+	if settings_menu == null:
+		settings_menu = SETTINGS_SCRIPT.new()
+		settings_menu.connect("closed", _on_settings_closed)
+		add_child(settings_menu)
+	settings_menu.call("open")
+	get_tree().paused = true
+
+func _on_settings_closed() -> void:
+	get_tree().paused = false
+	_drain_story_queue()
 
 ## Stash-value readout (gold-equivalent; gems worth GEM_GOLD_VALUE gold
 ## each — display only).

@@ -1229,6 +1229,8 @@ func _on_choice_pressed(choice_index: int) -> void:
 	story_close_requested.emit()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not visible:
+		return   # closed: ESC belongs to the settings menu (SettingsMenu.gd)
 	var story: Variant = STORIES.get(current_kind)
 	if story == null:
 		return

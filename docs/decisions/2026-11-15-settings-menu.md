@@ -1,0 +1,15 @@
+# Settings menu (ESC)
+
+Date: 2026-11-15.
+
+User: "Please add a way to affect godot scale and window fit by pressing esc
+to get a settings menu."
+
+| Decision | Choice | Why |
+|---|---|---|
+| Opening | ESC in play (`GameManager._unhandled_input`, only when no story/menu is open and the world isn't paused) opens `scripts/ui/SettingsMenu.gd` and pauses; ESC or Resume closes it and drains queued stories | ESC already closes the story popup and the wizard menu; those keep it while they are open |
+| Knobs | Scale = `Window.content_scale_factor` (0.5–3.0); Window fit = `content_scale_aspect` (keep / expand / keep width / keep height / ignore); Stretch = `content_scale_mode` (off / canvas items / viewport); Window = windowed / maximized / fullscreen / exclusive fullscreen | Godot's own scaling knobs, applied live |
+| Defaults | The window as launched from project.godot, captured before saved choices apply. Note: the project's legacy `stretch/mode="2d"` runs as **Off** in Godot 4 — kept so "Defaults" changes nothing | No surprise on reset |
+| Persistence | `user://settings.cfg`, `[display]` section; applied at start by `SettingsMenu.apply_saved` from `GameManager._ready` | Survives restarts |
+| Build | A CanvasLayer (layer 20) built in code, no scene; no class_name (editor rescan caveat) | Small, self-contained |
+| StoryPopup | `_unhandled_input` ignores input while hidden | A closed popup must never answer ESC or number keys |
