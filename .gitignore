@@ -46,3 +46,10 @@
 /_quarantine/scenes/test/
 /_quarantine/scripts/test_input.gd*
 /_quarantine/root-assets/
+
+# Export builds (the Linux preset exports to the repo root; Windows to bin/)
+/Dragonheart.x86_64
+/Dragonheart.sh
+/Dragonheart.pck
+/dragoheart_res.pck
+/bin/
