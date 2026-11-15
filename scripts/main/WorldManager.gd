@@ -1228,8 +1228,8 @@ func _on_escalation_tick() -> void:
 	# user: "soldiers should always be coming") — the King fights a living
 	# army, and _escalation_soldier_spawned's spawn_king() call is already
 	# a no-op while one is out.
-	if game_manager == null or _dragon_hidden():
-		return   # no dragon in sight: the King recruits nobody
+	if game_manager == null or _dragon_hidden() or _invasion_on():
+		return   # no dragon in sight (or the realm's war is over): no recruits
 	spawn_entity(_next_recruit_type(), 1, rally_point, 90.0)
 	_escalation_soldier_spawned()
 
@@ -1332,7 +1332,7 @@ func _try_buy_soldiers() -> void:
 	# always be coming, especially if there are treasure in the treasury"):
 	# the town keeps buying through the boss battle, so the King fights a
 	# constantly refreshed army instead of a frozen 15.
-	if game_manager == null or game_manager.run_finished or _dragon_hidden():
+	if game_manager == null or game_manager.run_finished or _dragon_hidden() or _invasion_on():
 		return   # the treasury keeps its coin until there is a dragon to fight
 	# NOTE: no gem reserve for the goblin trade anymore (2026-11-10): the
 	# exchange moved to the dragon's STASH — the town's gems keep converting
@@ -1357,11 +1357,12 @@ func _try_buy_soldiers() -> void:
 			game_manager.treasury["gold"], game_manager.treasury["gems"]])
 
 
-## The final boss arrives at the city; defeating him ends the run.
-## 2026-11-09-king-lives: he rises THREE times after each defeat; the
-## last defeat is the true one and ends the run.
-@export var king_respawn_count: int = 3
-var king_respawns_left: int = 3
+## The final boss arrives at the city. Two lives (2026-11-15, user: "the
+## King only deserves two lives" — was four: 2026-11-09-king-lives had him
+## rise three times): he rises ONCE after his first fall; the second fall
+## is the true one and opens the aftermath.
+@export var king_respawn_count: int = 1
+var king_respawns_left: int = 1
 
 ## Recruit rotation (2026-11-09 archer addition): every THIRD fielded unit
 ## is an Archer — a ranged soldier that peppers the dragon from the mortars-
@@ -1414,9 +1415,9 @@ func _materialize_king() -> void:
 ## The King has fallen — schedule the next life if any remain.
 ## Returns true when a respawn is planned (King.die skips the victory
 ## path then); false = last life spent → caller declares victory.
-## Lives semantics: king_respawn_count = 3 → the King dies FOUR times in
-## total (first life + three rises). king_respawns_left counts remaining
-## respawns after each decrement.
+## Lives semantics: king_respawn_count = 1 → the King dies TWICE in total
+## (first life + one rise). king_respawns_left counts remaining respawns
+## after each decrement.
 func on_king_defeated() -> bool:
 	if game_manager == null or game_manager.run_finished:
 		return false
@@ -1473,6 +1474,11 @@ func _try_spawn_wizard() -> void:
 	# defeat): no run_finished gate — the backstabber turns whenever his
 	# provocation lines are crossed, victory or not.
 	if wizard_spawned or game_manager == null or game_manager.wizard_dead:
+		return
+	# His betrayal waits while the usurper's army is in the field (2026-11-15,
+	# user: "I was defeated by the invading army because the wizard decided
+	# to switch side"): he comes for the heart at the reckoning instead.
+	if game_manager.phase == GameManager.Phase.INVASION:
 		return
 	_ensure_tower_wizard()
 	var burned: bool = tower_wizard != null and is_instance_valid(tower_wizard) \
@@ -1702,31 +1708,187 @@ func relocate_prince() -> void:
 		spot = nav_grid.nearest_walkable(spot)
 	prince.call("relocate", spot)
 
-# --- the invasion (PREPARED, not implemented — 2026-11-15) --------------------
+# --- the invasion (2026-11-15) --------------------------------------------------
 
-## User: "The kiss triggers the next phase of the game: the invasion. Don't
-## implement this, but prepare for this stage where 200 soldiers + a King
-## invade and kill everything (farmers and miners). If they succeed the
-## game ends. Cycle has repeated and Dragon failed. If Dragon kills the
-## invasion she can marry the prince and become queen."
+## User: "create the trigger for the invasion. Create a new building: the
+## invaders camp and spawn far away from the city so it becomes a tower
+## defense situation. After the kiss and hand holding let the invaders
+## come. Game over if the prince is killed. If the invading king dies,
+## trigger the evil wizard to attack, and if he is dead too trigger the
+## wedding."
 ##
-## Plan (docs/decisions/2026-11-15-aftermath-glade-prince.md):
-##   start_invasion()   wave in INVASION_SOLDIERS soldiers + a new King from
-##                      the east edge (Osric's ridge) in INVASION_WAVES waves;
-##                      they hunt farmers and miners (not only the dragon)
-##   lose               every farmer and miner dead → GameManager.invasion_lost()
-##   win                every invader dead → GameManager.invasion_won()
-## Until then this logs and leaves the world as it is.
+## The camp rises on open ground as far from the city as the map allows.
+## INVASION_SOLDIERS march out of its gate in INVASION_WAVES waves (one
+## every WAVE_EVERY s, trickling out SPAWN_GAP s apart, at most
+## MAX_INVADERS_ALIVE on the field); the usurper King rides with the last
+## wave. They hunt the Prince, farmers and miners. Meanwhile the realm's
+## own army lays down its arms (their King is dead) and the town stops
+## recruiting, respawning and sending slayers.
+##   lose  — the Prince dies, or no farmer or miner is left
+##   win   — the usurper King falls → the army routs; the evil wizard
+##           comes for the heart (GameManager.on_usurper_slain)
 const INVASION_SOLDIERS := 200
-const INVASION_WAVES := 5
+## Ramping waves (sum = INVASION_SOLDIERS). First tuning (8 × 25, 28 s apart,
+## 45 alive) wiped out an idle town in under a minute — too brutal.
+const WAVE_SIZES: Array[int] = [10, 14, 18, 22, 26, 32, 36, 42]
+const INVASION_WAVES := 8
+const WAVE_EVERY := 40.0
+const SPAWN_GAP := 0.35
+const MAX_INVADERS_ALIVE := 30
+const FIRST_WAVE_AFTER := 20.0
+const USURPER_HP := 240
+
+var invasion_active := false
+var invasion_camp_position := Vector2.INF
+var _wave := 0
+var _wave_left := 0.0
+var _to_spawn := 0
+var _spawn_left := 0.0
+var _invaders_spawned := 0
+var _usurper_out := false
+var _usurper: Node2D = null
 
 func start_invasion() -> void:
-	print("WorldManager: INVASION requested (%d soldiers + a King in %d waves) — not implemented yet" % [
-		INVASION_SOLDIERS, INVASION_WAVES])
+	if invasion_active:
+		return
+	invasion_active = true
+	invasion_camp_position = _find_camp_spot()
+	var camp := (load("res://scenes/props/InvaderCamp.tscn") as PackedScene).instantiate() as Node2D
+	camp.global_position = invasion_camp_position
+	add_child(camp)
+	entity_spawned.emit("invader_camp", invasion_camp_position)
+	# The realm's army lays down its arms: their King is dead.
+	for node: Node in get_tree().get_nodes_in_group("soldiers"):
+		if node.has_method("retire") and node is BaseNPC and (node as BaseNPC).is_alive \
+				and not node.is_in_group("king"):
+			node.call("retire", city_position)
+	_wave = 0
+	_wave_left = FIRST_WAVE_AFTER
+	# The Prince takes cover in the city.
+	if prince != null and is_instance_valid(prince):
+		prince.call("relocate", city_position + Vector2(0.0, -30.0))
+	print("WorldManager: the usurper's camp stands at %s — %d soldiers in %d waves" % [
+		invasion_camp_position, INVASION_SOLDIERS, INVASION_WAVES])
 
-## Win/lose checks the invasion will run (ready for the implementation).
+## As far from the city as possible, on open ground, clear of landmarks.
+func _find_camp_spot() -> Vector2:
+	var half := world_size * 0.5 - Vector2(WORLD_MARGIN + 170.0, WORLD_MARGIN + 120.0)
+	var best := Vector2.ZERO
+	var best_score := -INF
+	for i in 120:
+		var p := Vector2(randf_range(-half.x, half.x), randf_range(-half.y, half.y))
+		var score := p.distance_to(city_position)
+		if glade_position != Vector2.INF and p.distance_to(glade_position) < 320.0:
+			score -= 2000.0
+		# keep the palisade off mines, fields, nests and mountains
+		for group: String in ["mines", "fields", "hag_nest", "mountains"]:
+			for node: Node in get_tree().get_nodes_in_group(group):
+				if p.distance_to((node as Node2D).global_position) < 200.0:
+					score -= 600.0
+		if nav_grid != null and nav_grid.is_built and not nav_grid.is_walkable(p + Vector2(0.0, 110.0)):
+			score -= 3000.0   # the gate must open onto walkable ground
+		if score > best_score:
+			best_score = score
+			best = p
+	return best
+
+func _tick_invasion(delta: float) -> void:
+	if not invasion_active:
+		return
+	if _wave < INVASION_WAVES and not _usurper_down():
+		_wave_left -= delta
+		if _wave_left <= 0.0:
+			_wave += 1
+			_wave_left = WAVE_EVERY
+			_to_spawn += WAVE_SIZES[_wave - 1]
+			if game_manager != null:
+				game_manager.call("_hud_message", "Wave %d of %d marches out of the camp!" % [_wave, INVASION_WAVES], 3.0)
+			if _wave == INVASION_WAVES:
+				_spawn_usurper()
+	_spawn_left -= delta
+	if _to_spawn > 0 and _spawn_left <= 0.0 \
+			and get_tree().get_nodes_in_group("invaders").size() < MAX_INVADERS_ALIVE:
+		_spawn_left = SPAWN_GAP
+		_to_spawn -= 1
+		_spawn_invader()
+	# Lose: nobody left to defend.
+	if game_manager != null and invasion_townsfolk_left() == 0:
+		invasion_active = false
+		game_manager.invasion_lost("townsfolk")
+
+func _camp_gate() -> Vector2:
+	return invasion_camp_position + Vector2(0.0, 105.0)
+
+func _spawn_invader() -> void:
+	var inv := (load("res://scenes/npcs/Invader.tscn") as PackedScene).instantiate() as Node2D
+	var spot := _camp_gate() + Vector2(randf_range(-40.0, 40.0), randf_range(-6.0, 20.0))
+	if nav_grid != null and nav_grid.is_built:
+		spot = nav_grid.nearest_walkable(spot)
+	inv.set("city_target", city_position)
+	inv.set("camp_position", invasion_camp_position)
+	inv.global_position = spot
+	add_child(inv)
+	inv.set("home_position", spot)
+	_invaders_spawned += 1
+
+## The usurper: a King (King.tscn) flagged as the invader — no lives, more
+## HP, his fall ends the invasion instead of opening the aftermath.
+func _spawn_usurper() -> void:
+	if _usurper_out:
+		return
+	_usurper_out = true
+	var king := entity_scenes["king"].instantiate() as Node2D
+	king.set("invader", true)
+	king.global_position = _camp_gate()
+	add_child(king)
+	king.set("home_position", king.global_position)
+	_usurper = king
+	entity_spawned.emit("king", king.global_position)
+	print("The usurper King rides out of the camp!")
+	if game_manager != null:
+		game_manager.call("_hud_message", "The usurper King rides out with the last wave! Slay him.", 5.0)
+
+func _usurper_down() -> bool:
+	return _usurper_out and (_usurper == null or not is_instance_valid(_usurper) \
+		or not bool(_usurper.get("is_alive")))
+
+## King.die() calls this for the usurper: the army breaks and runs.
+func on_usurper_fallen() -> void:
+	invasion_active = false
+	_to_spawn = 0
+	for node: Node in get_tree().get_nodes_in_group("invaders"):
+		if node.has_method("rout") and bool(node.get("is_alive")):
+			node.call("rout")
+	if game_manager != null:
+		game_manager.on_usurper_slain()
+
+## The final reckoning: the evil wizard comes for the heart — if he still
+## lives. Returns false when he is already dead (straight to the wedding).
+func start_wizard_finale() -> bool:
+	if game_manager != null and game_manager.wizard_dead:
+		return false
+	var wiz := tower_wizard
+	if wiz == null or not is_instance_valid(wiz) or not wiz.is_alive:
+		if wizard_spawned:
+			return false          # he turned earlier and has been slain
+		_ensure_tower_wizard()
+		wiz = tower_wizard
+		if wiz == null or not is_instance_valid(wiz):
+			return false
+	wiz.npc_died.connect(func(_t: String) -> void:
+		if game_manager != null:
+			game_manager.on_wizard_slain(), CONNECT_ONE_SHOT)
+	force_wizard_turn()
+	return true
+
+## Win/lose bookkeeping.
 func invasion_townsfolk_left() -> int:
 	return get_tree().get_nodes_in_group("farmers").size() + get_tree().get_nodes_in_group("miners").size()
+
+## Town systems that pause while the invasion runs (recruits, purchases,
+## respawns, slayers): the realm's own war is over.
+func _invasion_on() -> bool:
+	return invasion_active or (game_manager != null and game_manager.phase >= GameManager.Phase.INVASION)
 
 # --- the dragon slayer (2026-11-14) -------------------------------------------
 
@@ -1747,7 +1909,8 @@ func _on_slayer_timer() -> void:
 	_slayer_timer.start(randf_range(slayer_again_min_s, slayer_again_max_s))
 	if game_manager != null and game_manager.run_finished:
 		return
-	if not get_tree().get_nodes_in_group("dragon_slayer").is_empty() or _dragon_hidden():
+	if not get_tree().get_nodes_in_group("dragon_slayer").is_empty() or _dragon_hidden() \
+			or _invasion_on():
 		return
 	spawn_dragon_slayer()
 
@@ -1810,9 +1973,11 @@ func _refresh_nav_area(area: Rect2) -> void:
 # --- signal handlers: NPC → GameManager (the hub) ---------------------------
 
 func _process(delta: float) -> void:
-	_tick_respawn_queue(delta)
+	if not _invasion_on():
+		_tick_respawn_queue(delta)
 	_try_spawn_wizard()
 	_tick_retirements(delta)
+	_tick_invasion(delta)
 
 # --- stand-down while the dragon hides (2026-11-14) ------------------------------
 
@@ -1959,8 +2124,8 @@ func _on_npc_died(npc_type: String, npc: BaseNPC) -> void:
 
 ## Farmers + food gate miner spawning (the "farmers enable miners" chain).
 func try_spawn_miner() -> void:
-	if game_manager == null:
-		return
+	if game_manager == null or _invasion_on():
+		return   # no new miners while the realm is under invasion
 	var farmer_count_now := get_tree().get_nodes_in_group("farmers").size()
 	var supported := farmer_count_now >= miner_spawn_requirement_farmers \
 		and game_manager.food >= miner_spawn_requirement_food

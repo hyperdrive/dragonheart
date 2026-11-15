@@ -345,13 +345,22 @@ func _complete_haul_home() -> void:
 ## from the city.
 func die() -> void:
 	if _carrying_loot():
-		var drop := GOLD_DROP_SCENE.instantiate() as GoldDrop
-		if drop != null:
-			drop.res_type = payload_res_type
-			drop.amount = payload_amount
-			set_payload("", 0)
+		# The whole hoard scatters as several coins (2026-11-15: one small
+		# coin by a burning body went unnoticed — "he never drops his loot").
+		var total := payload_amount
+		var pieces := clampi(total / 5, 1, 6)
+		set_payload("", 0)
+		for i in pieces:
+			var drop := GOLD_DROP_SCENE.instantiate() as GoldDrop
+			if drop == null:
+				continue
+			drop.res_type = "gold"
+			drop.amount = total / pieces + (1 if i < total % pieces else 0)
 			get_parent().add_child(drop)
 			drop.global_position = global_position \
-				+ Vector2(randf_range(-16, 16), randf_range(4, 12))
-			print("The adventurer falls — his hoard of %d gold spills out!" % drop.amount)
+				+ Vector2.from_angle(TAU * float(i) / float(pieces) + randf() * 0.5) * randf_range(10.0, 26.0)
+		print("The adventurer falls — his hoard of %d gold spills out!" % total)
+		var gm := get_tree().get_first_node_in_group("game_manager") as GameManager
+		if gm != null:
+			gm.call("_hud_message", "The adventurer falls — %d gold spills out! Scoop it up and fly it home." % total, 4.0)
 	super.die()

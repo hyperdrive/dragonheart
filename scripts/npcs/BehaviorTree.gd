@@ -210,11 +210,33 @@ func _tick_danger() -> void:
 	if npc._handoff_stretch():
 		return
 	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
-	if dragon == null:
-		return
-	if npc.global_position.distance_to(dragon.global_position) < npc.danger_radius:
+	if dragon != null and npc.global_position.distance_to(dragon.global_position) < npc.danger_radius:
 		interrupt_current_activity()
 		_start_flee(dragon.global_position)
+		return
+	# The invasion (2026-11-15): farmers and miners also run from the
+	# usurper's soldiers — they used to stand and die, and an undefended
+	# town fell within half a minute of first contact.
+	if npc.is_in_group("farmers") or npc.is_in_group("miners"):
+		var inv := _nearest_invader(INVADER_DANGER)
+		if inv != null:
+			interrupt_current_activity()
+			_start_flee(inv.global_position)
+
+const INVADER_DANGER := 120.0
+
+func _nearest_invader(reach: float) -> Node2D:
+	var best: Node2D = null
+	var best_d := reach
+	for node: Node in get_tree().get_nodes_in_group("invaders"):
+		var inv := node as Node2D
+		if inv == null or not bool(inv.get("is_alive")):
+			continue
+		var d := npc.global_position.distance_to(inv.global_position)
+		if d < best_d:
+			best_d = d
+			best = inv
+	return best
 
 func _start_flee(dragon_position: Vector2) -> void:
 	var away := (npc.global_position - dragon_position).normalized()

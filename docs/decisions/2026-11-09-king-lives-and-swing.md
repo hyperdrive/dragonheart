@@ -80,3 +80,12 @@ sword swings during the fight and rests after; soldier spear swings +
 rests; three defeats each produce a rise at the city with lives
 3→2→1→0; the 4th defeat produces no rise and declares victory.
 14400-frame regression: 0 script errors, purchases/deliveries flowing.
+
+## Revision 2026-11-15
+
+User: "Maybe the King only deserves two lives." `king_respawn_count` 3 → 1:
+the King now dies TWICE in total (first life + one rise). Since the damage
+model (2026-11-14) each life is 120 HP = two burns, so the whole fight is
+four burns instead of eight. His last fall no longer ends the run — it opens
+the aftermath (`docs/decisions/2026-11-15-aftermath-glade-prince.md`). The
+final-defeat chapter now opens "The second fall, and the last".

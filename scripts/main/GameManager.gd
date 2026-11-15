@@ -160,6 +160,8 @@ func _on_story_choice(kind: String, choice_index: int) -> void:
 		_on_chapter_choice(kind, choice_index)
 	elif kind.begins_with("prince_"):
 		_on_prince_choice(kind, choice_index)
+	elif kind.begins_with("usurper_") or kind.begins_with("ending_"):
+		_on_finale_choice(kind)
 	# Goblin-encounter answers are handled by WorldManager (it connects
 	# story_choice_made). The answer is tribal once-per-run, so GameManager
 	# must NOT pick goblins — get_first_node_in_group would strand the rest.
@@ -778,10 +780,10 @@ func _victory_tally() -> Dictionary:
 
 ## The run's phases. REALM: the King lives. AFTERMATH: the King is dead —
 ## a glade blooms, deer graze, Prince Aurel walks (the courtship). INVASION:
-## the kiss brought two hundred spears over the ridge (PREPARED: the
-## WorldManager side is a stub). ENDED: the cycle repeated, or a queen was
-## crowned.
-enum Phase { REALM, AFTERMATH, INVASION, ENDED }
+## the kiss brought the usurper's army (tower defence). RECKONING: the
+## usurper fell; the evil wizard comes for the heart. ENDED: the cycle
+## repeated, or the wedding — and the last ember.
+enum Phase { REALM, AFTERMATH, INVASION, RECKONING, ENDED }
 var phase := Phase.REALM
 signal phase_changed(new_phase: Phase)
 signal invasion_started
@@ -834,35 +836,74 @@ func _on_prince_choice(kind: String, choice_index: int) -> void:
 		"prince_kiss":
 			begin_invasion()
 
-## PREPARED (user: "Don't implement this, but prepare for this stage"):
-## the phase flips, the signal fires and the story is written; the actual
-## invasion (200 soldiers + a King hunting farmers and miners) is
-## WorldManager.start_invasion's job — a logged stub for now.
+## The kiss → the invasion (2026-11-15). The phase flips, the chapter
+## "The Second Purification" tells it, and WorldManager raises the usurper's
+## camp and starts the waves (tower defence: protect the Prince, the
+## farmers and the miners; slay the usurper King).
 func begin_invasion() -> void:
 	if phase != Phase.AFTERMATH:
 		return
 	_set_phase(Phase.INVASION)
 	invasion_started.emit()
+	queue_followup_story("invasion_begins")
 	if world_manager != null and world_manager.has_method("start_invasion"):
 		world_manager.call("start_invasion")
-	_hud_message("War-horns on the eastern ridge… (the invasion arrives in a later update)", 6.0)
+	_hud_message("Defend the realm: keep the Prince, the farmers and the miners alive — and slay the usurper King.", 7.0)
 
-## Endings, ready for the invasion to call.
-func invasion_won() -> void:
+## The usurper King fell: his army routs. Now the evil wizard comes for the
+## heart — or, if he is already dead, the wedding.
+func on_usurper_slain() -> void:
 	if phase != Phase.INVASION:
+		return
+	_set_phase(Phase.RECKONING)
+	var wizard_comes := false
+	if world_manager != null and world_manager.has_method("start_wizard_finale"):
+		wizard_comes = bool(world_manager.call("start_wizard_finale"))
+	if wizard_comes:
+		_open_or_queue("usurper_falls")
+	else:
+		_open_or_queue("usurper_falls_quiet")
+
+## The evil wizard is dead (or long dead): the wedding — and the last ember.
+func on_wizard_slain() -> void:
+	if phase != Phase.RECKONING:
 		return
 	_set_phase(Phase.ENDED)
 	run_finished = true
-	_open_story_now("ending_queen")
+	_open_or_queue("ending_wedding")
 	victory_achieved.emit(_victory_tally())
 
-func invasion_lost() -> void:
-	if phase != Phase.INVASION:
+func notify_prince_died() -> void:
+	if phase == Phase.INVASION or phase == Phase.RECKONING:
+		invasion_lost("prince")
+
+## The invasion won: the Prince is dead, or no farmer or miner is left.
+## The chapter tells it; closing it starts a new run (the cycle turns).
+func invasion_lost(reason: String = "townsfolk") -> void:
+	if phase != Phase.INVASION and phase != Phase.RECKONING:
 		return
 	_set_phase(Phase.ENDED)
 	run_finished = true
-	_pending_death_reload = true    # the cycle turns: a new run begins
-	_open_story_now("ending_cycle")
+	_pending_death_reload = true
+	_open_or_queue("ending_prince_falls" if reason == "prince" else "ending_cycle")
+
+## The finale's chapters chain: the usurper falls (quietly → the wedding
+## at once); the wedding → the last ember → a new run.
+func _on_finale_choice(kind: String) -> void:
+	match kind:
+		"usurper_falls_quiet":
+			on_wizard_slain()
+		"ending_wedding":
+			_pending_story_kind = "ending_last_ember"
+		"ending_last_ember":
+			_pending_death_reload = true   # peace — and a new run
+
+## Open now, or right after the chapter on screen.
+func _open_or_queue(kind: String) -> void:
+	if story_open:
+		queue_followup_story(kind)
+	else:
+		_open_story_now(kind)
 
 # --- misc ------------------------------------------------------------------
 

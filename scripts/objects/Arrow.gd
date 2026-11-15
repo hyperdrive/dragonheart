@@ -63,7 +63,7 @@ func _check_dragon_hit() -> void:
 
 ## Rider behaviour: hit the nearest live soldier/goblin in the blast radius.
 func _check_rider_hit() -> void:
-	for group: String in ["soldiers", "goblins", "dragon_slayer"]:
+	for group: String in ["soldiers", "goblins", "dragon_slayer", "invaders"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			var npc := node as BaseNPC
 			if npc == null or not npc.is_alive or npc.is_in_group("king"):

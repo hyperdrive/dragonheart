@@ -34,13 +34,25 @@ sentence.)
 | The kiss | "True Love's First Kiss" (he sees the slit pupils and doesn't let go; two hundred war-horns on Osric's ridge) → `begin_invasion()` | — | — |
 | Invasion (PREPARED) | `begin_invasion()` → phase INVASION, `invasion_started` signal, `WorldManager.start_invasion()` (logged stub; consts INVASION_SOLDIERS 200, INVASION_WAVES 5), `invasion_townsfolk_left()` for the lose check. Endings ready: `invasion_won()` → "Long Live the Queen" + victory tally; `invasion_lost()` → "The Wheel Turns" + a fresh run. Chapter "The Second Purification" written for the invasion's start | User: "don't implement, prepare" | implementing the invasion |
 
-## Invasion — implementation plan (next step)
+## The invasion — implemented (2026-11-15, second pass)
 
-1. `start_invasion()`: open "invasion_begins"; spawn a new King (the dead
-   King's cousin) and 200 soldiers from the east edge in 5 waves.
-2. Invaders hunt townsfolk (new target provider: nearest farmer/miner)
-   as well as the dragon; a burning realm (fields) as they pass.
-3. Lose: `invasion_townsfolk_left() == 0` → `GameManager.invasion_lost()`.
-4. Win: every invader (and their King) dead → `GameManager.invasion_won()`.
-5. Performance: 200 NPCs need the nav grid's cheap straight-line path and
-   maybe staggered BT ticks — measure first.
+User: "create the trigger for the invasion. Create a new building: the
+invaders camp and spawn far away from the city so it becomes a tower
+defense situation. After the kiss and hand holding let the invaders come.
+Game over if the prince is killed. If the invading king dies, trigger the
+evil wizard to attack, and if he is dead too trigger a storypopup for the
+wedding... but... alas: [the last ember]". Also: "the dialogue can be
+improved and be a little clearer on the intention".
+
+| Decision | Choice | Why | Revisit when |
+|---|---|---|---|
+| Courtship wording | Choices say what they mean ("Flirt with him. (You like him.)", "Play hard to get.", "Reject him.", "Kiss him. (Choose him.)", "Reject him. (Not yet.)"); every non-kiss outcome ends with where to find him next | "Clearer on the intention" | — |
+| Trigger | The kiss → "The Second Purification" (the camp, the goal: keep the Prince alive, slay the usurper) → `WorldManager.start_invasion()` | — | — |
+| Camp | `InvaderCamp.tscn`: flat compound like the city (palisade, crimson tents, Osric's sun banners, command pavilion, campfire), no collision; placed on walkable ground as far from the city as the map allows (and clear of the glade); waves leave from its gate | Tower defence: a long road to defend | — |
+| Waves | 200 invaders in 8 ramping waves (10, 14, 18, 22, 26, 32, 36, 42), 40 s apart, first after 20 s; trickle 0.35 s apart; ≤ 30 alive at once. First tuning (8 × 25 every 28 s, ≤ 45 alive) wiped an undefended town out in under a minute | Learnable pressure, bounded NPC count | playtests |
+| Invaders | `Invader.gd` (Soldier art in the usurper's crimson, 50 HP = two claws, flammable): march for the nearest Prince/farmer/miner (else the city), cut down whoever they reach (10 DPS), fight the dragon only within 140 px. Group "invaders" (not "soldiers") | Tower defence: they go for the people, the dragon intercepts | — |
+| The realm stands down | At the invasion the town's soldiers retire to the city; recruiting, soldier purchases, townsfolk respawns, miner spawns and slayer arrivals pause | Their King is dead; and a respawning town could never be "wiped out" | — |
+| The Prince | Moves to the city centre; 200 HP; runs from any invader within 110 px; still fireproof and unclawable. His death → "The Prince Falls" → new run | "Game over if the prince is killed" — but give the defender a fighting chance | — |
+| Usurper | A King (King.tscn, `invader = true`): one life, 240 HP, rides with the last wave, hunts the dragon (storm, flaming sword). His fall routs the army (every invader retires to the camp) | "If the invading king dies…" | — |
+| Reckoning | Phase RECKONING: the evil wizard turns (or already has) and attacks — "The Usurper Falls"; if he is already dead, "The Usurper Falls" (quiet) goes straight on | User spec | — |
+| Endings | Wizard slain → "The Wedding" (in the glade) → "The Last Ember" (the user's text, verbatim) → victory tally → new run. Townsfolk all dead → "The Wheel Turns"; Prince dead → "The Prince Falls"; both → new run | User spec | — |

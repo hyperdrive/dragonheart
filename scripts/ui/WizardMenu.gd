@@ -13,7 +13,7 @@ const OPTIONS: Array = [
 	{"kind": "flame_1", "label": "+1 Flame (%s)", "desc": "More flames carried: capacity +1, arrives loaded."},
 	{"kind": "flame_2", "label": "+2 Flames (%s)", "desc": "Even bigger flame pool: capacity +2, arrives loaded."},
 	{"kind": "shield", "label": "Shield 40 (%s)", "desc": "Absorbs 40 damage, then gone. Cannot restack while one is active."},
-	{"kind": "speed", "label": "Speed Boost (%s)", "desc": "Fast wings for 6s (x1.6). Also quickens your claws for good (0.3s recharge)."},
+	{"kind": "speed", "label": "Speed Boost (%s)", "desc": "Fast wings for 6s (x1.6). Also quickens your claws for good (0.2s recharge)."},
 	{"kind": "range", "label": "Longer Flame (%s)", "desc": "Breath reaches +20px further. Permanent."},
 	{"kind": "flight", "label": "Longer Flight (%s)", "desc": "Q flight bursts last +3s longer. Permanent."},
 	{"kind": "brute", "label": "Brute Force (%s)", "desc": "Heavier claws: +7 claw damage. Repeatable, up to 50 (one strike per soldier)."},

@@ -41,3 +41,25 @@ EMPTY PackedScene ("Failed to instantiate scene state of "", node count is 0"
 on every shot). Fix: the menu and GameManager ask the dragon instance
 (`claw_damage_after_brute()`, `buy_brute_force()`). Rule of thumb: UI and
 manager scripts talk to the dragon through its instance, not its class.
+
+## Revision 2026-11-15 — "the claw animation doesn't work anymore"
+
+The animation itself was fine; E presses that hit nothing never swung (they
+never had), and since claws became damage two targets silently fell outside
+the claws: the King/usurper (excluded since the kill-lottery days — "his own
+battle rules") and the adventurer (missing from the fighter groups). Pressing
+E next to them did nothing at all. Now:
+- the King and the usurper can be clawed (120 HP = 5 base strikes per life;
+  the usurper's 240 = 10); the adventurer too (120 = 5);
+- every E press swings — a press with nothing in reach (or during the 0.5 s
+  recharge) is a swing through empty air, with no effect.
+
+## Revision 2026-11-15 — faster claws, and blood
+
+User: "0.5 recharge is too long likely. Make it 0.3 and also add a blood
+splash effect when we hit." Base recharge 0.5 → 0.3 s (25 dmg ≈ 83 DPS);
+Speed's permanent claw bonus 0.3 → 0.2 s so the upgrade still means
+something (fully upgraded: 50 dmg / 0.2 s = 250 DPS — earned late-game).
+Every claw hit, execution and deer kill now splashes `BloodSplash`: round
+droplets sprayed away from the dragon, a ground splat that fades over ~5 s,
+a red flash on the victim; goblins bleed green.

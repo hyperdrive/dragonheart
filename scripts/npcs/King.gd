@@ -38,6 +38,10 @@ var _storm_charges: int = 2
 var _storm_recharge_left: float = 0.0
 var _casting_storm: bool = false
 var _sprite: Node2D = null
+## The usurper of the invasion (2026-11-15): set by WorldManager before he
+## enters the tree. One life; his fall routs the invasion instead of
+## opening the aftermath.
+var invader := false
 var game_manager: GameManager
 
 func _ready() -> void:
@@ -45,7 +49,8 @@ func _ready() -> void:
 	npc_type = "king"
 	# Damage model (2026-11-14): burnout no longer kills outright, so HP
 	# decides — 120 = two burns (2 × 60) per life. He used to fall to ONE.
-	max_health = 120
+	# The usurper (invader) has no second life, so he gets more of this one.
+	max_health = WorldManager.USURPER_HP if invader else 120
 	speed = 60.0
 	# Magic sword (2026-11-09): contact DPS is the main threat — 5x the
 	# soldier's 10/s so a botched contact costs real dragon skin.
@@ -264,9 +269,17 @@ func _spectral_poly(parent: Node2D, pts: Array, col: Color) -> void:
 	parent.add_child(poly)
 
 func die() -> void:
-	# Three respawns after the first defeat (user spec 2026-11-09-king-lives):
-	# while lives remain, the death hands out to the WorldManager which
-	# re-summons the King at the city; the run only ENDS on the last life.
+	if invader:
+		print("The usurper King falls — and his army breaks!")
+		var wm := get_tree().get_first_node_in_group("world_manager") as WorldManager
+		if wm != null:
+			wm.on_usurper_fallen()
+		super.die()
+		return
+	# One respawn after the first defeat (two lives — 2026-11-15; was three
+	# respawns, 2026-11-09-king-lives): while lives remain, the death hands
+	# out to the WorldManager which re-summons the King at the city; the last
+	# life's fall opens the aftermath (GameManager.notify_king_defeated).
 	var world := get_tree().get_first_node_in_group("world_manager") as WorldManager
 	if world != null and world.on_king_defeated():
 		super.die()  # corpse out; the respawn is the world's business now

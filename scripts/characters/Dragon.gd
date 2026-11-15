@@ -294,10 +294,10 @@ func _physics_process(delta: float) -> void:
 ## FAST_STRIKE_RECHARGE for good (was 0.2 when strikes were a lottery —
 ## with sure hits that would be 250 damage a second).
 @export var claw_damage: int = Damage.CLAW
-@export var strike_recharge: float = 0.5
+@export var strike_recharge: float = 0.3   # 2026-11-15: was 0.5 ("too long")
 const CLAW_DAMAGE_MAX := 50
 const BRUTE_STEP := 7
-const FAST_STRIKE_RECHARGE := 0.3
+const FAST_STRIKE_RECHARGE := 0.2
 var _strike_cooldown: float = 0.0
 
 signal strike_missed
@@ -327,7 +327,10 @@ func _try_context_action() -> void:
 	var victim := _nearest_strike_target()
 	var soldier := _soldier_in_strike_reach()
 	if pen == null and victim == null and soldier == null:
-		print("Dragon: nothing to eat or strike in reach!")
+		# A swing through empty air: every E press answers (2026-11-15 —
+		# a press that hit nothing looked like a broken claw).
+		if not _claw_animating:
+			_play_claw_swing()
 		return
 	var pen_dist := INF if pen == null \
 		else global_position.distance_to(pen.global_position)
@@ -369,6 +372,7 @@ func _eat_deer(deer: BaseNPC) -> void:
 		print("Dragon: too full to hunt — the deer bounds away.")
 		return
 	_play_claw_swing()
+	_bleed(deer, 1.3)
 	deer.kill_by_dragon()
 	health = mini(health + DEER_HEALTH, max_health)
 	health_changed.emit(health)
@@ -409,21 +413,21 @@ func _nearest_strike_target() -> BaseNPC:
 				best = npc
 	return best
 
-## Nearest ordinary soldier (or encountered goblin) within strike reach —
-## while the strike is recharging soldiers are NOT valid targets (cooldown
-## keeps E on other candidates), and the King is excluded (his own battle
-## rules). Goblins fight like soldiers (Goblin.gd design note) and join the
-## same chance-strike pool — but only AFTER their first-encounter popup:
-## story before combat, so an unreached goblin is not E-strikeable.
+## Nearest fighter within strike reach — while the strike is recharging
+## fighters are NOT valid targets (cooldown keeps E on other candidates).
+## The King (and the usurper) can be clawed since the HP model (2026-11-15:
+## he used to be excluded — "his own battle rules" from the kill-lottery
+## days — so E next to him did nothing, not even a swing). Goblins join only
+## AFTER their first-encounter popup: story before combat.
 func _soldier_in_strike_reach() -> BaseNPC:
 	if _strike_cooldown > 0.0:
 		return null
 	var best: BaseNPC = null
 	var best_dist := INF
-	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer"]:
+	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer", "invaders", "adventurers"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			var npc := node as BaseNPC
-			if npc == null or not npc.is_alive or npc.is_in_group("king"):
+			if npc == null or not npc.is_alive:
 				continue
 			if npc.npc_type == "goblin" \
 					and int(npc.service_state) == Goblin.ServiceState.UNINITIALIZED:
@@ -440,6 +444,7 @@ func _soldier_in_strike_reach() -> BaseNPC:
 func _strike_soldier(soldier: BaseNPC) -> void:
 	_strike_cooldown = strike_recharge
 	_play_claw_swing()
+	_bleed(soldier, 1.0)
 	soldier.take_damage(claw_damage, Damage.Type.WEAPON, "dragon")
 	print("Dragon's claws rake the %s for %d." % [soldier.npc_type, claw_damage])
 
@@ -447,6 +452,7 @@ func _strike_soldier(soldier: BaseNPC) -> void:
 ## banks the cart into the claws; +5 health after regardless.
 func _strike_kill(npc: BaseNPC) -> void:
 	_play_claw_swing()
+	_bleed(npc, 1.6)
 	var loot := npc.steal_payload()
 	if int(loot["amount"]) > 0 and str(loot["res_type"]) != "":
 		take_loot(str(loot["res_type"]), int(loot["amount"]))
@@ -536,7 +542,7 @@ func _fire_origin() -> Vector2:
 ## (2026-11-14 user: "fire should kill all the actors, but the wizard who
 ## survives two blasts" — Wizard.catch_fire counts the blasts).
 const FLAMMABLE_GROUPS: Array[String] = ["farmers", "miners", "soldiers",
-	"goblins", "king", "wizard", "adventurers", "hag", "fields"]
+	"goblins", "king", "wizard", "adventurers", "hag", "fields", "invaders"]
 
 func _ignite_flammables() -> void:
 	var facing_vec := Vector2(float(facing), 0.0)
@@ -986,6 +992,28 @@ func _play_claw_swing() -> void:
 	_claw_animating = true
 	_claw_phase = 0.0
 
+## Blood where the claws land (2026-11-15): BloodSplash sprays away from the
+## dragon and leaves a fading splat; the victim flashes red; goblins bleed
+## green. `strength` 1 = a rake, more for a killing blow or a hunt.
+const BLOOD_SPLASH := preload("res://scripts/systems/BloodSplash.gd")
+
+func _bleed(victim: Node2D, strength: float) -> void:
+	if victim == null or not is_instance_valid(victim) or not victim.is_inside_tree():
+		return
+	var fx: Node2D = BLOOD_SPLASH.new()
+	var dir := (victim.global_position - global_position).normalized()
+	fx.set("direction", dir if dir != Vector2.ZERO else Vector2.RIGHT * float(facing))
+	fx.set("strength", strength)
+	if victim.is_in_group("goblins"):
+		fx.set("color", Color(0.22, 0.48, 0.10))
+	victim.get_parent().add_child(fx)
+	fx.global_position = victim.global_position
+	var vsprite := victim.get_node_or_null("Sprite") as CanvasItem
+	if vsprite != null:
+		var was := vsprite.modulate
+		vsprite.modulate = Color(1.6, 0.35, 0.3)
+		victim.create_tween().tween_property(vsprite, "modulate", was, 0.25)
+
 ## One-shot progress in _physics_process (synchronous state, no coroutines).
 func _tick_claw_visual(delta: float) -> void:
 	if not _claw_animating:
@@ -1343,7 +1371,7 @@ func _rider_shoot_at_enemies(delta: float) -> void:
 	# so the old scan found zero targets and never fired).
 	var nearest_enemy: Node2D = null
 	var nearest_dist: float = INF
-	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer"]:
+	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer", "invaders", "adventurers"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			var npc := node as BaseNPC
 			if npc == null or not npc.is_alive or npc.is_in_group("king"):
