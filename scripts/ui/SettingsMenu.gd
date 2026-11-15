@@ -46,9 +46,9 @@ const MODES := [
 
 var _scale_slider: HSlider
 var _scale_label: Label
-var _fit: OptionButton
-var _stretch: OptionButton
-var _mode: OptionButton
+var _fit: Stepper
+var _stretch: Stepper
+var _mode: Stepper
 var _resume: Button
 
 # --- saved settings, applied at start ---------------------------------------------
@@ -350,20 +350,71 @@ func _stop_listening() -> void:
 	_hint.text = "ESC: back to the game"
 	_show_keys()
 
-func _option(box: VBoxContainer, label: String, items: Array) -> OptionButton:
+func _option(box: VBoxContainer, label: String, items: Array) -> Stepper:
 	var row := HBoxContainer.new()
 	var l := Label.new()
 	l.text = label
 	l.custom_minimum_size = Vector2(100, 0)
 	row.add_child(l)
-	var ob := OptionButton.new()
-	ob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var st := Stepper.new()
+	st.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for i in items.size():
-		ob.add_item(str(items[i][0]), i)
-	ob.item_selected.connect(func(_i: int) -> void: _changed())
-	row.add_child(ob)
+		st.labels.append(str(items[i][0]))
+	st.item_selected.connect(func(_i: int) -> void: _changed())
+	row.add_child(st)
 	box.add_child(row)
-	return ob
+	return st
+
+## A "< value >" picker in place of an OptionButton (2026-11-15): Godot's
+## dropdown popups logged "Signal 'focus_entered' is already connected …
+## root Window" on open/close for the user (an engine-side popup issue;
+## not reproducible standalone). Plain buttons have no popup window at
+## all. Click < / > or the value (right-click: back).
+class Stepper extends HBoxContainer:
+	signal item_selected(index: int)
+	var labels: Array[String] = []
+	var selected := 0
+	var _value: Button
+
+	func _ready() -> void:
+		var prev := Button.new()
+		prev.text = "<"
+		prev.custom_minimum_size = Vector2(30, 0)
+		prev.pressed.connect(_step.bind(-1))
+		add_child(prev)
+		_value = Button.new()
+		_value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_value.button_mask = MOUSE_BUTTON_MASK_LEFT | MOUSE_BUTTON_MASK_RIGHT
+		_value.gui_input.connect(_on_value_input)
+		add_child(_value)
+		var next := Button.new()
+		next.text = ">"
+		next.custom_minimum_size = Vector2(30, 0)
+		next.pressed.connect(_step.bind(1))
+		add_child(next)
+		_refresh()
+
+	func _on_value_input(event: InputEvent) -> void:
+		var mb := event as InputEventMouseButton
+		if mb != null and not mb.pressed:
+			_step(-1 if mb.button_index == MOUSE_BUTTON_RIGHT else 1)
+		elif event.is_action_pressed("ui_accept"):
+			_step(1)
+
+	func _step(d: int) -> void:
+		if labels.is_empty():
+			return
+		selected = posmod(selected + d, labels.size())
+		_refresh()
+		item_selected.emit(selected)
+
+	func select(i: int) -> void:
+		selected = clampi(i, 0, maxi(labels.size() - 1, 0))
+		_refresh()
+
+	func _refresh() -> void:
+		if _value != null and not labels.is_empty():
+			_value.text = labels[selected]
 
 func _button(row: HBoxContainer, text: String, cb: Callable) -> Button:
 	var b := Button.new()

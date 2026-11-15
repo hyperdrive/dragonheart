@@ -13,6 +13,7 @@ to get a settings menu."
 | Persistence | `user://settings.cfg`, `[display]` section; applied at start by `SettingsMenu.apply_saved` from `GameManager._ready` | Survives restarts |
 | Build | A CanvasLayer (layer 20) built in code, no scene; no class_name (editor rescan caveat) | Small, self-contained |
 | StoryPopup | `_unhandled_input` ignores input while hidden | A closed popup must never answer ESC or number keys |
+| Pickers | `< value >` steppers (inner class `Stepper`), not OptionButtons: Godot's dropdown popups logged "Signal 'focus_entered' is already connected … root Window" on open/close for the user (engine-side; not reproducible standalone) | No popup windows, no errors; also keyboard-friendly |
 
 ## Keymapper (2026-11-15)
 
