@@ -16,6 +16,12 @@ class_name Sacrifice
 
 ## Story popup state - only triggers once per sacrifice per run
 var _story_triggered: bool = false
+## Left at the stake (2026-11-16, "Leave does nothing - you can come back
+## later"): the board the dragon walked away from, reopened on her return
+## — once she has gone REARM_DISTANCE away and come back.
+var resume_kind: String = ""
+var _await_departure := false
+const REARM_DISTANCE := 160.0
 
 ## 20% chance the captive is male (trainable as rider)
 @export var is_male: bool = false
@@ -209,6 +215,10 @@ func _check_dragon_encounter() -> void:
 		return
 
 	var distance := global_position.distance_to(dragon.global_position)
+	if _await_departure:
+		if distance > REARM_DISTANCE:
+			_await_departure = false
+		return
 	if distance <= 100.0:  # 100px detection radius
 		_story_triggered = true
 		_trigger_story()
@@ -231,7 +241,7 @@ func _trigger_story() -> void:
 		if is_male:
 			pool = ["brute", "thief", "renegade"]
 		personality = pool[randi() % pool.size()]
-	var story_kind := "sacrifice_" + personality
+	var story_kind := resume_kind if resume_kind != "" else "sacrifice_" + personality
 
 	print("Sacrifice: Showing story '%s'" % story_kind)
 
@@ -243,6 +253,12 @@ func _trigger_story() -> void:
 	# Choice routing now flows through story_choice_made →
 	# GameManager._on_story_choice → _on_sacrifice_choice_from_popup.
 	game_manager.call("open_sacrifice_story", story_kind)
+
+## The dragon left: the captive stays bound and waits on the same board.
+func rearm(kind: String) -> void:
+	resume_kind = kind
+	_story_triggered = false
+	_await_departure = true
 
 func remove_sacrifice() -> void:
 	# Called when the story answer is processed

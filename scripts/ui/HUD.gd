@@ -38,6 +38,43 @@ func _on_body_count(n: int) -> void:
 	if _dead_label != null:
 		_dead_label.text = "Dead: %d" % n
 
+## The rider's pact (2026-11-16, RiderPacts.gd): the term and its clock,
+## after the body count. Hidden while no pact rides.
+var _pact_label: Label
+
+func set_pact_text(text: String, danger: bool = false) -> void:
+	if _pact_label == null:
+		return
+	_pact_label.text = text
+	_pact_label.visible = text != ""
+	_pact_label.add_theme_color_override("font_color",
+		NOTICE_COLORS["warning"] if danger else Color(0.95, 0.78, 0.45))
+
+## Pact notices (2026-11-16, user: "If you are granted a bonus, show it in
+## a notice. If you are close to breaking the pact - show it as a warning"):
+## the message line in the notice's colour; a warning also pulses the
+## pact chip. Plain show_message calls go back to white.
+const NOTICE_COLORS := {
+	"bonus": Color(0.62, 1.0, 0.55),
+	"warning": Color(1.0, 0.42, 0.3),
+	"info": Color(0.98, 0.86, 0.6),
+}
+
+## A fresh warning holds the line this long (ms): plain messages that
+## arrive meanwhile wait their turn instead of wiping it.
+const WARNING_HOLD_MS := 2500
+var _warning_hold_until := 0
+
+func show_notice(text: String, kind: String = "info", duration: float = 3.5) -> void:
+	_show_now(text, duration)
+	if kind == "warning":
+		_warning_hold_until = Time.get_ticks_msec() + WARNING_HOLD_MS
+	message_label.add_theme_color_override("font_color", NOTICE_COLORS.get(kind, Color.WHITE))
+	if kind == "warning" and _pact_label != null and _pact_label.visible:
+		var tween := create_tween()
+		tween.tween_property(_pact_label, "scale", Vector2(1.15, 1.15), 0.12)
+		tween.tween_property(_pact_label, "scale", Vector2.ONE, 0.25)
+
 func bind_manager(mgr: GameManager) -> void:
 	game_manager = mgr
 	mgr.treasury_changed.connect(_on_pools_changed)
@@ -60,6 +97,11 @@ func bind_manager(mgr: GameManager) -> void:
 	_dead_label.add_theme_color_override("font_color", Color(0.85, 0.7, 0.62))
 	wings_label.add_sibling(_dead_label)
 	mgr.body_count_changed.connect(_on_body_count)
+	_pact_label = Label.new()
+	_pact_label.add_theme_font_size_override("font_size", 15)
+	_pact_label.add_theme_color_override("font_color", Color(0.95, 0.78, 0.45))
+	_pact_label.visible = false
+	_dead_label.add_sibling(_pact_label)
 	_on_body_count(mgr.body_count.size())
 	# Dragon health/flame/shield chips (take_damage/_try_eat_at_pen emit).
 	var dragon_ref := mgr.dragon
@@ -206,6 +248,13 @@ func show_upgrade_available() -> void:
 	show_message("Upgrades: visit the wizard's tower!")
 
 func show_message(text: String, duration: float = 3.0) -> void:
+	var wait := _warning_hold_until - Time.get_ticks_msec()
+	if wait > 0:
+		await get_tree().create_timer(wait / 1000.0).timeout
+	_show_now(text, duration)
+
+func _show_now(text: String, duration: float) -> void:
+	message_label.remove_theme_color_override("font_color")
 	message_label.text = text
 	await get_tree().create_timer(duration).timeout
 	if message_label.text == text:

@@ -103,6 +103,8 @@ var _roll: CanvasLayer = null
 
 func record_kill(npc: Node, source: String, type: int) -> void:
 	var npc_type := str(npc.get("npc_type"))
+	if rider_pact != null and is_instance_valid(rider_pact):
+		rider_pact.call("on_kill", npc_type, source)   # the rider keeps count too
 	if not BODY_COUNT.counts(npc_type, source):
 		return
 	var who: Dictionary = BODY_COUNT.identity(npc_type)
@@ -176,7 +178,7 @@ func notify_peasant_burn() -> void:
 	_open_story_now(story_kind)
 
 ## Open the shared popup for one kind and pause the world beneath it.
-func _open_story_now(kind: String, note: String = "") -> void:
+func _open_story_now(kind: String, note: String = "", lead: String = "") -> void:
 	story_open = true
 	print("GameManager: Opening story '%s'" % kind)
 	if story_popup == null:
@@ -187,7 +189,7 @@ func _open_story_now(kind: String, note: String = "") -> void:
 		story_popup.story_choice_made.connect(_on_story_choice)
 		add_child(story_popup)
 	print("GameManager: Calling story_popup.open()...")
-	story_popup.call("open", kind, note)
+	story_popup.call("open", kind, note, lead)
 	get_tree().paused = true
 
 ## Public entry for the sacrifice encounter (Sacrifice.gd): opens the popup
@@ -197,7 +199,10 @@ func _open_story_now(kind: String, note: String = "") -> void:
 ## Deliberately bypasses story_shown: the popup is once per SACRIFICE
 ## (Sacrifice._story_triggered), not once per run.
 func open_sacrifice_story(kind: String) -> void:
-	_open_story_now(kind)
+	# a captive left at the pact board hears the dragon's answer again
+	var lead := pact_reaction(kind.trim_prefix("sacrifice_").get_slice("_", 0)) \
+		if kind.ends_with("_pact") else ""
+	_open_story_now(kind, "", lead)
 
 ## The chosen answer joins the run's progression policy.
 func _on_story_choice(kind: String, choice_index: int) -> void:
@@ -226,51 +231,98 @@ func _on_story_choice(kind: String, choice_index: int) -> void:
 	# story_choice_made). The answer is tribal once-per-run, so GameManager
 	# must NOT pick goblins — get_first_node_in_group would strand the rest.
 
-## Sacrifice dialogues (2026-11-14). Every captive is a named personality
-## (Sacrifice.gd picks one). EVERY board of the negotiation offers the same
-## three answers (user 2026-11-14: "always have options to either eat or
-## train or leave. The dialogue changes but not the options"):
-##   0 Train as rider · 1 Eat! · 2 Leave
-## Answering the board's own path again walks it on (approach → _2 → _3 →
-## the deed); switching path makes the captive plead the OTHER case from
-## its stage 2. Leave always ends it. The deed opens a closing report.
+## Sacrifice dialogues — a three-level decision tree (2026-11-16, user:
+## "a decision/expert system tree of three levels where the outcomes are
+## train as dragon rider, eat or leave. Leave does nothing - you can come
+## back later, and this ESC option should remain through the decisions").
+##
+##   1 The stake (sacrifice_X):  What can you do? → TRIAL · Eat! → PLEA · Leave
+##   2 The trial (_trial): the captive shows their aim — and asks what the
+##       dragon values: Gold · Fire · What is mine · Leave
+##     The plea (_eat_2):  Eat! → LAST WORDS · What can you do? → TRIAL · Leave
+##   3 The pact (_pact): the captive's price (RiderPacts.gd), opened by their
+##       answer to the dragon's value: Swear it → TRAIN · Eat! → EAT · Leave
+##     Last words (_eat_3): Eat! → EAT · What can you do? → TRIAL · Leave
+##
+## Leave is always the last answer (ESC). It changes nothing: the captive
+## stays at the stake, and coming back reopens the same board.
+## Naming what the captive values most makes the rider DEVOTED: one broken
+## term of the pact is forgiven.
 const SACRIFICE_PERSONALITIES: Array[String] = ["defiant", "courageous",
 	"cunning", "devout", "brute", "thief", "renegade"]
-const SACRIFICE_PATHS: Array[String] = ["lair", "eat"]   # by choice index
+const PACTS_SCRIPT := preload("res://scripts/systems/RiderPacts.gd")
 ## The next dialogue to open once the current popup closes (stages chain
 ## through _on_story_closed so the popup's own close doesn't eat them),
-## plus an optional closing paragraph appended to its text.
+## plus an optional closing paragraph appended to its text, and an opening
+## one (the captive's answer to the dragon's value) put before it.
 var _pending_story_kind: String = ""
 var _pending_story_note: String = ""
+var _pending_story_lead: String = ""
+## What the dragon told each captive she values (VALUES index), per run.
+var _sacrifice_value: Dictionary = {}
+## The live pact of the current rider (RiderPacts node), or null.
+var rider_pact: Node = null
 
 func _on_sacrifice_choice(kind: String, choice_index: int) -> void:
 	var parts := kind.trim_prefix("sacrifice_").split("_")
 	var personality := parts[0]
-	var path := parts[1] if parts.size() > 1 else ""   # "" = the approach
-	if path == "outcome":
+	var board := "_".join(parts.slice(1))     # "" = the stake
+	if board.begins_with("outcome"):
 		return                    # the closing report: nothing more to do
-	if choice_index >= SACRIFICE_PATHS.size():
-		print("GameManager: the dragon leaves %s at the stake" % personality)
-		_release_sacrifice()
+	var base := "sacrifice_" + personality
+	var answers: Array = StoryPopup.STORIES.get(kind, {}).get("choices", [])
+	if choice_index >= answers.size() - 1:
+		_leave_sacrifice(kind)
 		return
-	var want := SACRIFICE_PATHS[choice_index]
-	var stage := int(parts[2]) if path == want else 1
-	if stage < 3:
-		_pending_story_kind = "sacrifice_%s_%s_%d" % [personality, want, stage + 1]
-		return
-	# The deed, then a plain report of what just happened.
+	match board:
+		"":
+			_pending_story_kind = base + ("_trial" if choice_index == 0 else "_eat_2")
+		"eat_2":
+			_pending_story_kind = base + ("_eat_3" if choice_index == 0 else "_trial")
+		"eat_3":
+			if choice_index == 0:
+				_sacrifice_deed(personality, "eat")
+			else:
+				_pending_story_kind = base + "_trial"
+		"trial":
+			_sacrifice_value[personality] = choice_index
+			_pending_story_kind = base + "_pact"
+			_pending_story_lead = pact_reaction(personality)
+		"pact":
+			_sacrifice_deed(personality, "lair" if choice_index == 0 else "eat")
+
+## The captive's answer to what the dragon said she values (opens the pact).
+func pact_reaction(personality: String) -> String:
+	var v := int(_sacrifice_value.get(personality, -1))
+	var lines: Array = PACTS_SCRIPT.pact(personality).get("answers", [])
+	return str(lines[v]) if v >= 0 and v < lines.size() else ""
+
+## Leave: nothing happens. The captive stays bound; the same board waits.
+func _leave_sacrifice(kind: String) -> void:
+	print("GameManager: the dragon leaves (%s) — come back later" % kind)
+	for node: Node in get_tree().get_nodes_in_group("sacrifice"):
+		var sacrifice := node as Sacrifice
+		if sacrifice != null and sacrifice._story_triggered:
+			sacrifice.rearm(kind)
+
+## The tree's two real outcomes, then a plain report of what just happened.
+func _sacrifice_deed(personality: String, deed: String) -> void:
 	var who := _sacrifice_name(personality)
-	if want == "lair":
-		train_sacrifice_as_rider(personality)
+	if deed == "lair":
+		var devoted := PACTS_SCRIPT.loves(personality, int(_sacrifice_value.get(personality, -1)))
+		train_sacrifice_as_rider(personality, devoted)
+		var pron := "him" if personality in ["brute", "thief", "renegade"] else "her"
 		_pending_story_note = ("%s waits in your lair — but the wizard is dead, and no one is left to train a rider." % who) \
 			if wizard_dead else \
-			("%s waits in your lair, among the gold. The wizard can train %s as your dragon rider: visit his tower and choose \"Train Dragon Rider\" (10g)." % [who, "him" if personality in ["brute", "thief", "renegade"] else "her"])
+			("%s waits in your lair. Train %s at the wizard's tower (\"Train Dragon Rider\", 10g).\n%s" \
+				% [who, pron, PACTS_SCRIPT.summary(personality, devoted)])
 		_pending_story_kind = "sacrifice_%s_outcome_lair" % personality
 	else:
 		var gain := eat_sacrifice(personality)
 		_pending_story_note = ("Your fire grows: +%d flame capacity." % gain) if gain > 0 \
 			else "The meal sits heavy, but no new flame kindles."
 		_pending_story_kind = "sacrifice_%s_outcome_eat" % personality
+	_sacrifice_value.erase(personality)
 	_release_sacrifice()
 
 ## "Brannagh Thornwick — The Defiant" → "Brannagh Thornwick".
@@ -286,12 +338,15 @@ func _release_sacrifice() -> void:
 			sacrifice.remove_sacrifice()
 
 ## Train the sacrifice as a dragon rider (unlocks the 10g wizard option).
-## The personality rides along: the defiant one shoots 1.5x faster.
+## The personality rides along with its pact (RiderPacts.gd): aim, gift,
+## price — and devotion, if the dragon named what the captive values.
 var _trainable_personality: String = ""
+var _trainable_devoted := false
 
-func train_sacrifice_as_rider(personality: String = "") -> void:
+func train_sacrifice_as_rider(personality: String = "", devoted: bool = false) -> void:
 	_trainable_sacrifice = true
 	_trainable_personality = personality
+	_trainable_devoted = devoted
 	print("GameManager: %s waits in the lair to be trained as a rider" % personality)
 
 ## Eating: the defiant one burns hot (+2 flame capacity); every other
@@ -303,6 +358,8 @@ func eat_sacrifice(personality: String = "") -> int:
 	if gain > 0:
 		dragon.call("increase_flame_capacity", gain)
 	print("GameManager: the dragon ate %s — +%d flame capacity" % [personality, gain])
+	if dragon.has_signal("meal_eaten"):
+		dragon.emit_signal("meal_eaten", "captive")
 	return gain
 
 ## Captive rotation (2026-11-14 fix: "circulate the characters so we don't
@@ -373,6 +430,7 @@ const RIDER_LAST_WORDS := {
 }
 
 func _on_rider_fell(killer: String, personality: String) -> void:
+	_end_rider_pact()
 	var kind := "rider_fall_king" if killer == "king" else "rider_fall_wizard"
 	var note: String = RIDER_LAST_WORDS.get(personality, "")
 	story_shown[kind] = true
@@ -380,6 +438,47 @@ func _on_rider_fell(killer: String, personality: String) -> void:
 		queue_followup_story(kind)
 		return
 	_open_story_now(kind, note)
+
+## A rider climbs into the saddle: the pact's clock starts.
+func _begin_rider_pact(personality: String, devoted: bool) -> void:
+	_end_rider_pact()
+	if not PACTS_SCRIPT.PACTS.has(personality):
+		return
+	rider_pact = PACTS_SCRIPT.new()
+	rider_pact.name = "RiderPact"
+	add_child(rider_pact)
+	rider_pact.connect("broken", _on_rider_pact_broken)
+	rider_pact.call("begin", personality, devoted, self, dragon)
+
+func _end_rider_pact() -> void:
+	if rider_pact != null and is_instance_valid(rider_pact):
+		rider_pact.call("end")
+	rider_pact = null
+
+## The price went unpaid: the rider leaves (their own parting words).
+func _on_rider_pact_broken(personality: String) -> void:
+	var d := dragon as Dragon
+	if d == null or not d.has_rider:
+		return
+	var p: Dictionary = PACTS_SCRIPT.pact(personality)
+	if personality == "cunning":
+		# Vesna's twenty-two percent, of everything
+		for res: String in ["gold", "gems"]:
+			var cut := int(floor(stash[res] * float(p.get("cut", 0.0))))
+			if cut > 0:
+				spend_stash(res, cut)
+	d.dismount_rider()
+	rider_pact = null
+	print("GameManager: %s breaks the pact and leaves" % personality)
+	var note := str(p.get("parting", ""))
+	if story_open or get_tree().paused:
+		if _pending_story_kind == "":
+			_pending_story_kind = "rider_pact_broken"
+			_pending_story_note = note
+		else:
+			story_queue.append("rider_pact_broken")
+	else:
+		_open_story_now("rider_pact_broken", note)
 
 ## Show epic story when rider is upgraded
 func _on_rider_upgraded() -> void:
@@ -394,9 +493,11 @@ func _on_story_closed() -> void:
 		# the next sacrifice dialogue: stay paused, reopen right away
 		var next := _pending_story_kind
 		var note := _pending_story_note
+		var lead := _pending_story_lead
 		_pending_story_kind = ""
 		_pending_story_note = ""
-		_open_story_now(next, note)
+		_pending_story_lead = ""
+		_open_story_now(next, note, lead)
 		return
 	story_open = false
 	get_tree().paused = false
@@ -1104,11 +1205,18 @@ func purchase_upgrade(kind: String) -> bool:
 		"rider_train":
 			if dragon_ref.has_method("upgrade_rider"):
 				dragon_ref.call("upgrade_rider")
-				# Brannagh the Defiant shoots out of pure spite: 1.5x faster.
-				dragon_ref.set("rider_fire_mult", 1.5 if _trainable_personality == "defiant" else 1.0)
+				# Aim and gifts by who rides (RiderPacts.PACTS): Brannagh
+				# shoots 1.5x faster, Garreth misses most, Aldith and Horrik
+				# never shoot, Horrik takes a quarter of every blade.
+				var pact_data: Dictionary = PACTS_SCRIPT.pact(_trainable_personality)
+				dragon_ref.set("rider_fire_mult", float(pact_data.get("fire_mult", 1.0)))
+				dragon_ref.set("rider_accuracy", float(pact_data.get("accuracy", 1.0)))
+				dragon_ref.set("rider_guard", 0.25 if _trainable_personality == "brute" else 0.0)
 				dragon_ref.set("rider_personality", _trainable_personality)
+				_begin_rider_pact(_trainable_personality, _trainable_devoted)
 				_trainable_sacrifice = false  # consumed
 				_trainable_personality = ""
+				_trainable_devoted = false
 			else:
 				print("Dragon: upgrade_rider method not found")
 				return false

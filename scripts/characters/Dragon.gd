@@ -17,6 +17,12 @@ signal shield_changed(points: int)
 signal rider_upgraded
 ## The rider took a killing blow for the dragon (rider_takes_the_hit).
 signal rider_fell(killer: String, personality: String)
+## A meal went down (pig, cow, deer, or one the rider Horrik ate) — the
+## brute's pact counts them (RiderPacts.gd).
+signal meal_eaten(what: String)
+## A rider's gift landed here ("loot": Corvin's extra coin, "guard": the
+## damage Horrik took) — RiderPacts shows it as a bonus notice.
+signal rider_gift(kind: String, amount: int)
 ## The dragon changed shape (T, once the fen hag's tea taught her how).
 signal form_changed(human: bool)
 
@@ -381,6 +387,10 @@ func _eat_deer(deer: BaseNPC) -> void:
 	var gains_flame := flame_charges < float(max_flame_charges)
 	var gains_health := health < max_health
 	if not gains_flame and not gains_health:
+		if _rider_eats_it():
+			_play_claw_swing()
+			deer.kill_by_dragon()
+			return
 		eat_refused.emit("health")
 		print("Dragon: too full to hunt — the deer bounds away.")
 		return
@@ -392,9 +402,21 @@ func _eat_deer(deer: BaseNPC) -> void:
 	flame_charges = minf(flame_charges + float(DEER_FLAMES), float(max_flame_charges))
 	flame_charges_changed.emit(int(flame_charges), max_flame_charges)
 	print("Dragon ate a deer: +%d flames, +%d health." % [DEER_FLAMES, DEER_HEALTH])
+	meal_eaten.emit("deer")
 	if game_manager != null:
 		game_manager.notify_story("deer_eaten")
 		game_manager.call("_hud_message", "A deer of the glade: +%d flames, +%d health" % [DEER_FLAMES, DEER_HEALTH], 3.0)
+
+## Full, but Horrik rides: the meal she cannot use goes to him (his pact
+## is a meal every three minutes — a full dragon must not starve him).
+func _rider_eats_it() -> bool:
+	if not has_rider or rider_personality != "brute":
+		return false
+	meal_eaten.emit("horrik")
+	print("Dragon: full — Horrik eats it instead.")
+	if game_manager != null:
+		game_manager.call("_hud_message", "You're full. Horrik eats it instead, bones and all.", 3.0)
+	return true
 
 ## Nearest pen (either species) with stock within its own reach, else null.
 func _nearest_edible_pen() -> AnimalPen:
@@ -492,6 +514,10 @@ func _eat_meal_from(pen: AnimalPen) -> void:
 	var health_gain := heals and not health_full
 	var flame_gain := fuels and not flames_full
 	if not health_gain and not flame_gain:
+		if has_rider and rider_personality == "brute" \
+				and not pen.take_animal_for_dragon(self).is_empty():
+			_rider_eats_it()
+			return
 		if heals:
 			eat_refused.emit("health")
 		if fuels:
@@ -501,6 +527,7 @@ func _eat_meal_from(pen: AnimalPen) -> void:
 	var meal := pen.take_animal_for_dragon(self)
 	if meal.is_empty():
 		return
+	meal_eaten.emit(pen.animal_name)
 	# TTRPG first-meal chapters (once per run each): the pig and the cow
 	# both earned their own story before becoming calories.
 	var meal_kind := "pig_eaten" if pen.animal_name == "pig" else "cow_eaten"
@@ -661,10 +688,14 @@ func _deliver_carried_loot() -> void:
 
 ## Everything (drops, interception, mine landing) funnels through here.
 func take_loot(res_type: String, amount: int) -> void:
+	if has_rider and rider_personality == "thief" and amount > 0:
+		amount += 1   # Corvin's light fingers (his pact gift)
 	if not carried_loot.has(res_type):
 		carried_loot[res_type] = 0
 	carried_loot[res_type] += amount
 	loot_carried.emit(carried_total())
+	if has_rider and rider_personality == "thief" and amount > 1:
+		rider_gift.emit("loot", 1)   # after the haul message, so it shows
 
 func carried_total() -> int:
 	var total := 0
@@ -714,6 +745,12 @@ func take_damage(amount: int, type: Damage.Type = Damage.Type.WEAPON,
 	if game_manager != null and type == Damage.Type.WEAPON:
 		damage_reduction = (game_manager.scales_level - 1) * 2
 	var incoming := maxi(1, amount - damage_reduction)
+	# Horrik the brute takes a share of every blade and arrow (his pact gift).
+	if has_rider and rider_guard > 0.0 and type == Damage.Type.WEAPON:
+		var guarded := maxi(1, roundi(incoming * (1.0 - rider_guard)))
+		if guarded < incoming:
+			rider_gift.emit("guard", incoming - guarded)
+		incoming = guarded
 	# Wizard shield pool absorbs first (and is lost with use, decision record).
 	if shield_points > 0 and not bypass_shield:
 		var absorbed := mini(shield_points, incoming)
@@ -744,18 +781,26 @@ const VENGEFUL_FLAMES := 2
 func _rider_takes_the_hit(type: Damage.Type, killer: String) -> bool:
 	if not has_rider or type != Damage.Type.MAGIC or not killer in ["wizard", "king"]:
 		return false
-	var who := rider_personality
-	has_rider = false
-	rider_personality = ""
-	rider_fire_mult = 1.0
-	var pivot := sprite.get_node_or_null("RiderPivot") if sprite != null else null
-	if pivot != null:
-		pivot.queue_free()
+	var who := dismount_rider()
 	increase_flame_capacity(VENGEFUL_FLAMES)
 	_rider_grace = RIDER_GRACE
 	print("Dragon: the rider takes the %s's killing blow — the saddle is empty" % killer)
 	rider_fell.emit(killer, who)
 	return true
+
+## The saddle empties (the rider fell, or left over a broken pact): the
+## rider's figure and every rider trait go. Returns who rode.
+func dismount_rider() -> String:
+	var who := rider_personality
+	has_rider = false
+	rider_personality = ""
+	rider_fire_mult = 1.0
+	rider_accuracy = 1.0
+	rider_guard = 0.0
+	var pivot := sprite.get_node_or_null("RiderPivot") if sprite != null else null
+	if pivot != null:
+		pivot.queue_free()
+	return who
 
 # --- flight (2026-11-09, user spec: Q, 3s fast flight, 5s recharge) ------------
 
@@ -1556,9 +1601,17 @@ const RIDER_SHOOT_INTERVAL := 1.5  # seconds between shots
 ## Per-rider fire rate (2026-11-14): Brannagh the Defiant shoots 1.5x
 ## faster than any other rider (set by GameManager when she is trained).
 var rider_fire_mult: float = 1.0
+## Per-rider aim (2026-11-16, the pacts): the chance an arrow flies true —
+## a miss goes wide of the target. 0 fire_mult = the rider never shoots.
+var rider_accuracy: float = 1.0
+## Share of every WEAPON blow the rider takes for the dragon (Horrik: 0.25).
+var rider_guard: float = 0.0
+const RIDER_MISS_SPREAD := 70.0
 const RIDER_ARROW_SCENE := preload("res://scenes/objects/Arrow.tscn")
 
 func _rider_shoot_at_enemies(delta: float) -> void:
+	if rider_fire_mult <= 0.0:
+		return   # Sister Aldith and Horrik do not shoot
 	if _rider_shoot_cooldown > 0.0:
 		_rider_shoot_cooldown -= delta
 		return
@@ -1592,8 +1645,12 @@ func _rider_shoot_at(target: Node2D) -> void:
 	arrow.global_position = global_position + Vector2(0.0, -14.0)  # from the saddle
 	arrow.rider_arrow = true
 	get_tree().root.add_child(arrow)
-	arrow.launch(target.global_position, 500.0)
-	print("DragonRider: Arrow loosed at the %s" % target.name)
+	var aim := target.global_position
+	if randf() > rider_accuracy:
+		# wide: past the target, off to one side
+		aim += Vector2.from_angle(randf() * TAU) * RIDER_MISS_SPREAD
+	arrow.launch(aim, 500.0)
+	print("DragonRider: Arrow loosed at the %s%s" % [target.name, "" if aim == target.global_position else " — wide!"])
 
 ## Mount the rider ON the original vector dragon (2026-11-11, user: "the
 ## dragon rider version of the dragon sprite should look like a derivative

@@ -13,10 +13,16 @@ signal story_close_requested
 signal story_choice_made(kind: String, choice_index: int)
 signal sacrifice_choice_made(choice_index: int)
 
-## The sacrifice negotiation's fixed answers (user 2026-11-14: "The
-## dialogue changes but not the options"). GameManager._on_sacrifice_choice
-## reads them by index: 0 train · 1 eat · 2 leave.
-const SACRIFICE_OPTIONS: Array = ["Train as rider", "Eat!", "Leave"]
+## The sacrifice decision tree's answers (2026-11-16; GameManager.
+## _on_sacrifice_choice reads them by index). Leave is ALWAYS the last
+## answer, so ESC leaves — and leaving changes nothing.
+const SACRIFICE_LEAVE := "Leave (come back later)"
+const SACRIFICE_STAKE: Array = ["What can you do?", "Eat!", SACRIFICE_LEAVE]
+const SACRIFICE_PLEA: Array = ["Eat!", "Fine. What can you do?", SACRIFICE_LEAVE]
+const SACRIFICE_LAST: Array = ["Eat!", "Wait. Show me what you can do.", SACRIFICE_LEAVE]
+const SACRIFICE_VALUES: Array = ["\"Gold, and more of it.\"", "\"Fire, and what it leaves.\"",
+	"\"What is mine, and who.\"", SACRIFICE_LEAVE]
+const SACRIFICE_PACT: Array = ["Swear it. (Train as rider)", "No bargains. Eat!", SACRIFICE_LEAVE]
 
 ## Story library — per kind: panel title, one image (SVG), its backdrop
 ## tint, the fantasy-novel body text, and the dragon's possible answers.
@@ -350,245 +356,248 @@ const STORIES := {
 		"image": "res://assets/story/sacrifice_defiant.svg",
 		"tint": Color(0.42, 0.20, 0.18),
 		"text": "The village staked her out the old way — Osric's hymn, and a priest who would not meet her eyes. She's chewed halfway through the rope and stopped, apparently out of spite. \"Oh, FINALLY. Took you long enough, you oversized lizard. Go on — I've been insulting you to the whole village for an hour. Your breath smells like a burnt tannery, your wings look like wet laundry, and your mother was a newt.\" She juts her chin at your teeth. \"Well? Hungry or scared?\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_STAKE,
 	},
 	"sacrifice_defiant_eat_2": {
 		"title": "Brannagh Thornwick — Dinner Bell",
 		"image": "res://assets/story/sacrifice_defiant_jaws.svg",
 		"tint": Color(0.42, 0.20, 0.18),
 		"text": "Her face LIGHTS up. \"YES. That's the spirit! Wider — come on, you've opened your mouth wider for a sheep. I want them to hear the crunch from the chapel.\" She wiggles her toes at your fangs. \"Season me with a little fire first? No? Coward. Fine. Raw it is.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_PLEA,
 	},
 	"sacrifice_defiant_eat_3": {
 		"title": "Brannagh Thornwick — Served",
 		"image": "res://assets/story/sacrifice_defiant_jaws.svg",
 		"tint": Color(0.42, 0.20, 0.18),
 		"text": "She has stopped insulting you, which is somehow worse. She's lying on the stone like a roast on a platter, arms folded over her chest, one eye open. \"Well? I've done the speech. I've done the toes. I've made my peace with three gods and a goat. If you back out NOW, lizard, I will tell every bard in the realm you lost your nerve over a girl in a rope.\"",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_defiant_lair_2": {
-		"title": "Brannagh Thornwick — Outrage",
-		"image": "res://assets/story/sacrifice_defiant_lair.svg",
-		"tint": Color(0.42, 0.20, 0.18),
-		"text": "\"A RIDER?!\" She kicks your snout the whole way to the lair. \"I came here to be EATEN. I had a whole speech. I insulted your mother!\" She folds her arms on the hoard and glares. \"I'll be the worst rider you ever had. I'll steer you into trees. I'll sing.\"",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_defiant_lair_3": {
-		"title": "Brannagh Thornwick — Under Protest",
-		"image": "res://assets/story/sacrifice_defiant_lair.svg",
-		"tint": Color(0.42, 0.20, 0.18),
-		"text": "She's still sitting on your hoard with her arms crossed, kicking a goblet at intervals. \"I want it on record,\" she announces, \"that I was promised TEETH. Teeth! And instead I get a JOB.\" She eyes the bows racked beside the gold. Then you. Then the bows. \"…Is the pay at least in blood?\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_LAST,
 	},
 	"sacrifice_courageous": {
 		"title": "Ysolde of the Wolfrun — The Unbowed",
 		"image": "res://assets/story/sacrifice_courageous.svg",
 		"tint": Color(0.36, 0.26, 0.30),
 		"text": "They bound her at dawn and sang the old hymn over her, the one that once climbed the ridge to Lorindel. A wolf pelt hangs off her shoulders and her chin is up so high it's practically pointing at the moon. \"I have faced wolves. I have walked through fire to save my sister. I do not fear you, beast.\" Her knees are knocking audibly. \"…I mostly do not fear you.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_STAKE,
 	},
 	"sacrifice_courageous_eat_2": {
 		"title": "Ysolde of the Wolfrun — Bravery, Reconsidered",
 		"image": "res://assets/story/sacrifice_courageous_jaws.svg",
 		"tint": Color(0.36, 0.26, 0.30),
 		"text": "\"Ah — eat, you said? Right. Yes. Bravely.\" She clears her throat. \"Only, a warrior's flesh is very tough. Gristly. All that marching. I'm practically a boot. Have you considered a nice cow? I know a cow. Several cows. I can point.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_PLEA,
 	},
 	"sacrifice_courageous_eat_3": {
 		"title": "Ysolde of the Wolfrun — Chin Up",
 		"image": "res://assets/story/sacrifice_courageous_jaws.svg",
 		"tint": Color(0.36, 0.26, 0.30),
 		"text": "She's run out of cows to point at. Ysolde straightens, pulls the wolf pelt tight, and looks you right in the teeth. \"Very well. If it must be, let it be quick, and let it be told that I did not scream.\" A pause. \"Much. Let it be told I did not scream MUCH.\" Her lip trembles. Her chin does not.",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_courageous_lair_2": {
-		"title": "Ysolde of the Wolfrun — Vertigo",
-		"image": "res://assets/story/sacrifice_courageous_lair.svg",
-		"tint": Color(0.36, 0.26, 0.30),
-		"text": "\"A rider? Me? On you? In the SKY?\" She clutches the hoard like it's a cliff edge. \"Funny story — the wolves, the fire, all very brave — but I've never been higher than a hay loft. I get dizzy on a STOOL. Perhaps I could be your… ground rider? I'll run alongside. Very fast.\"",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_courageous_lair_3": {
-		"title": "Ysolde of the Wolfrun — Ground Rider",
-		"image": "res://assets/story/sacrifice_courageous_lair.svg",
-		"tint": Color(0.36, 0.26, 0.30),
-		"text": "She has wedged herself between two chests of coin, as far from the cave mouth as the lair allows. \"Ground rider,\" she says firmly. \"It's a real position. I've just invented it.\" Then she sees the old hunter's bow on the hoard — a lot like her sister's. She does not reach for it. She does not look away from it either.",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_LAST,
 	},
 	"sacrifice_cunning": {
 		"title": "Vesna Silvertongue — The Fox",
 		"image": "res://assets/story/sacrifice_cunning.svg",
 		"tint": Color(0.30, 0.34, 0.26),
 		"text": "Offered to the beast like every unlucky soul before her, she has spent the night on the knots and on her pitch. She winks at you. Actually winks. One hand is suspiciously busy behind her back. \"Darling. Those scales! Has anyone ever told you that you have a truly majestic jawline? I know where the treasury hides its weakest guard. I know which mountain pass the soldiers fear. Let's make a deal, you and I.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_STAKE,
 	},
 	"sacrifice_cunning_eat_2": {
 		"title": "Vesna Silvertongue — The Counter-Offer",
 		"image": "res://assets/story/sacrifice_cunning_jaws.svg",
 		"tint": Color(0.30, 0.34, 0.26),
 		"text": "\"Eat me? Me? Darling, that's like eating the map to the treasure.\" She bats her lashes so hard a little wind picks up. \"Let me sweeten it: I'll owe you a favour. Two favours. A favour and a half and a really good recipe for king. Final offer. Okay — final-final offer…\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_PLEA,
 	},
 	"sacrifice_cunning_eat_3": {
 		"title": "Vesna Silvertongue — Do the Sums",
 		"image": "res://assets/story/sacrifice_cunning_jaws.svg",
 		"tint": Color(0.30, 0.34, 0.26),
 		"text": "Vesna has dropped the lashes and the darlings. What's left is a very quick mind running out of road. \"Last offer, and it's a real one: the treasury's night guard sleeps from the second bell. I'll draw you the way in. Eat me and you get one meal. Keep me and you get the crown's gold, every season, forever.\" A thin smile. \"Do the sums, dragon.\"",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_cunning_lair_2": {
-		"title": "Vesna Silvertongue — Renegotiation",
-		"image": "res://assets/story/sacrifice_cunning_lair.svg",
-		"tint": Color(0.30, 0.34, 0.26),
-		"text": "She surveys your hoard with professional interest. \"Rider. Hmm. Let's discuss terms, darling. Salary? Holidays? Do I get a share of the shiny? I'm thinking forty percent.\" A gold chain has already disappeared into her sleeve. \"Thirty. Thirty-five. Okay, I'll start at ten and steal the rest.\"",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_cunning_lair_3": {
-		"title": "Vesna Silvertongue — Twenty-Two Percent",
-		"image": "res://assets/story/sacrifice_cunning_lair.svg",
-		"tint": Color(0.30, 0.34, 0.26),
-		"text": "Negotiations have stalled at twenty-two percent. Vesna sits cross-legged on your hoard, drawing figures in the gold dust with one finger. \"Here's my problem, darling. Riders die young. Business partners retire rich.\" She looks up, and for once she isn't selling anything. \"So tell me which one I am, and we'll both know where we stand.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_LAST,
 	},
 	"sacrifice_devout": {
 		"title": "Sister Aldith — The Prophet",
 		"image": "res://assets/story/sacrifice_devout.svg",
 		"tint": Color(0.28, 0.32, 0.40),
 		"text": "The priest who bound her sang Osric's hymn so loudly he never heard her join in. Candles flicker at her feet; she has clearly brought her own. \"The old gods whispered of you in my dreams, great wyrm. I am ready. I have been ready for years. I have rehearsed this.\" She sneaks a look at your teeth. \"In the dream you were… somewhat smaller.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_STAKE,
 	},
 	"sacrifice_devout_eat_2": {
 		"title": "Sister Aldith — A Theological Objection",
 		"image": "res://assets/story/sacrifice_devout_jaws.svg",
 		"tint": Color(0.28, 0.32, 0.40),
 		"text": "\"Now — with respect — the prophecy was VAGUE on the eating part.\" She flips frantically through a tiny prayer book. \"It says 'the dragon shall take her.' TAKE. It could mean take for a walk. Take on as an apprentice. Take tea with. Shall we take tea? I brought biscuits.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_PLEA,
 	},
 	"sacrifice_devout_eat_3": {
 		"title": "Sister Aldith — The Smudged Verse",
 		"image": "res://assets/story/sacrifice_devout_jaws.svg",
 		"tint": Color(0.28, 0.32, 0.40),
 		"text": "The biscuits are gone. The candles are out. Sister Aldith kneels with her prayer book open to a page she has clearly been saving, and reads in a voice that barely shakes: \"And the wyrm shall look upon the faithful, and the wyrm shall—\" She squints. \"The ink's smudged. It could say 'spare'. It could say 'swallow'. It really could go either way.\" She looks up at you, hopefully.",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_devout_lair_2": {
-		"title": "Sister Aldith — A Calling, Revised",
-		"image": "res://assets/story/sacrifice_devout_lair.svg",
-		"tint": Color(0.28, 0.32, 0.40),
-		"text": "\"Ride you?\" She stares at the saddle, then at the heavens. \"The prophecy did not mention SADDLES. I'm a woman of contemplation. I've never held a weapon. I once apologised to a fly.\" She edges toward the cave mouth. \"Perhaps I'm called to be your… lair chaplain?\"",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_devout_lair_3": {
-		"title": "Sister Aldith — A Sign, Requested",
-		"image": "res://assets/story/sacrifice_devout_lair.svg",
-		"tint": Color(0.28, 0.32, 0.40),
-		"text": "She has stopped edging toward the cave mouth. Now she stands before the hoard's one good bow as if before an altar, hands folded, lips moving. \"I asked for a sign,\" she tells you. \"A small one. A dove. A rainbow. Not a SADDLE.\" She reaches for the bow, stops, reaches again. \"If I touch it, I think I am agreeing to something.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_LAST,
 	},
 	"sacrifice_brute": {
 		"title": "Horrik Bearhug — The Mountain",
 		"image": "res://assets/story/sacrifice_brute.svg",
 		"tint": Color(0.32, 0.30, 0.26),
 		"text": "It took eight villagers and a cart-chain to stake him out for the beast. He's already snapped two of the ropes just by breathing in. \"Ha! A dragon! I wrestled a grizzly bear once. Twice, actually. Same bear. We're friends now.\" He flexes. Something in the stake creaks. \"You want food or a fighter? I'm warning you, I'm ALL gristle.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_STAKE,
 	},
 	"sacrifice_brute_eat_2": {
 		"title": "Horrik Bearhug — Second Thoughts",
 		"image": "res://assets/story/sacrifice_brute_jaws.svg",
 		"tint": Color(0.32, 0.30, 0.26),
 		"text": "He stops flexing. \"…Wait, you went for 'food'? Most people go for 'fighter'.\" He pats his belly nervously. \"I'm terribly stringy, you know. Lot of hair. You'll be picking me out of your teeth for a WEEK. Also I'm allergic to being eaten. Very allergic. Breaks me out in death.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_PLEA,
 	},
 	"sacrifice_brute_eat_3": {
 		"title": "Horrik Bearhug — The Tavern That Never Was",
 		"image": "res://assets/story/sacrifice_brute_jaws.svg",
 		"tint": Color(0.32, 0.30, 0.26),
 		"text": "He's stopped flexing. He sits down heavily on the stump of the stake and looks at you with big, sad, bear-wrestler's eyes. \"I had plans, you know. Open a tavern. Name it after the bear.\" He sniffs. \"Fine. Go on, then. Only — chew properly. I'd hate to be a stomachache. It'd be a terrible legacy.\"",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_brute_lair_2": {
-		"title": "Horrik Bearhug — Too Big to Ride",
-		"image": "res://assets/story/sacrifice_brute_lair.svg",
-		"tint": Color(0.32, 0.30, 0.26),
-		"text": "\"Ride you?\" He looks at your back, then at himself, then back at your back. \"I'll squash you flat, little dragon. I'm built for wrestling, not flying. Also, bows are for skinny men. I punch things.\" He tries to punch the hoard. It does not go well.",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_brute_lair_3": {
-		"title": "Horrik Bearhug — Fiddly Little Strings",
-		"image": "res://assets/story/sacrifice_brute_lair.svg",
-		"tint": Color(0.32, 0.30, 0.26),
-		"text": "Horrik has tried every seat in the lair: the hoard, a chest, briefly your tail. \"Look, I'm not saying no,\" he says, which is what men say right before they say no. \"I'm saying I punch things. A soldier comes up in the sky with us, fine, I punch him. But bows? Fiddly. Little strings.\" He holds up a hand the size of a shovel. \"See my problem?\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_LAST,
 	},
 	"sacrifice_thief": {
 		"title": "Corvin Nimblefoot — The Shadow",
 		"image": "res://assets/story/sacrifice_thief.svg",
 		"tint": Color(0.26, 0.28, 0.34),
 		"text": "The village gave him to the beast for stealing a loaf of bread, which tells you everything about the village. One arm is already out of the ropes. He freezes mid-wriggle and smiles very, very widely. \"Evening! This isn't what it looks like. This is a… stretch. Prisoners stretch.\" He waggles the free hand. \"I steal what others cannot see, mighty one. Kings' secrets. Merchants' gold. Your lunch, if you blink.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_STAKE,
 	},
 	"sacrifice_thief_eat_2": {
 		"title": "Corvin Nimblefoot — Slippery",
 		"image": "res://assets/story/sacrifice_thief_jaws.svg",
 		"tint": Color(0.26, 0.28, 0.34),
 		"text": "\"Ah. Eat. Classic choice.\" Both arms are out now. A leg is in progress. \"Counter-proposal: you DON'T, and I pay you back in stolen gold. Here—\" he produces a gold coin from behind your own ear. \"See? Already working. There's more where that came from. From you, mostly. But still.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_PLEA,
 	},
 	"sacrifice_thief_eat_3": {
 		"title": "Corvin Nimblefoot — Contents of a Thief",
 		"image": "res://assets/story/sacrifice_thief_jaws.svg",
 		"tint": Color(0.26, 0.28, 0.34),
 		"text": "He's run out of rope to wriggle from, and you've run out of patience. Corvin lies pinned under one claw, cheerful as a man at a picnic. \"Before you do it — and you're very welcome to do it — you should know I've swallowed your gold coin. And two of your rubies. And a key I don't remember stealing.\" He pats his belly. \"Eat me, and it's all yours. Technically.\"",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_thief_lair_2": {
-		"title": "Corvin Nimblefoot — Sticky Fingers",
-		"image": "res://assets/story/sacrifice_thief_lair.svg",
-		"tint": Color(0.26, 0.28, 0.34),
-		"text": "He's delighted with the lair for exactly four seconds, until he realises he can't carry it all. \"Rider, you say? Hmm. Hmm hmm. Very dangerous. Very high. Very far from all this—\" he gestures at the hoard, two rubies vanishing into his boots. \"What if I stay here and… guard it? Closely. From the inside of my pockets.\"",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_thief_lair_3": {
-		"title": "Corvin Nimblefoot — Cards on the Table",
-		"image": "res://assets/story/sacrifice_thief_lair.svg",
-		"tint": Color(0.26, 0.28, 0.34),
-		"text": "Corvin is sitting very still, which for him is a kind of confession. Two rubies lie on the stone beside him, returned with great ceremony. \"Right. Cards on the table,\" he says, and there is, oddly, a card on the table. \"I don't do heights, I don't do loyalty, and I REALLY don't do arrows. But I do enjoy being alive, and you've made it clear those are linked.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_LAST,
 	},
 	"sacrifice_renegade": {
 		"title": "Garreth the Outcast — The Exile",
 		"image": "res://assets/story/sacrifice_renegade.svg",
 		"tint": Color(0.32, 0.26, 0.28),
 		"text": "Even his own village wanted him gone; they staked him out for the beast and did not stay to watch. An eyepatch, a scar, and the dead-eyed stare of a man who has been exiled by three separate kingdoms. \"They called me traitor. They hounded me to the edge of the world.\" He squints his one eye at you. \"Give me wings and I'll bring their heads back in sacks. Or burn me. Either way, they die.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_STAKE,
 	},
 	"sacrifice_renegade_eat_2": {
 		"title": "Garreth the Outcast — Terms and Conditions",
 		"image": "res://assets/story/sacrifice_renegade_jaws.svg",
 		"tint": Color(0.32, 0.26, 0.28),
 		"text": "\"Eat. Right.\" The tough-guy rasp cracks into something higher. \"Thing is, I've got unfinished business. Vengeance, mostly. A small amount of laundry. Could you eat me AFTER the vengeance? I'll come back. Exiles are very punctual. We've got nowhere else to be.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_PLEA,
 	},
 	"sacrifice_renegade_eat_3": {
 		"title": "Garreth the Outcast — One Last Job",
 		"image": "res://assets/story/sacrifice_renegade_jaws.svg",
 		"tint": Color(0.32, 0.26, 0.28),
 		"text": "\"No vengeance first, then.\" Garreth works it through out loud, the way men do with bad news. \"No laundry. No three kingdoms.\" He spits, squares up to your jaws, and straightens the eyepatch with great care, as if he might be inspected. \"Go on. You'll be the first to finish a job on me. The kingdoms will be furious.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"choices": SACRIFICE_LAST,
 	},
-	"sacrifice_renegade_lair_2": {
-		"title": "Garreth the Outcast — Second Thoughts",
+	# --- the sacrifice tree, levels 2 and 3 (2026-11-16): the trial (aim
+	# shown, the dragon's value asked) and the pact (the captive's price;
+	# GameManager puts their answer to the dragon's value in front) ---
+	"sacrifice_defiant_trial": {
+		"title": "Brannagh Thornwick — The Trial",
+		"image": "res://assets/story/sacrifice_defiant.svg",
+		"tint": Color(0.42, 0.20, 0.18),
+		"text": "\"Finally, a test.\" You drop a bow at her feet and set a rotten apple on the far post, forty paces off. She doesn't even stand up properly. THWACK: the apple falls in two halves, and the arrow carries on through the priest's hat, which he left behind in his hurry. THWACK: the hat again, for spite. \"Want one more? Put it on your own head this time.\" She nocks a third arrow and looks at you along the shaft. \"Now you answer one, lizard. What do you actually care about? And don't say lunch.\"",
+		"choices": SACRIFICE_VALUES,
+	},
+	"sacrifice_defiant_pact": {
+		"title": "Brannagh Thornwick — The Pact",
+		"image": "res://assets/story/sacrifice_defiant_lair.svg",
+		"tint": Color(0.42, 0.20, 0.18),
+		"text": "\"Here's my price, handbag. I'll shoot faster than any rider alive. But I didn't come out here to sightsee. Whenever there's a soldier in sight, I want one DEAD every ten heartbeats. Ten seconds, lizard; I'll be counting out loud. Let one stand around breathing longer than that and I'm off to find a dragon with a pulse.\" She spits in her palm and holds it out. \"Deal?\"",
+		"choices": SACRIFICE_PACT,
+	},
+	"sacrifice_courageous_trial": {
+		"title": "Ysolde of the Wolfrun — The Trial",
+		"image": "res://assets/story/sacrifice_courageous.svg",
+		"tint": Color(0.36, 0.26, 0.30),
+		"text": "Her hands shake when she takes the bow. Then she draws, and the shaking stops as if someone cut a string. Three arrows, three knots in the old stake-rope, each one split clean. \"My sister and I hunted for the whole valley,\" she says quietly. \"I don't miss what I'm protecting.\" She lowers the bow and looks at you properly for the first time. \"Before I climb onto anything, what do you value, dragon? I need to know what I'd be fighting for.\"",
+		"choices": SACRIFICE_VALUES,
+	},
+	"sacrifice_courageous_pact": {
+		"title": "Ysolde of the Wolfrun — The Pact",
+		"image": "res://assets/story/sacrifice_courageous_lair.svg",
+		"tint": Color(0.36, 0.26, 0.30),
+		"text": "\"Then here is my oath, and my one condition. I'll shoot true for you, every soldier, every slayer, every wolf. But the farmers and the miners are someone's sisters. You will never kill one of them while I ride. Not by claw, not by fire. The day you do, I climb down and walk home, and I will not look back.\"",
+		"choices": SACRIFICE_PACT,
+	},
+	"sacrifice_cunning_trial": {
+		"title": "Vesna Silvertongue — The Trial",
+		"image": "res://assets/story/sacrifice_cunning.svg",
+		"tint": Color(0.30, 0.34, 0.26),
+		"text": "Vesna takes the bow the way a merchant takes a coin: weighs it, bites it. Her first arrow hits the apple. Her second hits the apple. Her third hits the apple's edge, and she sighs. \"Fair. I'm a fair shot, darling. I'm fair at everything; it's my whole charm.\" She lets the bow hang. \"But a fair shot is only worth what it's paid. So before we talk terms: what does a dragon value? Tell me true, and I'll tell you my price.\"",
+		"choices": SACRIFICE_VALUES,
+	},
+	"sacrifice_cunning_pact": {
+		"title": "Vesna Silvertongue — The Pact",
+		"image": "res://assets/story/sacrifice_cunning_lair.svg",
+		"tint": Color(0.30, 0.34, 0.26),
+		"text": "\"My terms, darling, and they're very reasonable. Twenty-two percent of nothing is nothing, so the hoard must GROW: twenty-five gold banked in your lair every five minutes. Keep the gold coming and I'll keep the arrows coming, and every soldier we drop pays a coin into the stash. Finder's fee. Let the ledger run dry and I leave. With my twenty-two percent. Of everything.\"",
+		"choices": SACRIFICE_PACT,
+	},
+	"sacrifice_devout_trial": {
+		"title": "Sister Aldith — The Trial",
+		"image": "res://assets/story/sacrifice_devout.svg",
+		"tint": Color(0.28, 0.32, 0.40),
+		"text": "She will not take the bow. She holds it out to you at arm's length, like a dead rat. \"Thou shalt not, et cetera,\" she says. Then she notices this morning's arrow-scratch on your flank, lays her palm on it and murmurs. The scale knits closed under her hand, warm as fresh bread. Sister Aldith looks as surprised as you are. \"Oh. Oh, it never worked on the goat.\" She folds her hands. \"I will not shoot for you, great wyrm. I might mend you. But first tell me: what is it you hold dear?\"",
+		"choices": SACRIFICE_VALUES,
+	},
+	"sacrifice_devout_pact": {
+		"title": "Sister Aldith — The Pact",
+		"image": "res://assets/story/sacrifice_devout_lair.svg",
+		"tint": Color(0.28, 0.32, 0.40),
+		"text": "\"Then hear the price of a blessing. Out in the fen lives Mother Grisla, a hag who eats what you only burn. The old gods want her ended, and the prophecy (this part is NOT smudged) wants her ended before the war comes. Slay the hag before the invasion, and I will ride with you and mend you, a little and often. Fail, and I will go and do it myself, with a candle and a strongly worded psalm.\"",
+		"choices": SACRIFICE_PACT,
+	},
+	"sacrifice_brute_trial": {
+		"title": "Horrik Bearhug — The Trial",
+		"image": "res://assets/story/sacrifice_brute.svg",
+		"tint": Color(0.32, 0.30, 0.26),
+		"text": "Horrik takes the bow, draws it to his ear, and it snaps. Both halves. He looks at the pieces, then at you, with great sorrow. \"Fiddly,\" he explains. \"Little strings.\" A soldier's lost spear lies in the grass; he bends it into a hoop, mostly to show you he can. \"I don't shoot, dragon. I hold on, I punch whatever comes close, and I catch the arrows meant for you with my big face.\" He sits on the stump of the stake. \"Now. What do you love? A man should know what he's hugging.\"",
+		"choices": SACRIFICE_VALUES,
+	},
+	"sacrifice_brute_pact": {
+		"title": "Horrik Bearhug — The Pact",
+		"image": "res://assets/story/sacrifice_brute_lair.svg",
+		"tint": Color(0.32, 0.30, 0.26),
+		"text": "\"Simple terms. I'm a big man, dragon, and big men get hungry. You eat, I eat: every three minutes, a pig, a cow, a deer. I'm not fussy. If you're too full, I'll have yours. Feed the mountain and the mountain holds on, and every blade that comes for you hits me first, which honestly I enjoy. Starve me and I'm off to find a tavern.\"",
+		"choices": SACRIFICE_PACT,
+	},
+	"sacrifice_thief_trial": {
+		"title": "Corvin Nimblefoot — The Trial",
+		"image": "res://assets/story/sacrifice_thief.svg",
+		"tint": Color(0.26, 0.28, 0.34),
+		"text": "Corvin fumbles the bow. Drops it. Picks it up. Drops the arrow. When he finally looses, it goes sideways into a hay bale forty feet from the apple, and he applauds anyway. \"Truthfully, I'm better at taking arrows OUT of quivers than putting them anywhere,\" he says. \"But I find things. Coins. Rings. Whatever your claws pick up, I'll pick up a little more.\" He cocks his head. \"So, partner. What do you value? Gold-shaped answers get my best work.\"",
+		"choices": SACRIFICE_VALUES,
+	},
+	"sacrifice_thief_pact": {
+		"title": "Corvin Nimblefoot — The Pact",
+		"image": "res://assets/story/sacrifice_thief_lair.svg",
+		"tint": Color(0.26, 0.28, 0.34),
+		"text": "\"One condition, and it's a small one. You see that city? Every gallows in it has my name carved on the crossbeam. Keep us out of it. Near is fine, close is nervous, IN is a rope. Linger by those walls longer than eight heartbeats and I vanish, the way I do. Otherwise I'm yours, and so is everything I find.\"",
+		"choices": SACRIFICE_PACT,
+	},
+	"sacrifice_renegade_trial": {
+		"title": "Garreth the Outcast — The Trial",
+		"image": "res://assets/story/sacrifice_renegade.svg",
+		"tint": Color(0.32, 0.26, 0.28),
+		"text": "Garreth snatches the bow before you've offered it. His first arrow hits the stake. His second hits the stake's shadow. His third you feel: it glances off a scale an inch from your eye. \"Three of everything,\" he growls, and shuts his good eye as if that might help, which it does not. \"I'll miss. I'll miss a LOT. But I won't miss the village that staked me out.\" He spits. \"So tell me, dragon. What do you value? Because I know what I do.\"",
+		"choices": SACRIFICE_VALUES,
+	},
+	"sacrifice_renegade_pact": {
+		"title": "Garreth the Outcast — The Pact",
 		"image": "res://assets/story/sacrifice_renegade_lair.svg",
 		"tint": Color(0.32, 0.26, 0.28),
-		"text": "\"A rider. Right.\" He stares at the sky, then at you, then at his eyepatch in a shiny shield. \"Thing is, depth perception. One eye. Flying, shooting — I'll be aiming at three of everything. Have you got a dragon that's slower? Or a smaller sky?\"",
-		"choices": SACRIFICE_OPTIONS,
-	},
-	"sacrifice_renegade_lair_3": {
-		"title": "Garreth the Outcast — Three of Everything",
-		"image": "res://assets/story/sacrifice_renegade_lair.svg",
-		"tint": Color(0.32, 0.26, 0.28),
-		"text": "Garreth has been practising with a bow for an hour. He has hit the wall, the ceiling, the hoard and — once, terrifyingly — your shadow. \"It's the eye,\" he growls. \"Three of everything.\" He lowers the bow and, for the first time, sounds tired rather than hard. \"Thing is, dragon, nobody's ever offered me anything but a rope. Don't let me fail at the one offer I got.\"",
-		"choices": SACRIFICE_OPTIONS,
+		"text": "\"My price. The village that tied me up sent its sons to watch me die from behind the hedges. Ten of their farmers, dragon. Ten, within five minutes of me climbing up. I'll miss half my arrows, but I won't miss that count. Pay it and I stay, and the grudge goes into your fire. Don't, and I walk back down that road and finish it with my hands.\"",
+		"choices": SACRIFICE_PACT,
 	},
 	# --- sacrifice outcomes (2026-11-14): close the loop plainly ---
 	"sacrifice_defiant_outcome_lair": {
@@ -634,10 +643,10 @@ const STORIES := {
 		"choices": ["Lick your lips."],
 	},
 	"sacrifice_devout_outcome_lair": {
-		"title": "Sister Aldith — Divine Aim",
+		"title": "Sister Aldith — The Candle Rider",
 		"image": "res://assets/story/sacrifice_devout_lair.svg",
 		"tint": Color(0.28, 0.32, 0.40),
-		"text": "She closes her eyes, draws the bow, and looses an arrow that splits a candle wick at forty paces. Opens her eyes. Stares at it. \"…The gods,\" she says faintly, \"have a sense of humour.\" She climbs aboard murmuring a prayer for whoever she shoots first.",
+		"text": "She sets the bow down on the hoard very gently, the way one lays down a sleeping child, and climbs aboard with her candles and nothing else. \"I shall not shoot,\" she informs the heavens. \"I shall mend, and I shall pray, and if a soldier comes I shall look at him in a deeply disappointed manner.\" Her palm rests warm on your neck. \"Lead on, great wyrm. The fen first.\"",
 		"choices": ["Onward."],
 	},
 	"sacrifice_devout_outcome_eat": {
@@ -648,10 +657,10 @@ const STORIES := {
 		"choices": ["Lick your lips."],
 	},
 	"sacrifice_brute_outcome_lair": {
-		"title": "Horrik Bearhug — Big Bow",
+		"title": "Horrik Bearhug — No Strings",
 		"image": "res://assets/story/sacrifice_brute_lair.svg",
 		"tint": Color(0.32, 0.30, 0.26),
-		"text": "You find him the biggest bow in the hoard. He bends it like a twig and grins. \"…Alright. ALRIGHT. I like this.\" He mounts, and you sag a little. Neither of you mentions it. \"Tell the bear I got a dragon!\"",
+		"text": "He leaves the bows where they lie and climbs aboard with a grunt, and you sag a little. Neither of you mentions it. He wraps both arms round your neck like a man hugging a bear he is fond of. \"No strings,\" he says happily. \"Anything comes up here, I punch it. Anything comes at you, it hits me first.\" A pause. \"When's lunch?\"",
 		"choices": ["Onward."],
 	},
 	"sacrifice_brute_outcome_eat": {
@@ -679,7 +688,7 @@ const STORIES := {
 		"title": "Garreth the Outcast — Vengeance Takes Wing",
 		"image": "res://assets/story/sacrifice_renegade_lair.svg",
 		"tint": Color(0.32, 0.26, 0.28),
-		"text": "He squints down the arrow with his one good eye, looses, and pins a fleeing rat to the wall. \"…Huh.\" He mounts up, and for the first time in years the exile smiles. \"Three kingdoms,\" he says, \"are about to have a very bad day.\"",
+		"text": "He looses one last arrow at a rat on the wall. It misses the rat, the wall and, narrowly, you. \"…Huh.\" He slings the bow anyway and climbs up behind your horns, and for the first time in years the exile smiles. \"Doesn't matter where the arrows go,\" he says. \"I know where WE'RE going.\"",
 		"choices": ["Onward."],
 	},
 	"sacrifice_renegade_outcome_eat": {
@@ -1010,7 +1019,7 @@ const STORIES := {
 		"title": "Greater Flame",
 		"image": "res://assets/story/story_greater_flame.svg",
 		"tint": Color(0.34, 0.08, 0.04),
-		"text": "The second wave is marching when the tome begins to burn against your heart. It falls open on its own, pages flipping in a wind that isn't there, and stops at a spell written in a hand like flame: GREATER FLAME. Queen Ysolde's voice fills your head, clear as a bell after a hundred years of silence. \"They came with choirs and iron, daughter. Answer them as I could not.\" Your breath catches fire. It leaves you twice as far as ever before, and where it touches the earth, the earth keeps burning.\n\n(Greater Flame: your breath reaches twice as far and leaves fire on the ground for 5 seconds. Anyone who walks into it dies.)",
+		"text": "The second wave is marching when the tome you retrieved from the temple begins to burn against your heart. It falls open on its own, pages flipping in a wind that isn't there, and stops at a spell written in a hand like flame: GREATER FLAME. Queen Ysolde's voice fills your head, clear as a bell after a hundred years of silence. \"They came with choirs and iron, daughter. Answer them as I could not.\" Your breath catches fire. It leaves you twice as far as ever before, and where it touches the earth, the earth keeps burning.\n\n(Gained Greater Flame. Anyone who walks into it dies.)",
 		"choices": ["Answer them."],
 	},
 	# --- the aftermath: glade, deer, the Prince; the invasion + endings (2026-11-15) ---
@@ -1147,6 +1156,15 @@ const STORIES := {
 	# The rider's fall (2026-11-16): the rider takes the boss's killing
 	# blow; the dragon lives, +2 flames, vengeful (Dragon._rider_takes_the_hit).
 	# GameManager appends the rider's own last words as the note.
+	# The pact unpaid (2026-11-16): the rider leaves; GameManager appends
+	# the rider's own parting words (RiderPacts.PACTS[...]["parting"]).
+	"rider_pact_broken": {
+		"title": "The Broken Pact",
+		"image": "res://assets/story/story_rider.svg",
+		"tint": Color(0.22, 0.2, 0.26),
+		"text": "A pact is only words until the day it is not kept. Then it is the weight of a saddle with no one in it.",
+		"choices": ["Let them go."],
+	},
 	"rider_fall_wizard": {
 		"title": "The Empty Saddle",
 		"image": "res://assets/story/story_rider.svg",
@@ -1200,7 +1218,7 @@ var current_kind: String = ""
 ## the deed actually did — the flame gained, who waits in the lair).
 const SETTINGS_KEYS := preload("res://scripts/ui/SettingsMenu.gd")   # {key:action} → bound key
 
-func open(kind: String, note: String = "") -> void:
+func open(kind: String, note: String = "", lead: String = "") -> void:
 	var story: Variant = STORIES.get(kind)
 	if story == null:
 		story_close_requested.emit()
@@ -1214,7 +1232,8 @@ func open(kind: String, note: String = "") -> void:
 	else:
 		image_rect.texture = null
 	_show_animation(str(STORIES[kind].get("animation", "")))
-	text_label.text = SETTINGS_KEYS.with_keys(STORIES[kind]["text"] + ("\n\n" + note if note != "" else ""))
+	text_label.text = SETTINGS_KEYS.with_keys((lead + "\n\n" if lead != "" else "")
+		+ STORIES[kind]["text"] + ("\n\n" + note if note != "" else ""))
 	_rebuild_choices(STORIES[kind]["choices"])
 	# One-answer chapters (meals, outcome reports) just continue.
 	var count: int = STORIES[kind]["choices"].size()
