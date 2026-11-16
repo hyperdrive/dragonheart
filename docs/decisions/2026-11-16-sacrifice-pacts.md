@@ -68,5 +68,5 @@ show it as a warning in the notice."
 
 - Warnings end with "Break it and <name> leaves" unless the rider is devoted.
 - While a warning is due, the pact chip turns red, and it pulses when the warning appears.
-- A fresh warning holds the message line for 2.5 s. Bonus and info notices skip that window, and plain game messages wait it out (`HUD.show_message`).
+- **Rolling window** (user: "make the notifications into a rolling window so that we see the last 4 notices"): the HUD's message line is now a log of the last four lines (`HUD._log`), newest at the bottom, older ones fading (alpha 1 / .86 / .74 / .62). Each line has a dark backing and leaves when its own time is up; a fifth pushes the oldest out; the same text again refreshes its line. Notices and plain messages share it, so the earlier "a warning holds the line for 2.5 s" rule was dropped.
 - Frequent bonuses are throttled per kind.

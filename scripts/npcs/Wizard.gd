@@ -246,6 +246,14 @@ func catch_fire() -> void:
 	print("The wards shatter — the wizard is ablaze!")
 	super.catch_fire()
 
+## Any wound shows his true face (2026-11-16, the hag's bargain: "wizard
+## should be able to take damage for this to trigger"): claws, fire, a
+## rider's arrow — the kind old man turns the moment he is hurt.
+func _on_damaged(dealt: int, type: Damage.Type, source: String) -> void:
+	super._on_damaged(dealt, type, source)
+	if phase == Phase.KIND and is_alive and health > 0:
+		turn_evil()
+
 func _physics_process(delta: float) -> void:
 	if phase == Phase.TURNING and is_alive:
 		_tick_turn(delta)

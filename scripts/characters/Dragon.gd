@@ -459,7 +459,8 @@ func _soldier_in_strike_reach() -> BaseNPC:
 		return null
 	var best: BaseNPC = null
 	var best_dist := INF
-	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer", "invaders", "adventurers", "wolves"]:
+	# + the wizard (2026-11-16): the hag's bargain asks you to bite him
+	for group: String in ["soldiers", "goblins", "hag", "dragon_slayer", "invaders", "adventurers", "wolves", "wizard"]:
 		for node: Node in get_tree().get_nodes_in_group(group):
 			var npc := node as BaseNPC
 			if npc == null or not npc.is_alive:

@@ -768,14 +768,23 @@ func _on_chapter_choice(kind: String, choice_index: int) -> void:
 			_pending_story_kind = "hag_tea_warning"
 		"hag_tea_warning":
 			story_flags["hag_tea_done"] = true
-			_pending_story_kind = "hag_spared" if choice_index == 0 else "hag_unmasked"
-		"hag_spared":
+			if choice_index == 1:
+				_pending_story_kind = "hag_unmasked"
+			else:
+				# the bargain needs a living wizard to kill
+				_pending_story_kind = "hag_spared" if _bargain_wizard() != null else "hag_spared_late"
+		"hag_spared", "hag_spared_late":
+			# The hag's bargain (2026-11-16): sworn, the sand-glass turns —
+			# five minutes to wound and kill Ambrose; refused, nothing is
+			# forced (he stays kind until something else turns him).
 			var wm := world_manager as WorldManager
-			if wm != null:
-				if wm.hag_alive():
-					wm.fen_hag.befriend()
-				wm.force_wizard_turn()
-			_hud_message("Ambrose Fairweather waits in his tower. Press %s to wake the dragon." % SETTINGS_SCRIPT.key_name("shapeshift"), 6.0)
+			if wm != null and wm.hag_alive():
+				wm.fen_hag.befriend()
+			var hint := "Press %s to wake the dragon." % SETTINGS_SCRIPT.key_name("shapeshift")
+			if kind == "hag_spared" and choice_index == 0 and _begin_hag_bargain(" " + hint):
+				pass   # the bargain's notice carries the hint
+			else:
+				_hud_message(hint, 6.0)
 		"hag_unmasked":
 			# she was attacked during the visit: she knows the girl's face now
 			story_flags["hag_attacked_at_house"] = true
@@ -791,6 +800,43 @@ func _on_chapter_choice(kind: String, choice_index: int) -> void:
 			_pending_story_kind = "hag_book_lorindel_2"
 		"hag_book_lorindel_2":
 			story_flags["lorindel_read"] = true
+
+# --- the hag's bargain (2026-11-16) ---------------------------------------------
+
+const HAG_PACT_SCRIPT := preload("res://scripts/systems/HagPact.gd")
+## Seconds after the killing blow before the gift is told (the wizard's
+## death show plays first; the finale's wedding waits longer).
+const HAG_GIFT_DELAY := 3.8
+var hag_pact: Node = null
+
+## The living tower wizard (spawned if he has not been yet), or null.
+func _bargain_wizard() -> Wizard:
+	var wm := world_manager as WorldManager
+	if wm == null or wizard_dead:
+		return null
+	wm._ensure_tower_wizard()
+	var wiz := wm.tower_wizard
+	return wiz if wiz != null and is_instance_valid(wiz) and wiz.is_alive else null
+
+func _begin_hag_bargain(hint: String = "") -> bool:
+	var wiz := _bargain_wizard()
+	if wiz == null or hag_pact != null:
+		return false
+	hag_pact = HAG_PACT_SCRIPT.new()
+	hag_pact.name = "HagPact"
+	add_child(hag_pact)
+	hag_pact.connect("kept", _on_hag_bargain_kept)
+	hag_pact.connect("lapsed", func() -> void: hag_pact = null)
+	hag_pact.call("begin", self, wiz, hint)
+	return true
+
+## Ambrose died in time: the hag grants a child; the ending changes.
+func _on_hag_bargain_kept() -> void:
+	hag_pact = null
+	story_flags["hag_child"] = true
+	print("GameManager: the hag's bargain is kept — a child is granted")
+	await get_tree().create_timer(HAG_GIFT_DELAY).timeout
+	_open_or_queue("hag_child_granted")
 
 # --- the hag's house + the human shape (2026-11-14) ------------------------------
 
@@ -1422,7 +1468,10 @@ func _on_finale_choice(kind: String) -> void:
 		"ending_peace":
 			_pending_story_kind = "ending_wedding"
 		"ending_wedding":
-			_pending_story_kind = "ending_last_ember"
+			# the hag's gift: she lives until her daughter is born
+			_pending_story_kind = "ending_daughter" if story_flags.has("hag_child") else "ending_last_ember"
+		"ending_daughter":
+			_pending_death_reload = true
 		"ending_last_ember":
 			_pending_death_reload = true   # peace — and a new run
 

@@ -411,8 +411,6 @@ func _breach() -> void:
 const CIVILIAN_NEAR := 70.0
 const RIDER_NAMES := {"defiant": "Brannagh", "courageous": "Ysolde", "cunning": "Vesna",
 	"devout": "Aldith", "brute": "Horrik", "thief": "Corvin", "renegade": "Garreth"}
-## Bonus/info notices yield to a fresh warning for this long (ms).
-const WARNING_HOLD_MS := 2500
 
 var _warned: Array = []          # warning marks already given this window
 var _danger := false             # the chip shows red
@@ -420,17 +418,15 @@ var _fees := 0                   # Vesna's fees, summed per notice
 var _last_notice := {}           # key → ticks (throttle)
 var _warning_at := -100000
 
-## One notice line on the HUD. kind: "bonus" | "warning" | "info". A `key`
-## with a `cooldown` (s) throttles repeats; bonuses and info wait out a
-## fresh warning unless `force`.
+## One notice line on the HUD's rolling log. kind: "bonus" | "warning" |
+## "info". A `key` with a `cooldown` (s) throttles repeats. (`force` is
+## kept for callers; nothing is held back since the log shows four lines.)
 func _notice(kind: String, text: String, duration: float = 3.5, key: String = "",
 		force: bool = false, cooldown: float = 0.0) -> void:
 	if text == "" or gm == null:
 		return
 	var now := Time.get_ticks_msec()
 	if key != "" and now - int(_last_notice.get(key, -1000000)) < int(cooldown * 1000.0):
-		return
-	if kind != "warning" and not force and now - _warning_at < WARNING_HOLD_MS:
 		return
 	if key != "":
 		_last_notice[key] = now

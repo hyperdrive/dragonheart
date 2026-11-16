@@ -30,6 +30,8 @@ func _ready() -> void:
 	# the wizard tower (decision record 2026-11-08-manual-eat-wizard-menu).
 	$UpgradePanel.visible = false
 	$UpgradePanel.process_mode = Node.PROCESS_MODE_DISABLED
+	# the scene's opening hint becomes the log's first line
+	_log(message_label.text, Color.WHITE, 8.0)
 
 ## Called by GameManager._ready (the hub injects itself; signals up, calls down).
 var _dead_label: Label
@@ -38,42 +40,52 @@ func _on_body_count(n: int) -> void:
 	if _dead_label != null:
 		_dead_label.text = "Dead: %d" % n
 
-## The rider's pact (2026-11-16, RiderPacts.gd): the term and its clock,
-## after the body count. Hidden while no pact rides.
-var _pact_label: Label
+## Pact chips (2026-11-16): the rider's pact (RiderPacts.gd) and the
+## hag's bargain (HagPact.gd), each with its term and clock, after the body
+## count. A chip is hidden while its pact is not running; red = in danger.
+var _pact_label: Label            # the rider's chip
+var _chips := {}                  # id → Label
 
 func set_pact_text(text: String, danger: bool = false) -> void:
-	if _pact_label == null:
-		return
-	_pact_label.text = text
-	_pact_label.visible = text != ""
-	_pact_label.add_theme_color_override("font_color",
+	set_chip("rider", text, danger)
+
+func set_chip(id: String, text: String, danger: bool = false) -> void:
+	var chip: Label = _chips.get(id)
+	if chip == null:
+		if _dead_label == null or text == "":
+			return
+		chip = Label.new()
+		chip.add_theme_font_size_override("font_size", 15)
+		var after: Node = _dead_label
+		for other: Label in _chips.values():
+			after = other
+		after.add_sibling(chip)
+		_chips[id] = chip
+		if id == "rider":
+			_pact_label = chip
+	chip.text = text
+	chip.visible = text != ""
+	chip.add_theme_color_override("font_color",
 		NOTICE_COLORS["warning"] if danger else Color(0.95, 0.78, 0.45))
 
 ## Pact notices (2026-11-16, user: "If you are granted a bonus, show it in
 ## a notice. If you are close to breaking the pact - show it as a warning"):
-## the message line in the notice's colour; a warning also pulses the
-## pact chip. Plain show_message calls go back to white.
+## a line in the notice's colour; a warning also pulses the pact chips.
+## Plain show_message lines are white.
 const NOTICE_COLORS := {
 	"bonus": Color(0.62, 1.0, 0.55),
 	"warning": Color(1.0, 0.42, 0.3),
 	"info": Color(0.98, 0.86, 0.6),
 }
 
-## A fresh warning holds the line this long (ms): plain messages that
-## arrive meanwhile wait their turn instead of wiping it.
-const WARNING_HOLD_MS := 2500
-var _warning_hold_until := 0
-
 func show_notice(text: String, kind: String = "info", duration: float = 3.5) -> void:
-	_show_now(text, duration)
+	_log(text, NOTICE_COLORS.get(kind, Color.WHITE), duration)
 	if kind == "warning":
-		_warning_hold_until = Time.get_ticks_msec() + WARNING_HOLD_MS
-	message_label.add_theme_color_override("font_color", NOTICE_COLORS.get(kind, Color.WHITE))
-	if kind == "warning" and _pact_label != null and _pact_label.visible:
-		var tween := create_tween()
-		tween.tween_property(_pact_label, "scale", Vector2(1.15, 1.15), 0.12)
-		tween.tween_property(_pact_label, "scale", Vector2.ONE, 0.25)
+		for chip: Label in _chips.values():
+			if chip.visible:
+				var tween := create_tween()
+				tween.tween_property(chip, "scale", Vector2(1.15, 1.15), 0.12)
+				tween.tween_property(chip, "scale", Vector2.ONE, 0.25)
 
 func bind_manager(mgr: GameManager) -> void:
 	game_manager = mgr
@@ -97,11 +109,6 @@ func bind_manager(mgr: GameManager) -> void:
 	_dead_label.add_theme_color_override("font_color", Color(0.85, 0.7, 0.62))
 	wings_label.add_sibling(_dead_label)
 	mgr.body_count_changed.connect(_on_body_count)
-	_pact_label = Label.new()
-	_pact_label.add_theme_font_size_override("font_size", 15)
-	_pact_label.add_theme_color_override("font_color", Color(0.95, 0.78, 0.45))
-	_pact_label.visible = false
-	_dead_label.add_sibling(_pact_label)
 	_on_body_count(mgr.body_count.size())
 	# Dragon health/flame/shield chips (take_damage/_try_eat_at_pen emit).
 	var dragon_ref := mgr.dragon
@@ -248,25 +255,112 @@ func show_upgrade_available() -> void:
 	show_message("Upgrades: visit the wizard's tower!")
 
 func show_message(text: String, duration: float = 3.0) -> void:
-	var wait := _warning_hold_until - Time.get_ticks_msec()
-	if wait > 0:
-		await get_tree().create_timer(wait / 1000.0).timeout
-	_show_now(text, duration)
+	_log(text, Color.WHITE, duration)
 
-func _show_now(text: String, duration: float) -> void:
-	message_label.remove_theme_color_override("font_color")
-	message_label.text = text
+## The rolling message window (2026-11-16, user: "make the notifications
+## into a rolling window so that we see the last 4 notices"): the newest
+## line at the bottom, older ones above it, fading with age; each line
+## leaves when its own time is up, and a fifth pushes the oldest out. The
+## same text again just refreshes its line. Replaces the single
+## MessageLabel (hidden; its spot and style are kept).
+const LOG_LINES := 4
+const LOG_AGE_ALPHA: Array[float] = [1.0, 0.86, 0.74, 0.62]   # newest → oldest
+var _log_box: VBoxContainer
+
+func _ensure_log() -> void:
+	if _log_box != null:
+		return
+	_log_box = VBoxContainer.new()
+	_log_box.name = "MessageLog"
+	_log_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_log_box.alignment = BoxContainer.ALIGNMENT_END
+	_log_box.add_theme_constant_override("separation", 2)
+	add_child(_log_box)
+	_log_box.anchor_left = 0.0
+	_log_box.anchor_right = 1.0
+	_log_box.anchor_top = 1.0
+	_log_box.anchor_bottom = 1.0
+	_log_box.offset_left = message_label.offset_left
+	_log_box.offset_right = message_label.offset_right
+	_log_box.offset_bottom = message_label.offset_bottom
+	_log_box.offset_top = message_label.offset_bottom - 30.0 * LOG_LINES
+	_log_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	message_label.visible = false
+
+func _log(text: String, color: Color, duration: float) -> void:
+	if text == "":
+		return
+	_ensure_log()
+	var line: Label = null
+	var count := _log_box.get_child_count()
+	if count > 0:
+		var newest := _log_box.get_child(count - 1) as Label
+		if newest.text == text and not newest.is_queued_for_deletion():
+			line = newest   # the same news again: refresh it
+	if line == null:
+		line = Label.new()
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.add_theme_font_size_override("font_size", 17)
+		line.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+		line.add_theme_constant_override("shadow_offset_x", 1)
+		line.add_theme_constant_override("shadow_offset_y", 2)
+		line.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		var back := StyleBoxFlat.new()   # a faint backing: readable over the map
+		back.bg_color = Color(0.05, 0.04, 0.03, 0.6)
+		back.set_corner_radius_all(4)
+		back.content_margin_left = 8
+		back.content_margin_right = 8
+		back.content_margin_top = 1
+		back.content_margin_bottom = 1
+		line.add_theme_stylebox_override("normal", back)
+		line.text = text
+		_log_box.add_child(line)
+		while _log_box.get_child_count() > LOG_LINES:
+			var oldest := _log_box.get_child(0)
+			_log_box.remove_child(oldest)
+			oldest.queue_free()
+	line.add_theme_color_override("font_color", color)
+	if line.has_meta("fade"):
+		var fading := line.get_meta("fade") as Tween
+		if fading != null and fading.is_valid():
+			fading.kill()   # refreshed while leaving: it stays
+		line.remove_meta("fade")
+	message_label.text = text          # the newest line (probes and old callers read it)
+	var stamp := Time.get_ticks_msec()
+	line.set_meta("stamp", stamp)
+	_restyle_log()
 	await get_tree().create_timer(duration).timeout
-	if message_label.text == text:
-		_update_stats()
+	if is_instance_valid(line) and int(line.get_meta("stamp", 0)) == stamp and line.get_parent() == _log_box:
+		var tw := line.create_tween()
+		line.set_meta("fade", tw)
+		tw.tween_property(line, "modulate:a", 0.0, 0.4)
+		tw.tween_callback(func() -> void:
+			if is_instance_valid(line) and int(line.get_meta("stamp", 0)) == stamp:
+				line.queue_free()
+				_restyle_log.call_deferred())
+
+## Older lines fade back so the newest reads first.
+func _restyle_log() -> void:
+	if _log_box == null:
+		return
+	var lines := _log_box.get_children().filter(func(n: Node) -> bool: return not n.is_queued_for_deletion())
+	for k in lines.size():
+		var age := lines.size() - 1 - k
+		(lines[k] as Label).modulate.a = LOG_AGE_ALPHA[mini(age, LOG_AGE_ALPHA.size() - 1)]
+
+## Every line still on screen, oldest first (probes).
+func log_lines() -> Array:
+	var out: Array = []
+	if _log_box != null:
+		for n: Node in _log_box.get_children():
+			if not n.is_queued_for_deletion():
+				out.append((n as Label).text)
+	return out
 
 func _on_victory(tally: Dictionary) -> void:
-	message_label.text = "VICTORY! Time %ds — stolen %dg/%dgems — fire Lv%d, scales Lv%d" % [
+	show_notice("VICTORY! Time %ds — stolen %dg/%dgems — fire Lv%d, scales Lv%d" % [
 		int(tally["time_survived"]), tally["gold_stolen"], tally["gems_stolen"],
-		tally["fire_level"], tally["scales_level"]]
-
-func _update_stats() -> void:
-	message_label.text = ""
+		tally["fire_level"], tally["scales_level"]], "bonus", 12.0)
 
 # --- minimap (MinimapPanel below; GameManager pushes per-frame dragon dots) ---
 

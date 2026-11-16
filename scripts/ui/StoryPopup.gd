@@ -764,12 +764,29 @@ const STORIES := {
 		"text": "She refills your cup with a hand that has too many knuckles. \"Listen, little ember, for nobody else will tell you true. You didn't wake in that chamber by chance. Ambrose Fairweather sang you up out of the dark with a dead tongue and a stolen circle. He wanted the heart of Lorindel in a jar, and what you found bleeding in the ash was what the singing cost him.\" She taps your chest, right where it burns. \"He doesn't want your gold, dearie. He never did.\" She does not say where a hedge-wizard learned a dead tongue. The cat watches you with eyes the same yellow as hers.",
 		"choices": ["Spare her. The wizard dies.", "Nice try, hag. YOU die."],
 	},
+	# The hag's bargain (2026-11-16): sworn, five minutes on her sand-glass
+	# to wound Ambrose (it turns him) and kill him; the prize is a child
+	# (HagPact.gd). "hag_spared_late": the wizard is already dead.
 	"hag_spared": {
-		"title": "The Hag's Blessing",
+		"title": "The Hag's Bargain",
 		"image": "res://assets/story/story_hag_tea.svg",
 		"tint": Color(0.20, 0.16, 0.18),
-		"text": "Mother Grisla smiles a smile that is mostly gums and only a little teeth. \"Good girl. Clever girl.\" She presses a warm biscuit into your hand for the road. \"Wear the dragon when you get there; men like Ambrose only respect teeth. And when he's dead, dearie... bring me back what's left. The heart especially. Waste not.\" Far to the east a tower window flares violet, then goes dark. He knows. He has been counting your heartbeats since the night he woke them. So, you begin to suspect, has she.",
-		"choices": ["Go. Hunt the wizard."],
+		"text": "Mother Grisla smiles a smile that is mostly gums and only a little teeth. \"Good girl. Clever girl. Now, a bargain between women.\" She sets a little sand-glass on the table and keeps one crooked finger on top of it. \"Ambrose sits in his tower thinking he's safe. Go and bite him, dearie. Hurt him, and he'll show you his true face. Then finish him before the last grain falls. Five minutes, no more.\" Her yellow eyes drop to your belly and stay there. \"Do that, and old Grisla gives you what no tower and no prince ever could: a child of your own. A daughter, with your fire in her. Dawdle, and the sand runs out, and so does my generosity.\"",
+		"choices": ["Swear it. Turn the glass.", "No bargains. Just go."],
+	},
+	"hag_spared_late": {
+		"title": "The Hag's Shrug",
+		"image": "res://assets/story/story_hag_tea.svg",
+		"tint": Color(0.20, 0.16, 0.18),
+		"text": "Mother Grisla cocks her head. \"Dead already, is he? The old fool.\" She sounds almost sorry, the way a cook is sorry about a burnt pie. \"Pity. I'd have paid you well for that, dearie. Better than gold.\" She presses a warm biscuit into your hand for the road and does not say what the payment would have been. The cat does. It looks at your belly, and then at you, and then it goes back to sleep.",
+		"choices": ["Go."],
+	},
+	"hag_child_granted": {
+		"title": "The Hag's Gift",
+		"image": "res://assets/story/story_hag_tea.svg",
+		"tint": Color(0.30, 0.20, 0.16),
+		"text": "Somewhere far to the west, in a fen, the last grain of sand never falls: an old woman's crooked finger stops the glass. You feel it before you understand it. Under your heart, beside the ember, a second warmth has kindled, small and steady and not your own. Mother Grisla's laugh comes to you on the wind, like a kettle starting to sing. \"A bargain's a bargain, little ember. Look after her.\"\n\n(The hag's gift: a child. The end of your story will change.)",
+		"choices": ["Lay a hand over the warmth."],
 	},
 	"hag_unmasked": {
 		"title": "The Mask Slips",
@@ -1144,6 +1161,15 @@ const STORIES := {
 		"tint": Color(0.44, 0.32, 0.20),
 		"text": "With its purpose fulfilled, the dragon’s inner fire fades. Its enormous body crumbles to dust, leaving only a single dragon heart behind.\n\nA tragic end? Not quite.\nThe land prospers, peace endures, and for a hundred years no new monsters are born.",
 		"choices": ["Rest."],
+	},
+	# The hag's gift kept (2026-11-16): after the wedding she lives until
+	# her daughter is born, then the ember dies (replaces ending_last_ember).
+	"ending_daughter": {
+		"title": "Ysolde",
+		"image": "res://assets/story/story_glade.svg",
+		"tint": Color(0.44, 0.34, 0.22),
+		"text": "The ember dims, but it does not go out. It holds on, the way the hag promised, through a winter and a spring, low and stubborn beside the second warmth under your heart.\n\nOn the first warm night of summer, in the glade under the birches, you give birth to a daughter with Aurel's grin and your eyes: gold, with a slit of black. You name her Ysolde, after the queen whose voice woke in the tome.\n\nYou hold her until morning. Then your ember goes out, gently, like a candle that has finished its work. Aurel keeps your heart in a box of birchwood. Ysolde keeps your fire.",
+		"choices": ["Hold her until morning."],
 	},
 	"ending_prince_falls": {
 		"title": "The Prince Falls",
