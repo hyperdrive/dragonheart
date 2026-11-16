@@ -15,6 +15,8 @@ signal flame_charges_changed(charges: int, max_charges: int)
 signal eat_refused(what: String)
 signal shield_changed(points: int)
 signal rider_upgraded
+## The rider took a killing blow for the dragon (rider_takes_the_hit).
+signal rider_fell(killer: String, personality: String)
 ## The dragon changed shape (T, once the fen hag's tea taught her how).
 signal form_changed(human: bool)
 
@@ -53,6 +55,12 @@ var _chip_seconds: Variant = null
 ## Rider system (2026-11-11): when a sacrifice is trained and upgraded,
 ## the dragon gets a composite sprite and rider combat ability.
 var has_rider: bool = false
+## Who rides (a sacrifice personality: "defiant", "brute", …), set by
+## GameManager when the rider is trained; names the rider's last words.
+var rider_personality: String = ""
+## After the rider's fall: a short breath of grace (s) so the very next
+## bolt doesn't undo the sacrifice. Ticks only while the world runs.
+var _rider_grace: float = 0.0
 ## Rider arrow reach (archer-like, deliberately NOT fire_reach).
 @export var rider_range: float = 260.0
 
@@ -191,6 +199,8 @@ func _physics_process(delta: float) -> void:
 	if _dying:
 		velocity = Vector2.ZERO
 		return
+	if _rider_grace > 0.0:
+		_rider_grace -= delta
 	if fire_cooldown > 0.0:
 		fire_cooldown -= delta
 	if _speed_boost_left > 0.0:
@@ -694,6 +704,8 @@ func take_damage(amount: int, type: Damage.Type = Damage.Type.WEAPON,
 		killer: String = "", bypass_shield: bool = false) -> void:
 	if _dying or human_form:
 		return   # the farm girl is untouchable (user: "invincibility mode")
+	if _rider_grace > 0.0:
+		return   # the rider just died for this breath
 	# Who came for the dragon's last hoard? The death chapter names the
 	# slayer (2026-11-09 user: "take into account which NPC killed it").
 	if killer != "":
@@ -710,10 +722,40 @@ func take_damage(amount: int, type: Damage.Type = Damage.Type.WEAPON,
 		shield_changed.emit(shield_points)
 		print("Shield absorbed %d damage (%d shield left)!" % [
 			absorbed, shield_points])
+	if incoming >= health and _rider_takes_the_hit(type, killer):
+		return
 	health -= incoming
 	health_changed.emit(health)
 	if health <= 0:
 		die()
+
+## The rider's sacrifice (2026-11-16, user: "When dragon is about to die
+## from lightning or the sword storm, open a story popup where the
+## dragonrider takes the hit instead. Dragon is now without a dragon rider
+## but survives to fight again. Dragon also gains two charges as she gets
+## vengeful."). Only the bosses' great blows — the wizard's lightning, the
+## King's sword storm (both MAGIC) — and only when they would kill. The
+## blow is spent on the rider: no damage, the rider is gone, +2 flames
+## (capacity, arriving loaded — the wizard's "+2 Flames"), and a breath of
+## grace. GameManager opens the chapter (rider_fell).
+const RIDER_GRACE := 2.0
+const VENGEFUL_FLAMES := 2
+
+func _rider_takes_the_hit(type: Damage.Type, killer: String) -> bool:
+	if not has_rider or type != Damage.Type.MAGIC or not killer in ["wizard", "king"]:
+		return false
+	var who := rider_personality
+	has_rider = false
+	rider_personality = ""
+	rider_fire_mult = 1.0
+	var pivot := sprite.get_node_or_null("RiderPivot") if sprite != null else null
+	if pivot != null:
+		pivot.queue_free()
+	increase_flame_capacity(VENGEFUL_FLAMES)
+	_rider_grace = RIDER_GRACE
+	print("Dragon: the rider takes the %s's killing blow — the saddle is empty" % killer)
+	rider_fell.emit(killer, who)
+	return true
 
 # --- flight (2026-11-09, user spec: Q, 3s fast flight, 5s recharge) ------------
 

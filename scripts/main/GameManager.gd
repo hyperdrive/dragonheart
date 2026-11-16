@@ -304,6 +304,28 @@ func queue_followup_story(kind: String) -> void:
 	else:
 		story_queue.append(kind)
 
+## The rider took the boss's killing blow (Dragon._rider_takes_the_hit):
+## the chapter of the fall, with the rider's own last words. Can happen
+## again with the next rider, so it is not once-per-run.
+const RIDER_LAST_WORDS := {
+	"defiant": "\"Don't you dare die after this,\" Brannagh spits through the smoke. \"I'd never forgive you.\"",
+	"courageous": "\"Fly, old girl,\" Ysolde says, steady to the last. \"I was never afraid of you. Not once.\"",
+	"cunning": "\"Well,\" Vesna laughs, thin as paper, \"that's the first bargain I ever lost on purpose.\"",
+	"devout": "Sister Aldith's lips move in a prayer, and the dragon understands, too late, that it is a prayer for her.",
+	"brute": "Horrik grins with red teeth. \"Told you,\" he rumbles. \"Bear hug. Best there is.\"",
+	"thief": "\"Stole that one from you,\" Corvin whispers. \"Your death. Keep the change.\"",
+	"renegade": "\"Exiled from everywhere,\" Garreth says, \"except here. Here I belonged.\"",
+}
+
+func _on_rider_fell(killer: String, personality: String) -> void:
+	var kind := "rider_fall_king" if killer == "king" else "rider_fall_wizard"
+	var note: String = RIDER_LAST_WORDS.get(personality, "")
+	story_shown[kind] = true
+	if story_open or get_tree().paused:
+		queue_followup_story(kind)
+		return
+	_open_story_now(kind, note)
+
 ## Show epic story when rider is upgraded
 func _on_rider_upgraded() -> void:
 	print("GameManager: Rider upgraded, showing epic story")
@@ -386,6 +408,7 @@ func _ready() -> void:
 	if dragon != null and dragon.has_signal("rider_upgraded") \
 			and not dragon.rider_upgraded.is_connected(_on_rider_upgraded):
 		dragon.rider_upgraded.connect(_on_rider_upgraded)
+		dragon.rider_fell.connect(_on_rider_fell)
 	emit_signal("gold_changed", treasury["gold"])
 	emit_signal("food_changed", food)
 	_build_color_grade()
@@ -1026,6 +1049,7 @@ func purchase_upgrade(kind: String) -> bool:
 				dragon_ref.call("upgrade_rider")
 				# Brannagh the Defiant shoots out of pure spite: 1.5x faster.
 				dragon_ref.set("rider_fire_mult", 1.5 if _trainable_personality == "defiant" else 1.0)
+				dragon_ref.set("rider_personality", _trainable_personality)
 				_trainable_sacrifice = false  # consumed
 				_trainable_personality = ""
 			else:
@@ -1190,13 +1214,25 @@ func on_usurper_slain() -> void:
 		_open_or_queue("usurper_falls_quiet")
 
 ## The evil wizard is dead (or long dead): the wedding — and the last ember.
-func on_wizard_slain() -> void:
+## Slain in the finale he dies in lightning and fire (WizardDeathFX); then
+## nothing for 5 s (user, 2026-11-16: "Then nothing for 5s. Only after the
+## pause is the wedding declared"); then "ending_peace" — every threat gone,
+## the wedding declared — and the wedding itself. Long dead (the quiet
+## path, `delay` 0): the declaration at once.
+const WIZARD_FX_SCRIPT := preload("res://scripts/fx/WizardDeathFX.gd")
+const FINALE_SILENCE := 5.0
+
+func on_wizard_slain(delay: float = -1.0) -> void:
 	if phase != Phase.RECKONING:
 		return
 	_set_phase(Phase.ENDED)
 	run_finished = true
-	_open_or_queue("ending_wedding")
 	victory_achieved.emit(_victory_tally())
+	if delay < 0.0:
+		delay = WIZARD_FX_SCRIPT.DURATION + FINALE_SILENCE
+	if delay > 0.0:
+		await get_tree().create_timer(delay).timeout
+	_open_or_queue("ending_peace")
 
 func notify_prince_died() -> void:
 	if phase == Phase.INVASION or phase == Phase.RECKONING:
@@ -1217,7 +1253,9 @@ func invasion_lost(reason: String = "townsfolk") -> void:
 func _on_finale_choice(kind: String) -> void:
 	match kind:
 		"usurper_falls_quiet":
-			on_wizard_slain()
+			on_wizard_slain(0.0)
+		"ending_peace":
+			_pending_story_kind = "ending_wedding"
 		"ending_wedding":
 			_pending_story_kind = "ending_last_ember"
 		"ending_last_ember":

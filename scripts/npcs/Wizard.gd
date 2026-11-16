@@ -310,7 +310,7 @@ func bolt_origin() -> Vector2:
 ## (the bolt IS a lightning strike), the recharge is the only relief. Fires
 ## the instant he is in range, then every 2s.
 func _tick_lightning(delta: float) -> void:
-	if _lightning_left > 0.0:
+	if _lightning_left > 0.0 or not is_alive:
 		return
 	var dragon := get_tree().get_first_node_in_group("dragon_threat") as Node2D
 	if dragon == null or not is_instance_valid(dragon):
@@ -385,6 +385,29 @@ func _spawn_bolt(target: Vector2) -> void:
 	flash.add_child(core)
 	var timer := get_tree().create_timer(BOLT_FLASH_S)
 	timer.timeout.connect(flash.queue_free)
+
+## A spectacular death (2026-11-16): the sky's own lightning strikes him
+## again and again, then he bursts (WizardDeathFX.gd, which frees him).
+## Like BaseNPC.die — the death is announced at once (npc_died: the tower
+## seals, the finale waits out the show) — but no 2 s corpse timer.
+const DEATH_FX := preload("res://scripts/fx/WizardDeathFX.gd")
+
+func die() -> void:
+	if not is_alive and _death_played:
+		return
+	_death_played = true
+	is_alive = false
+	velocity = Vector2.ZERO
+	if behavior_tree != null:
+		behavior_tree.kill()
+	print(npc_type, " has died — the sky answers")
+	var fx: Node2D = DEATH_FX.new()
+	get_parent().add_child(fx)
+	fx.global_position = global_position
+	fx.call("play", self)
+	npc_died.emit(npc_type)
+
+var _death_played := false
 
 ## No melee at all.
 func _contact_damage(delta: float) -> void:

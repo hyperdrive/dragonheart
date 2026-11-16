@@ -1113,6 +1113,15 @@ const STORIES := {
 		"text": "The usurper goes down in the mud of his own march, and his army breaks like a dam, running for the camp. The town bells ring, for the first time in a hundred years without a hymn in them. No violet storm comes from the east: the man who woke you is already dust, and whatever he wanted died with him. For the first time since the broken altar, there is nothing left to fight.",
 		"choices": ["Go to him."],
 	},
+	# After the wizard's death and five silent seconds (2026-11-16): every
+	# threat gone, the wedding declared; → ending_wedding.
+	"ending_peace": {
+		"title": "A Wedding Is Declared",
+		"image": "res://assets/story/story_glade.svg",
+		"tint": Color(0.30, 0.30, 0.26),
+		"text": "The smoke drifts off toward the hills, and nothing comes out of it. No storm. No hymn. No marching feet.\n\nThe old King lies in his tomb and the usurper in the mud of his own march. The wizard who woke you is scattered ash on the wind, and his tower stands dark and empty. The soldiers have laid down their spears; the goblins have gone back under the mountain; the wolves keep to the wild edges. For the first time in a hundred years, nothing in the realm is hunting anything.\n\nThen the town bells ring, one after another, all the way down the valley. A herald climbs the well in the market square and reads it out twice, because nobody believes it the first time: Prince Aurel will be married in the glade, and the whole realm is invited. Even the dragon. Especially the dragon.",
+		"choices": ["Go to the glade."],
+	},
 	"ending_wedding": {
 		"title": "The Wedding",
 		"image": "res://assets/story/story_glade.svg",
@@ -1135,6 +1144,29 @@ const STORIES := {
 		"choices": ["Let the dark take you."],
 	},
 	# --- rider upgrade story (2026-11-11) ---
+	# The rider's fall (2026-11-16): the rider takes the boss's killing
+	# blow; the dragon lives, +2 flames, vengeful (Dragon._rider_takes_the_hit).
+	# GameManager appends the rider's own last words as the note.
+	"rider_fall_wizard": {
+		"title": "The Empty Saddle",
+		"image": "res://assets/story/story_rider.svg",
+		"tint": Color(0.18, 0.2, 0.32),
+		"text": "The bolt that should have stopped your heart never reaches it. Your rider stands up in the saddle, arms wide, bow flung away, and the lightning finds steel and leather and a beating heart instead of scale. For one instant the rider burns white against the sky. Then they slide from your back into the ash, and the wizard's laugh dies in his throat.\n\nYour heart hammers on. Something in it has turned to iron. Two new fires kindle in your chest, and both of them are hungry for him.",
+		"choices": [
+			"Roar the rider's name until the tower shakes.",
+			"Say nothing. Turn. Burn him.",
+		],
+	},
+	"rider_fall_king": {
+		"title": "The Empty Saddle",
+		"image": "res://assets/story/story_rider.svg",
+		"tint": Color(0.3, 0.18, 0.16),
+		"text": "The storm of swords breaks over you, and over the rider first. They throw themselves flat across your neck, shield-arm raised, and take every falling blade that was meant for your heart. When the steel stops raining, the saddle is empty. Your rider lies in the dust with the King's swords standing around them like a fence.\n\nYou live. The King raises his blade for another storm. Two new fires kindle in your chest, and every one of them has his name on it.",
+		"choices": [
+			"Roar the rider's name over the battlefield.",
+			"Say nothing. Turn. Burn him.",
+		],
+	},
 	"rider_upgraded": {
 		"title": "The Archer's Oath",
 		"image": "res://assets/story/story_rider.svg",
