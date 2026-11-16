@@ -88,6 +88,61 @@ func notify_dragon_death(killer_key: String) -> void:
 	_pending_death_reload = true
 	_open_story_now(DRAGON_DEATH_KINDS.get(killer_key, "dragon_death"))
 
+# --- the body count (2026-11-16) --------------------------------------------------
+
+## The dragon's dead, in order: {name, age, occupation, type, cause}.
+## BaseNPC._report_death → record_kill; BodyCount.gd holds the rules.
+## After the death chapter the roll is read out (BodyCountRoll.gd) before
+## the run ends.
+const BODY_COUNT := preload("res://scripts/systems/BodyCount.gd")
+const ROLL_SCRIPT := preload("res://scripts/ui/BodyCountRoll.gd")
+signal body_count_changed(count: int)
+var body_count: Array[Dictionary] = []
+var _haunting_dead := 0
+var _roll: CanvasLayer = null
+
+func record_kill(npc: Node, source: String, type: int) -> void:
+	var npc_type := str(npc.get("npc_type"))
+	if not BODY_COUNT.counts(npc_type, source):
+		return
+	var who: Dictionary = BODY_COUNT.identity(npc_type)
+	for i in 12:   # one name, one person: re-roll a name already on the roll
+		if not body_count.any(func(w: Dictionary) -> bool: return w["name"] == who["name"]):
+			break
+		who = BODY_COUNT.identity(npc_type)
+	who["cause"] = BODY_COUNT.cause(source, type)
+	body_count.append(who)
+	body_count_changed.emit(body_count.size())
+	print("Body count %d: %s, %d — %s (%s)" % [body_count.size(), who["name"], who["age"],
+		who["occupation"], who["cause"]])
+	var wm := world_manager as WorldManager
+	if wm == null:
+		return
+	if body_count.size() > BODY_COUNT.GRAVEYARD_AFTER:
+		if wm.graveyard == null:
+			wm.spawn_graveyard(body_count.size())
+			_hud_message("So many dead. The town digs a graveyard.", 4.0)
+		else:
+			wm.add_grave(body_count.size())
+	if npc_type in BODY_COUNT.HAUNTING:
+		_haunting_dead += 1
+		if _haunting_dead % BODY_COUNT.GHOST_EVERY == 0:
+			wm.spawn_ghost("%s, %s" % [who["name"], str(who["occupation"]).to_lower()])
+			if wm.graveyard != null:
+				_hud_message("The ghost of %s rises over the graveyard." % who["name"], 4.0)
+
+## The roll of the dead, read out once when the dragon's end has been told.
+## Returns false when it was already shown (the caller goes on).
+func _show_body_roll() -> bool:
+	if _roll != null:
+		return false
+	_roll = ROLL_SCRIPT.new()
+	add_child(_roll)
+	_roll.connect("closed", _run_scene_reload)
+	_roll.call("open", body_count)
+	get_tree().paused = true
+	return true
+
 func _run_scene_reload() -> void:
 	if get_tree() != null and get_tree().current_scene != null:
 		get_tree().reload_current_scene()
@@ -347,7 +402,9 @@ func _on_story_closed() -> void:
 	get_tree().paused = false
 	if _pending_death_reload:
 		_pending_death_reload = false
-		_run_scene_reload()
+		# the dead are named before the world turns over (body count)
+		if not _show_body_roll():
+			_run_scene_reload()
 		return
 	_drain_story_queue()
 
@@ -437,7 +494,7 @@ const BACK_SCENES: Array[String] = ["res://scenes/props/Mountain.tscn",
 ## Trees: the back layer's palette but a gentler hand (user: "stem needs to
 ## be more brownish" — the full grim ramp washed bark to olive-grey).
 const LAND_SCENES: Array[String] = ["res://scenes/props/Tree.tscn",
-	"res://scenes/props/FirTree.tscn"]
+	"res://scenes/props/FirTree.tscn", "res://scenes/props/Graveyard.tscn"]
 const MIDDLE_SCENES: Array[String] = ["res://scenes/props/City.tscn",
 	"res://scenes/objects/WizardTower.tscn", "res://scenes/objects/Mine.tscn",
 	"res://scenes/props/PigPen.tscn", "res://scenes/props/CowPen.tscn",

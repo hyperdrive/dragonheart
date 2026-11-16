@@ -1916,6 +1916,62 @@ func spawn_dragon_temple() -> void:
 	print("WorldManager: the Temple of the Dragon Queen stands at %s" % spot)
 	refresh_ground()
 
+# --- the body count: the graveyard and its ghosts (2026-11-16) ------------------
+
+## More than BodyCount.GRAVEYARD_AFTER dead on the dragon's roll: a small
+## walled graveyard near the town (GameManager.record_kill asks). Every
+## dead gets a headstone. Ghosts raised before it stands wait for it.
+const GRAVEYARD_SCENE_PATH := "res://scenes/props/Graveyard.tscn"
+const GHOST_SCRIPT := preload("res://scripts/npcs/Ghost.gd")
+const GRAVEYARD_RADIUS := 105.0
+var graveyard: Node2D = null
+var _ghosts_waiting: Array[String] = []
+
+func spawn_graveyard(graves: int) -> void:
+	if graveyard != null:
+		return
+	var spot := Vector2.INF
+	for dist: float in [320.0, 400.0, 480.0, 560.0]:
+		for deg: float in [200.0, 160.0, 240.0, 120.0, 280.0, 80.0, 320.0, 40.0, 0.0]:
+			var anchor := _clamp_to_interior(city_position + Vector2.RIGHT.rotated(deg_to_rad(deg)) * dist, GRAVEYARD_RADIUS)
+			if anchor.distance_to(lair_position) < 260.0:
+				continue
+			var free := _terrain_free_position(anchor, GRAVEYARD_RADIUS)
+			if free != Vector2.INF and free.distance_to(lair_position) >= 260.0:
+				spot = free
+				break
+		if spot != Vector2.INF:
+			break
+	if spot == Vector2.INF:
+		spot = _clamp_to_interior(city_position + Vector2(-380.0, 120.0), GRAVEYARD_RADIUS)
+	graveyard = (load(GRAVEYARD_SCENE_PATH) as PackedScene).instantiate() as Node2D
+	graveyard.global_position = spot
+	add_child(graveyard)
+	graveyard.call("set_graves", graves)
+	register_footprint(spot, GRAVEYARD_RADIUS)
+	entity_spawned.emit("terrain", spot)
+	refresh_ground()
+	print("WorldManager: a graveyard is dug at %s — %d graves" % [spot, graves])
+	for who: String in _ghosts_waiting:
+		spawn_ghost(who)
+	_ghosts_waiting.clear()
+
+func add_grave(graves: int) -> void:
+	if graveyard != null and is_instance_valid(graveyard):
+		graveyard.call("set_graves", graves)
+
+## A ghost rises among the graves (or waits until there are graves).
+func spawn_ghost(ghost_of: String) -> void:
+	if graveyard == null or not is_instance_valid(graveyard):
+		_ghosts_waiting.append(ghost_of)
+		return
+	var ghost: Node2D = GHOST_SCRIPT.new()
+	ghost.set("home", graveyard.global_position)
+	ghost.set("ghost_of", ghost_of)
+	ghost.global_position = graveyard.global_position + Vector2(randf_range(-60, 60), randf_range(-30, 30))
+	add_child(ghost)
+	print("WorldManager: the ghost of %s rises over the graveyard" % ghost_of)
+
 # --- the aftermath: the glade, the deer, the Prince (2026-11-15) --------------
 
 ## After the King's last fall (GameManager.begin_aftermath): a glade blooms

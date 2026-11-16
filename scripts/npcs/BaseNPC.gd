@@ -345,7 +345,16 @@ func take_damage(amount: int, type: Damage.Type = Damage.Type.WEAPON,
 	_on_damaged(dealt, type, source)
 	if health <= 0:
 		_burning_left = 0.0   # a body stops running once the fire has killed it
+		_report_death(source, type)
 		die()
+
+## The body count (2026-11-16): the killing blow is reported before die()
+## (subclasses override die(); every death by damage passes here).
+## GameManager.record_kill decides whether it is on the dragon's roll.
+func _report_death(source: String, type: Damage.Type) -> void:
+	var gm := get_tree().get_first_node_in_group("game_manager")
+	if gm != null and gm.has_method("record_kill"):
+		gm.call("record_kill", self, source, int(type))
 
 ## Hook: after HP was lost (still alive or about to die).
 func _on_damaged(_dealt: int, _type: Damage.Type, _source: String) -> void:

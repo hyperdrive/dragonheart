@@ -1113,6 +1113,16 @@ func increase_flame_capacity(amount: int) -> void:
 	flame_charges_changed.emit(int(flame_charges), max_flame_charges)
 	print("Dragon flame capacity +%d (max %d)!" % [amount, max_flame_charges])
 
+## A ghost touched her (Ghost.gd, 2026-11-16): every flame she carries is
+## gone. Returns how many whole flames were drunk.
+func drain_flames() -> int:
+	var drunk := int(flame_charges)
+	if drunk <= 0:
+		return 0
+	flame_charges = 0.0
+	flame_charges_changed.emit(0, max_flame_charges)
+	return drunk
+
 ## Breath reach +px, permanent.
 func increase_flame_range(add_px: float) -> void:
 	fire_reach += add_px

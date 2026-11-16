@@ -32,6 +32,12 @@ func _ready() -> void:
 	$UpgradePanel.process_mode = Node.PROCESS_MODE_DISABLED
 
 ## Called by GameManager._ready (the hub injects itself; signals up, calls down).
+var _dead_label: Label
+
+func _on_body_count(n: int) -> void:
+	if _dead_label != null:
+		_dead_label.text = "Dead: %d" % n
+
 func bind_manager(mgr: GameManager) -> void:
 	game_manager = mgr
 	mgr.treasury_changed.connect(_on_pools_changed)
@@ -48,6 +54,13 @@ func bind_manager(mgr: GameManager) -> void:
 	if world != null and world.has_signal("entity_spawned"):
 		pass  # soldier recount uses the same stream
 	mgr.boss_battle_started.connect(_on_king_arrived)
+	# The body count (2026-11-16): the dragon's dead, after the wings chip.
+	_dead_label = Label.new()
+	_dead_label.add_theme_font_size_override("font_size", 15)
+	_dead_label.add_theme_color_override("font_color", Color(0.85, 0.7, 0.62))
+	wings_label.add_sibling(_dead_label)
+	mgr.body_count_changed.connect(_on_body_count)
+	_on_body_count(mgr.body_count.size())
 	# Dragon health/flame/shield chips (take_damage/_try_eat_at_pen emit).
 	var dragon_ref := mgr.dragon
 	if dragon_ref != null and dragon_ref.has_signal("health_changed"):
@@ -100,7 +113,7 @@ func _on_dragon_health(health: Variant) -> void:
 		var shield: int = int(dragon_ref.get("shield_points"))
 		var shield_text: String = "" if shield <= 0 else " (+%d shield)" % shield
 		health_label.text = "HP %d/%d%s" % [
-			int(health), int(dragon_ref.get("max_health")), shield_text]
+			maxi(int(health), 0), int(dragon_ref.get("max_health")), shield_text]
 	else:
 		health_label.text = "HP %d" % int(health)
 
